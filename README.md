@@ -1,6 +1,6 @@
 # Tê Liệt — Hang trú thua
 
-Bản chơi thử low-poly: hang trú cho fan sau trận thua, 30 người/phòng. Hang dựng từ model GLB theo concept v3 (`design/concepts/v3`), fan có animation đi/đứng/cảm xúc, camera góc ba bám sau vai, chat, ba cảm xúc, bảng tên, Vách ký ức, TV trú thua và góc thâm niên (bấm E).
+Bản chơi thử low-poly: hang trú cho fan sau trận thua, 60 người/phòng. Hang dựng từ model GLB theo concept v3 (`design/concepts/v3`), fan có animation đi/đứng/cảm xúc, camera góc ba bám sau vai, chat, ba cảm xúc, bảng tên, Vách ký ức, TV trú thua và góc thâm niên (bấm E).
 
 Đọc [hướng dẫn chơi thử](docs/playtest.md), [camera và bố cục](docs/cameras-and-layout.md), [review repository](docs/review-2026-11-09.md), [quyết định kỹ thuật](docs/tech-decisions.md), [GDD](docs/GDD.md) và [art direction v3](docs/art-direction.md).
 

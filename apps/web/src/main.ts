@@ -42,7 +42,7 @@ import { GLOW_MATERIAL_PREFIX } from "./models.js";
 import { createNameTags } from "./nametags.js";
 import { createNearFlames } from "./nearFlames.js";
 import { createWorld, landmarks } from "./scene.js";
-import { CONTROLS_HELP, focusChat, mountUI, touch, ui } from "./ui.js";
+import { CONTROLS_HELP, focusChat, mountUI, rememberInvite, touch, ui } from "./ui.js";
 import { loadManifests } from "./world/manifest.js";
 
 declare global {
@@ -109,7 +109,7 @@ function setFov(fov: number) {
 }
 
 const LOADING = "Đang dựng hang…";
-const IDLE = "Trong hang vẫn còn chỗ cho anh.";
+const IDLE = "Trong hang vẫn còn chỗ cho bạn.";
 const AVATARS_FAILED =
   "Không tải được nhân vật. Tải lại trang để thử lại (vẫn đi lại và chat được).";
 let worldReady = false;
@@ -716,17 +716,27 @@ const gameUrl =
     ? "ws://localhost:2567"
     : `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}`);
 
-async function join(name: string) {
+async function join(name: string, invite = "") {
   if (session || ui.get().busy) return;
   ui.set({ busy: true });
   let joined: Room | undefined;
   try {
+    const code = invite.trim();
     const res = await fetch(apiUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: name }),
+      body: JSON.stringify(code ? { name, invite: code } : { name }),
     });
+    if (res.status === 403) {
+      // close test: API đòi mã mời (thiếu hoặc sai) → hiện ô nhập mã
+      const body = (await res.json().catch(() => null)) as { error?: string } | null;
+      ui.set({ needInvite: true });
+      if (code) rememberInvite("");
+      throw new Error(body?.error || "Cần mã mời để vào hang");
+    }
+    if (res.status === 429) throw new Error("Đông người vào quá, thử lại sau ít giây nhé.");
     if (!res.ok) throw new Error("Không thể đăng nhập");
+    if (code) rememberInvite(code);
     const { ticket } = await res.json();
     const room = await new Client(gameUrl).joinOrCreate("hub_v1", { ticket });
     joined = room;

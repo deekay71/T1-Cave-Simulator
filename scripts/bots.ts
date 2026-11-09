@@ -28,8 +28,8 @@ function fail(msg: string): never {
 const endpoint = process.env.GAME_URL || "ws://127.0.0.1:2800";
 const count = Number(process.env.BOTS || 8);
 const duration = Number(process.env.DURATION_SECONDS || 0);
-if (!Number.isInteger(count) || count < 1 || count > 60)
-  fail("BOTS phải là số nguyên từ 1 đến 60");
+if (!Number.isInteger(count) || count < 1 || count > 120)
+  fail("BOTS phải là số nguyên từ 1 đến 120");
 if (!Number.isFinite(duration) || duration < 0)
   fail("DURATION_SECONDS phải ≥ 0 (0 = chạy tới Ctrl+C)");
 let host = "";

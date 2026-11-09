@@ -23,7 +23,7 @@ Gốc toạ độ ở tâm lửa trại, mét, nhìn từ chỗ xuất hiện (0
 - Bảng tên: của mình hiện 4 giây sau khi vào rồi mờ đi; của người khác mờ dần theo khoảng cách (ẩn quá 18 m), luôn nằm trong màn hình, chồng nhau thì người xa được đẩy lên trên.
 
 ## Có thể thử
-- Vào room tối đa 30 người; thấy người khác đi lại (dự đoán ở client bằng cùng `applyInput()` với server, 20 Hz).
+- Vào room tối đa 60 người (`ROOM_CAPACITY`), người thứ 61 sang hang mới; thấy người khác đi lại (dự đoán ở client bằng cùng `applyInput()` với server, 20 Hz).
 - Bảy bộ đồ fan (chọn theo session), animation đi bộ, đứng thở, ba cảm xúc. Dòng chat cảm xúc tối đa một dòng mỗi 8 giây mỗi người.
 - Chat thu gọn: 4 dòng mới nhất, tự mờ sau 12 giây; gõ hoặc rê chuột vào để xem lại 40 dòng.
 - Chín NPC theo concept 03: bốn hạng thâm niên quanh lửa và trên giường, fan ở Vách ký ức và góc sinh hoạt.
@@ -44,3 +44,9 @@ Minigame/quiz thực thi, ngồi ghế có reservation, cosmetics xe lăn/giư�
 
 ## Phạm vi phát hành
 Bản local để review gameplay và bố cục, chưa deploy public. Trước public cần xử lý P1 trong review-2026-11-09.md. Mục tiêu tiếp: hoạt động nhặt tinh thể trong cùng hub, test room lifecycle và persistence/abuse prevention.
+
+## Close test có mã mời
+- API đặt `INVITE_CODE` thì `/v1/guest` chỉ cấp vé khi có đúng mã (bỏ khoảng trắng, không phân biệt hoa thường); thiếu hay sai mã thì form hiện ô "Mã mời".
+- Link mời: `https://<host>/?invite=<mã>`. Mã được nhớ trong trình duyệt; mã sai thì bị xóa để nhập lại.
+- `GUEST_RATE_LIMIT` (mặc định 20 request/phút/IP) nên đặt 120 cho close test vì nhiều người có thể chung một mạng.
+- Deploy máy public: `docs/deploy-free.md` và `compose.public.yaml`.

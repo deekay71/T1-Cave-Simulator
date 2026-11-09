@@ -19,7 +19,7 @@ Chỗ nào khác với `architecture.md`, `networking.md`, `data.md`, `deploymen
 | T2 | UI | React cho lớp UI DOM phủ trên canvas (chat, panel Hall of Fame, cài đặt, báo cáo). Không dùng React để render 3D | Mới: scaffold đang dùng DOM thuần |
 | T3 | Realtime | Colyseus **0.18**, `@colyseus/schema` 5, `@colyseus/sdk` 0.18 | Nâng từ 0.17 ngay ở M0 |
 | T4 | Di chuyển | Server quyết định vị trí. Dùng bộ netcode có sẵn của 0.18: `defineInput` + `setFixedTimestep` ở server; `room.input()` + `Predict` + `room.clock` ở client | Thay vòng "lấy input mới nhất mỗi tick" và lerp hiện tại |
-| T5 | Room | `hub_v1` tối đa 30 người. Minigame và quiz chạy **trong room hub** dưới dạng activity. Phòng riêng (mời bạn) là room riêng | Khác `networking.md` (đang tách room cho minigame/quiz) |
+| T5 | Room | `hub_v1` tối đa 30 người (cập nhật 2026-11-10: nâng lên 60 cho close test, đo bằng bot). Minigame và quiz chạy **trong room hub** dưới dạng activity. Phòng riêng (mời bạn) là room riêng | Khác `networking.md` (đang tách room cho minigame/quiz) |
 | T6 | API | Fastify 5, bật `trustProxy` theo hạ tầng thật | Giữ, sửa cấu hình proxy |
 | T7 | Tài khoản | Better Auth chạy trên Fastify: guest (plugin anonymous), Google, Discord, liên kết tài khoản giữ tiến trình | Mới: thay kế hoạch tự viết refresh rotation |
 | T8 | Vé vào game | JWT EdDSA hạn 60 s; API ký bằng khóa riêng, game chỉ giữ khóa công khai. Mỗi tài khoản một chỗ | Thay HS256 dùng chung, hạn 15 phút, dùng lại được |

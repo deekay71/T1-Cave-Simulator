@@ -1,0 +1,43 @@
+# Bổ sung cho máy public (close test). Chạy cùng compose.yaml:
+#   docker compose -f compose.yaml -f compose.public.yaml up -d --build
+# Cần trong .env (xem .env.example): TICKET_PRIVATE_JWK, TICKET_PUBLIC_JWKS, SITE_HOST,
+# POSTGRES_PASSWORD, và INVITE_CODE nếu muốn khóa bằng mã mời.
+# Caddy tự xin chứng chỉ Let's Encrypt cho SITE_HOST (vd. 203-0-113-7.sslip.io), cần mở cổng 80/443.
+services:
+  postgres:
+    environment:
+      # Chỉ có hiệu lực khi volume pgdata được tạo lần đầu.
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Đặt POSTGRES_PASSWORD trong .env}
+    restart: unless-stopped
+  redis:
+    restart: unless-stopped
+  migrate:
+    environment:
+      DATABASE_URL: postgres://te_liet:${POSTGRES_PASSWORD}@postgres:5432/te_liet
+  api:
+    environment:
+      DATABASE_URL: postgres://te_liet:${POSTGRES_PASSWORD}@postgres:5432/te_liet
+      WEB_ORIGIN: https://${SITE_HOST:?Đặt SITE_HOST trong .env}
+      # Caddy → Nginx → API: tin 2 proxy gần nhất để rate limit thấy IP thật của người chơi.
+      TRUST_PROXY: "2"
+      INVITE_CODE: ${INVITE_CODE:-}
+      GUEST_RATE_LIMIT: ${GUEST_RATE_LIMIT:-120}
+    restart: unless-stopped
+  game:
+    restart: unless-stopped
+  web:
+    restart: unless-stopped
+  caddy:
+    image: caddy:2.10-alpine
+    ports: ["80:80", "443:443", "443:443/udp"]
+    environment:
+      SITE_HOST: ${SITE_HOST}
+    volumes:
+      - ./infra/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on: [web]
+    restart: unless-stopped
+volumes:
+  caddy_data:
+  caddy_config:

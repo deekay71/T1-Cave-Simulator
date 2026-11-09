@@ -10,7 +10,7 @@ import {
 export * from "./layout.js";
 
 /** Số ghế tối đa của một room hub. */
-export const ROOM_CAPACITY = 30;
+export const ROOM_CAPACITY = 60;
 /** Nhịp mô phỏng cố định (Hz). Server quảng bá nhịp này cho client qua handshake. */
 export const TICK_RATE = 20;
 /** Chu kỳ gửi patch state (ms). */

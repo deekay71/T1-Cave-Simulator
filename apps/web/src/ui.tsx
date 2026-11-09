@@ -8,6 +8,7 @@ import {
   type MouseEvent,
 } from "react";
 import { createRoot } from "react-dom/client";
+import { ROOM_CAPACITY } from "@te-liet/shared";
 
 /** Một dòng trong nhật ký chat; id ổn định làm key React. */
 export type ChatLine = { id: number; text: string; at: number };
@@ -20,16 +21,53 @@ type Snapshot = {
   panel: string | null;
   /** Điểm tương tác ở gần (bấm E hoặc chạm nút để mở bảng). */
   prompt: { id: string; name: string } | null;
+  /** API yêu cầu mã mời (close test): hiện ô nhập mã trong form vào hang. */
+  needInvite: boolean;
 };
 let state: Snapshot = {
   connected: false,
   busy: false,
-  status: "Trong hang vẫn còn chỗ cho anh.",
+  status: "Trong hang vẫn còn chỗ cho bạn.",
   count: 0,
   messages: [],
   panel: null,
   prompt: null,
+  needInvite: false,
 };
+
+/**
+ * Mã mời close test: lấy từ link (?invite=…, rồi xóa khỏi thanh địa chỉ) hoặc lần nhập trước.
+ * localStorage chỉ để tiện, lỗi hay trống thì người chơi nhập lại.
+ */
+const INVITE_KEY = "te-liet.invite";
+function initialInvite(): string {
+  let code = "";
+  try {
+    const url = new URL(location.href);
+    code = url.searchParams.get("invite")?.trim() ?? "";
+    if (code) {
+      url.searchParams.delete("invite");
+      history.replaceState(null, "", url);
+    }
+  } catch {
+    /* URL lạ: bỏ qua */
+  }
+  try {
+    if (code) localStorage.setItem(INVITE_KEY, code);
+    else code = localStorage.getItem(INVITE_KEY) ?? "";
+  } catch {
+    /* trình duyệt chặn bộ nhớ */
+  }
+  return code.slice(0, 64);
+}
+export function rememberInvite(code: string) {
+  try {
+    if (code) localStorage.setItem(INVITE_KEY, code);
+    else localStorage.removeItem(INVITE_KEY);
+  } catch {
+    /* bỏ qua */
+  }
+}
 const listeners = new Set<() => void>();
 /** Số dòng chat giữ lại. */
 const MAX_LINES = 40;
@@ -85,7 +123,7 @@ const MOVES: readonly [key: string, label: string][] = [
   ["d", "Sang phải"],
 ];
 export type Actions = {
-  join: (name: string) => void;
+  join: (name: string, invite: string) => void;
   /** Gửi chat: 0 khi đã gửi, nếu không thì số ms phải chờ (giới hạn tần suất của khách). */
   chat: (text: string) => number;
   emote: (name: EmoteName) => void;
@@ -313,6 +351,7 @@ export function mountUI(actions: Actions) {
       return () => previous?.focus();
     }, [s.panel]);
     const [name, setName] = useState("Người trong hang");
+    const [invite, setInvite] = useState(initialInvite);
     return (
       <>
         <header>
@@ -322,7 +361,9 @@ export function mountUI(actions: Actions) {
           <div className="header-right">
             <div className="presence">
               <i />
-              {s.connected ? `${s.count}/30 cư dân` : "Bản chơi thử · v0.3"}
+              {s.connected
+                ? `${s.count}/${ROOM_CAPACITY} cư dân`
+                : "Bản chơi thử · v0.3"}
             </div>
             {s.connected && <LeaveButton leave={actions.leave} />}
           </div>
@@ -343,7 +384,7 @@ export function mountUI(actions: Actions) {
             <form
               onSubmit={(e) => {
                 e.preventDefault();
-                actions.join(name);
+                actions.join(name, invite);
               }}
             >
               <label htmlFor="name">Tên trong hang</label>
@@ -354,6 +395,19 @@ export function mountUI(actions: Actions) {
                 onChange={(e) => setName(e.target.value)}
                 required
               />
+              {(s.needInvite || invite !== "") && (
+                <>
+                  <label htmlFor="invite">Mã mời</label>
+                  <input
+                    id="invite"
+                    maxLength={64}
+                    autoComplete="off"
+                    value={invite}
+                    onChange={(e) => setInvite(e.target.value)}
+                    required={s.needInvite}
+                  />
+                </>
+              )}
               <button disabled={s.busy}>
                 {s.busy ? "Đang tìm chỗ…" : "Vào hang →"}
               </button>
@@ -496,7 +550,7 @@ export function mountUI(actions: Actions) {
                     Đọc nguồn lịch sử ↗
                   </a>
                   <small>
-                    Bản đọc thử; chưa có quiz hoặc nội dung cộng đồng.
+                    Sắp có: dán kỷ niệm của bạn lên vách.
                   </small>
                 </>
               ) : s.panel === "rest" ? (
@@ -514,9 +568,9 @@ export function mountUI(actions: Actions) {
                     </p>
                   ))}
                   <small>
-                    Bốn hạng đang ngồi quanh lửa trại và nằm ở góc này. Bản thử
-                    chọn ngẫu nhiên một trong 7 bộ đồ fan cho mỗi người; chưa
-                    ghi tiến trình hoặc mở khóa thâm niên.
+                    Bốn hạng đang ngồi quanh lửa trại và nằm ở góc này. Thâm
+                    niên sẽ tính theo những ngày bạn ghé hang; đợt thử này chưa
+                    ghi lại.
                   </small>
                 </>
               ) : (
@@ -524,8 +578,8 @@ export function mountUI(actions: Actions) {
                   <h2>DEFEAT</h2>
                   <p>TV vẫn chiếu lại khoảnh khắc ấy.</p>
                   <small>
-                    Góc minigame đang được xây dựng. Hiện có đi lại, chat và ba
-                    cảm xúc (phím 1/2/3).
+                    Máy chơi game còn đang sửa. Tạm thời ngồi lại, chat và bày
+                    tỏ cảm xúc bằng phím 1/2/3.
                   </small>
                 </>
               )}

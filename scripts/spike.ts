@@ -8,7 +8,7 @@ import { createTicketIssuer, loadPrivateJwk } from '@te-liet/auth';
 import { AXIS_MAX, CLOSE_SIGNED_IN_ELSEWHERE, HUB_LAYOUT, LIMITS, MOVE_SPEED, MoveInput, ROOM_CAPACITY, TICK_RATE } from '@te-liet/shared';
 
 const endpoint = process.env.GAME_URL || 'ws://localhost:2567';
-const count = Number(process.env.BOTS || 31), duration = Number(process.env.DURATION_SECONDS || 10);
+const count = Number(process.env.BOTS || ROOM_CAPACITY + 1), duration = Number(process.env.DURATION_SECONDS || 10);
 if (!Number.isInteger(count) || count < 2 || count > 10000 || !Number.isFinite(duration) || duration < 1) {
   throw new Error('Invalid load parameters');
 }

@@ -1,0 +1,7 @@
+# HTTPS tự động (Let's Encrypt) cho SITE_HOST, rồi chuyển hết sang Nginx trong container web.
+# Nginx định tuyến tiếp: file tĩnh, /v1 và /health sang API, /matchmake và WebSocket sang game.
+# Caddy tự chuyển tiếp WebSocket và thêm X-Forwarded-For.
+{$SITE_HOST} {
+	encode zstd gzip
+	reverse_proxy web:80
+}
