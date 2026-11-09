@@ -1,0 +1,62 @@
+name: te-liet
+# Cần khóa vé trong môi trường: `npm run -s keys > .env` (Compose tự đọc .env cùng thư mục).
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: te_liet
+      POSTGRES_PASSWORD: local_only
+      POSTGRES_DB: te_liet
+    volumes: ["pgdata:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U te_liet"]
+      interval: 5s
+      retries: 10
+  redis:
+    image: redis:7.4-alpine
+    command: ["redis-server", "--maxmemory-policy", "noeviction"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 10
+  migrate:
+    build: {context: ., dockerfile: infra/Dockerfile, target: backend}
+    command: ["node", "dist/server/migrate.mjs"]
+    environment:
+      DATABASE_URL: postgres://te_liet:local_only@postgres:5432/te_liet
+    depends_on:
+      postgres: {condition: service_healthy}
+  api:
+    build: {context: ., dockerfile: infra/Dockerfile, target: backend}
+    environment:
+      TICKET_PRIVATE_JWK: ${TICKET_PRIVATE_JWK:?Run `npm run -s keys > .env` first}
+      DATABASE_URL: postgres://te_liet:local_only@postgres:5432/te_liet
+      WEB_ORIGIN: http://localhost:8080
+      TRUST_PROXY: "1"
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/health/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      retries: 5
+  game:
+    build: {context: ., dockerfile: infra/Dockerfile, target: backend}
+    command: ["node", "dist/server/game.mjs"]
+    environment:
+      TICKET_PUBLIC_JWKS: ${TICKET_PUBLIC_JWKS:?Run `npm run -s keys > .env` first}
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      redis: {condition: service_healthy}
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:9100/health/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      retries: 5
+    stop_grace_period: 30s
+  web:
+    build: {context: ., dockerfile: infra/Dockerfile, target: web}
+    ports: ["127.0.0.1:8080:80"]
+    depends_on:
+      api: {condition: service_healthy}
+      game: {condition: service_healthy}
+volumes:
+  pgdata:

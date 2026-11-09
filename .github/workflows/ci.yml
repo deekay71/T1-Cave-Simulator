@@ -1,0 +1,38 @@
+name: foundation
+on: [push, pull_request]
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: 26, cache: npm}
+      - run: npm ci
+      - run: npm run build
+      - run: npm test
+      - name: Multiplayer smoke (bản JS đã build)
+        # Không có TICKET_* nên game và bot dùng chung khóa dev tự sinh trong .dev-keys/
+        run: |
+          node dist/server/game.mjs > /tmp/game.log 2>&1 &
+          GAME_PID=$!
+          trap 'kill "$GAME_PID" || true; cat /tmp/game.log' EXIT
+          for attempt in $(seq 1 30); do
+            if curl -fs http://localhost:9100/health/ready >/dev/null; then break; fi
+            sleep 1
+          done
+          npm run spike
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: {name: spike-report, path: reports/}
+      - name: Compose integration
+        run: |
+          npm run -s keys > .env
+          docker compose up --build -d
+          trap 'docker compose logs; docker compose down -v' EXIT
+          for attempt in $(seq 1 60); do
+            if curl -fsS http://localhost:8080/health/ready; then break; fi
+            sleep 2
+          done
+          curl -fsS http://localhost:8080/health/ready
+          set -a; . ./.env; set +a
+          GAME_URL=ws://localhost:8080 npm run spike
