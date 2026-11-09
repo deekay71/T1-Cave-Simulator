@@ -1,3 +1,5 @@
+> Cập nhật bản chơi thử 09/11/2026: art direction theo concept v3 và docs/art-direction.md; GDD v3 thay phần hình ảnh v1. React overlay đã thêm. Repo đã có commit nền tảng và remote; các ghi chú “chưa commit” bên dưới là lịch sử M0. Các quyết định kỹ thuật T1–T19 vẫn áp dụng; package-lock.json là phiên bản thực tế, bảng version cuối tài liệu là snapshot cũ.
+
 # Tê Liệt — Phương án kỹ thuật đã chốt
 
 Ngày chốt: 09/11/2026 · Áp dụng từ M0

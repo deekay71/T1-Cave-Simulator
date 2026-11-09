@@ -15,7 +15,8 @@
       "vite/client"
     ],
     "noEmit": true,
-    "useDefineForClassFields": false
+    "useDefineForClassFields": false,
+    "jsx": "react-jsx"
   },
   "include": [
     "apps",

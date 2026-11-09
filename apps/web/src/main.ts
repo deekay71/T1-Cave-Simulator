@@ -1,63 +1,59 @@
-import * as pc from 'playcanvas';
-import { Client, Predict, type InputHandle, type Room } from '@colyseus/sdk';
-import { applyInput, AXIS_MAX, CLOSE_SIGNED_IN_ELSEWHERE, MoveInput } from '@te-liet/shared';
-import './style.css';
+import * as pc from "playcanvas";
+import { Client, Predict, type InputHandle, type Room } from "@colyseus/sdk";
+import {
+  applyInput,
+  AXIS_MAX,
+  CLOSE_SIGNED_IN_ELSEWHERE,
+  MoveInput,
+} from "@te-liet/shared";
+import "./style.css";
+import { createCave, landmarks } from "./scene.js";
+import { mountUI, ui } from "./ui.js";
 
-const canvas = document.querySelector<HTMLCanvasElement>('#scene')!;
+const canvas = document.querySelector<HTMLCanvasElement>("#scene")!;
 const app = new pc.Application(canvas);
 app.setCanvasFillMode(pc.FILLMODE_FILL_WINDOW);
 app.setCanvasResolution(pc.RESOLUTION_AUTO);
 app.start();
-window.addEventListener('resize', () => app.resizeCanvas());
-app.scene.ambientLight = new pc.Color(0.25, 0.25, 0.32);
-
-const camera = new pc.Entity();
-camera.addComponent('camera', { clearColor: new pc.Color(0.035, 0.045, 0.065) });
-camera.setPosition(22, 25, 28);
-camera.lookAt(0, 0, 0);
-app.root.addChild(camera);
-const light = new pc.Entity();
-light.addComponent('light', { type: 'directional', color: new pc.Color(1, 0.78, 0.55), intensity: 1.4 });
-light.setEulerAngles(45, 25, 0);
-app.root.addChild(light);
-
-function shape(type: 'box' | 'cone' | 'capsule', color: number[], x: number, y: number, z: number, sx = 1, sy = 1, sz = 1) {
-  const e = new pc.Entity();
-  e.addComponent('render', { type });
-  const m = new pc.StandardMaterial();
-  m.diffuse = new pc.Color(...color);
-  m.update();
-  e.render!.meshInstances.forEach((i) => (i.material = m));
-  e.setPosition(x, y, z);
-  e.setLocalScale(sx, sy, sz);
-  app.root.addChild(e);
-  return e;
-}
-shape('box', [0.15, 0.19, 0.21], 0, -0.6, 0, 30, 1, 30);
-for (let i = 0; i < 18; i++) {
-  const a = (i / 18) * Math.PI * 2;
-  shape('box', [0.21, 0.24, 0.29], Math.cos(a) * 16, 1, Math.sin(a) * 16, 3, 3 + (i % 3), 3);
-}
-shape('cone', [1, 0.36, 0.12], 0, 0.6, 0, 1.5, 2, 1.5);
-
-const status = document.querySelector('#status')!;
-function log(text: string) {
-  const p = document.createElement('p');
-  p.textContent = text;
-  const box = document.querySelector('#log')!;
-  box.append(p);
-  while (box.children.length > 40) box.firstChild?.remove();
-  box.scrollTop = box.scrollHeight;
-}
+window.addEventListener("resize", () => app.resizeCanvas());
+const cave = createCave(app);
+const log = ui.log;
 
 const keys = new Set<string>();
-window.addEventListener('keydown', (e) => { if (!(e.target instanceof HTMLInputElement)) keys.add(e.key.toLowerCase()); });
-window.addEventListener('keyup', (e) => keys.delete(e.key.toLowerCase()));
-window.addEventListener('blur', () => keys.clear());
+window.addEventListener("keydown", (e) => {
+  if (
+    e.target instanceof HTMLInputElement ||
+    e.target instanceof HTMLButtonElement
+  )
+    return;
+  if (e.key === "Escape") {
+    ui.set({ panel: null });
+    keys.clear();
+    return;
+  }
+  if (ui.get().panel) return;
+  if (e.key.toLowerCase() === "e") {
+    const p = session?.room.state?.players?.get(session.room.sessionId);
+    if (p) {
+      const near = landmarks.find((l) => Math.hypot(l.x - p.x, l.z - p.z) < 3);
+      if (near) {
+        ui.set({ panel: near.id });
+        keys.clear();
+      }
+    }
+    return;
+  }
+  if (e.key.startsWith("Arrow")) e.preventDefault();
+  keys.add(e.key.toLowerCase());
+});
+window.addEventListener("keyup", (e) => keys.delete(e.key.toLowerCase()));
+window.addEventListener("blur", () => keys.clear());
 const held = (...names: string[]) => names.some((n) => keys.has(n));
 function axes() {
-  const right = Number(held('d', 'arrowright')) - Number(held('a', 'arrowleft'));
-  const back = Number(held('s', 'arrowdown')) - Number(held('w', 'arrowup'));
+  if (ui.get().panel) return { moveX: 0, moveZ: 0 };
+  const right =
+    Number(held("d", "arrowright")) - Number(held("a", "arrowleft"));
+  const back = Number(held("s", "arrowdown")) - Number(held("w", "arrowup"));
   return { moveX: right * AXIS_MAX, moveZ: back * AXIS_MAX };
 }
 
@@ -70,9 +66,12 @@ type Session = {
 };
 let session: Session | undefined;
 const avatars = new Map<string, pc.Entity>();
-function clearAvatars() { for (const e of avatars.values()) e.destroy(); avatars.clear(); }
+function clearAvatars() {
+  for (const e of avatars.values()) e.destroy();
+  avatars.clear();
+}
 
-app.on('update', () => {
+app.on("update", (dt: number) => {
   if (!session) return;
   const { room, predict, input } = session;
   const players = room.state?.players;
@@ -81,7 +80,12 @@ app.on('update', () => {
   // Nhân vật của mình: dự đoán ngay bằng cùng applyInput() với server, rồi đối chiếu khi server xác nhận.
   const self = players.get(room.sessionId);
   if (self && !session.reconciled) {
-    predict.reconciler(self, { input, fields: ['x', 'z'], smoothMs: 65, step: (ctx, s, cmd) => applyInput(s, cmd, ctx.dt) });
+    predict.reconciler(self, {
+      input,
+      fields: ["x", "z"],
+      smoothMs: 65,
+      step: (ctx, s, cmd) => applyInput(s, cmd, ctx.dt),
+    });
     session.reconciled = true;
   }
 
@@ -104,60 +108,125 @@ app.on('update', () => {
     seen.add(id);
     let e = avatars.get(id);
     if (!e) {
-      e = shape('capsule', id === room.sessionId ? [0.4, 0.85, 0.75] : [0.75, 0.6, 0.95], p.x, 1, p.z);
+      e = cave.avatar(id === room.sessionId);
       avatars.set(id, e);
     }
-    e.setPosition(predict.value(p, 'x'), 1, predict.value(p, 'z'));
+    const x = predict.value(p, "x"),
+      z = predict.value(p, "z");
+    const old = e.getPosition();
+    const dx = x - old.x,
+      dz = z - old.z;
+    if (Math.hypot(dx, dz) > 0.005)
+      e.setEulerAngles(0, (Math.atan2(dx, dz) * 180) / Math.PI, 0);
+    e.setPosition(x, 0, z);
   });
-  for (const [id, e] of avatars) if (!seen.has(id)) { e.destroy(); avatars.delete(id); }
+  for (const [id, e] of avatars)
+    if (!seen.has(id)) {
+      e.destroy();
+      avatars.delete(id);
+    }
+  if (ui.get().count !== seen.size) ui.set({ count: seen.size });
+  if (self) {
+    const target = avatars.get(room.sessionId)?.getPosition();
+    if (target) {
+      const pos = cave.camera.getPosition();
+      const alpha = 1 - Math.exp(-3 * dt);
+      cave.camera.setPosition(
+        pc.math.lerp(pos.x, target.x, alpha),
+        pc.math.lerp(pos.y, 6.5, alpha),
+        pc.math.lerp(pos.z, target.z + 9, alpha),
+      );
+      cave.camera.lookAt(target.x, 1, target.z - 2);
+      const near = landmarks.find(
+        (l) => Math.hypot(l.x - target.x, l.z - target.z) < 3,
+      );
+      const msg = near
+        ? `E · ${near.name}`
+        : "WASD / mũi tên · E tương tác khi ở gần";
+      if (ui.get().status !== msg) ui.set({ status: msg });
+    }
+  }
 });
 
-const apiUrl = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:3000/v1/guest' : '/v1/guest');
-const gameUrl = import.meta.env.VITE_GAME_URL
-  || (import.meta.env.DEV ? 'ws://localhost:2567' : `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}`);
+const apiUrl =
+  import.meta.env.VITE_API_URL ||
+  (import.meta.env.DEV ? "http://localhost:3000/v1/guest" : "/v1/guest");
+const gameUrl =
+  import.meta.env.VITE_GAME_URL ||
+  (import.meta.env.DEV
+    ? "ws://localhost:2567"
+    : `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}`);
 
-document.querySelector('#join')!.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  if (session) return;
-  const button = document.querySelector<HTMLButtonElement>('#join button')!;
-  button.disabled = true;
+async function join(name: string) {
+  if (session || ui.get().busy) return;
+  ui.set({ busy: true });
+  let joined: Room<any> | undefined;
   try {
     const res = await fetch(apiUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: document.querySelector<HTMLInputElement>('#name')!.value }),
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: name }),
     });
-    if (!res.ok) throw new Error('Không thể đăng nhập');
+    if (!res.ok) throw new Error("Không thể đăng nhập");
     const { ticket } = await res.json();
-    const room = await new Client(gameUrl).joinOrCreate('hub_v1', { ticket });
+    const room = await new Client(gameUrl).joinOrCreate("hub_v1", { ticket });
+    joined = room;
     const input = room.input({ type: MoveInput });
-    if (input.tickRate === undefined) throw new Error('Server chưa khai báo nhịp mô phỏng cố định');
-    const predict = Predict.get(room, { mode: 'lerp', delay: 100 });
-    predict.attachAll('players', { x: 'lerp', z: 'lerp' });
+    if (input.tickRate === undefined)
+      throw new Error("Server chưa khai báo nhịp mô phỏng cố định");
+    const predict = Predict.get(room, { mode: "lerp", delay: 100 });
+    predict.attachAll("players", { x: "lerp", z: "lerp" });
     session = { room, predict, input, reconciled: false, idleSteps: 0 };
-    status.textContent = 'Đã vào hang · ' + room.roomId;
+    ui.set({
+      connected: true,
+      busy: false,
+      status: "Đã vào hang · " + room.roomId,
+    });
 
-    room.onMessage('chat', (m: any) => log(m.name + ': ' + m.text));
-    room.onMessage('emote', (m: any) => log('👋 ' + (room.state.players.get(m.id)?.name || 'Bạn trong hang') + ' · ' + m.emote));
+    room.onMessage("chat", (m: any) => log(m.name + ": " + m.text));
+    room.onMessage("emote", (m: { id: string; emote: string }) => {
+      log(
+        "👋 " +
+          (room.state.players.get(m.id)?.name || "Bạn trong hang") +
+          " chào cả hang",
+      );
+      const arm = avatars.get(m.id)?.findByName("right-arm");
+      if (arm) {
+        arm.setLocalEulerAngles(0, 0, -130);
+        setTimeout(() => {
+          if (arm.parent) arm.setLocalEulerAngles(0, 0, 0);
+        }, 1400);
+      }
+    });
     room.onLeave((code: number) => {
       predict.dispose();
       session = undefined;
       clearAvatars();
-      button.disabled = false;
-      status.textContent = code === CLOSE_SIGNED_IN_ELSEWHERE
-        ? 'Bạn vừa vào hang ở tab hoặc máy khác, phiên này đã đóng.'
-        : 'Đã rời hang. Bấm Vào hang để kết nối lại.';
+      ui.set({
+        connected: false,
+        busy: false,
+        count: 0,
+        status:
+          code === CLOSE_SIGNED_IN_ELSEWHERE
+            ? "Bạn vừa vào hang ở tab hoặc máy khác, phiên này đã đóng."
+            : "Đã rời hang. Bấm Vào hang để kết nối lại.",
+      });
     });
   } catch (err) {
-    status.textContent = String(err);
-    button.disabled = false;
+    if (joined) await joined.leave().catch(() => {});
+    ui.set({ status: String(err), busy: false });
   }
+}
+mountUI({
+  join,
+  chat: (text) => session?.room.send("chat", text),
+  emote: () => session?.room.send("emote", "wave"),
+  leave: () => {
+    keys.clear();
+    void session?.room.leave();
+  },
+  move: (key, down) => {
+    if (down) keys.add(key);
+    else keys.delete(key);
+  },
 });
-
-document.querySelector('#chat')!.addEventListener('submit', (e) => {
-  e.preventDefault();
-  const input = document.querySelector<HTMLInputElement>('#message')!;
-  if (session && input.value.trim()) session.room.send('chat', input.value);
-  input.value = '';
-});
-document.querySelector('#wave')!.addEventListener('click', () => session?.room.send('emote', 'wave'));

@@ -46,7 +46,7 @@ export class HubRoom extends Room<{ state: HubState; input: MoveInput }> {
       const done = metrics.startTick();
       for (const [sessionId, player] of this.state.players) {
         const cmd = this.inputs.get(sessionId).next();
-        if (cmd) applyInput(player, cmd, ctx.dt);
+        if (cmd && player.connected) applyInput(player, cmd, ctx.dt);
       }
       done();
     }, TICK_RATE);
