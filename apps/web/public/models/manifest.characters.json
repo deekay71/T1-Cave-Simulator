@@ -1,0 +1,6655 @@
+{
+  "group": "characters",
+  "version": 1,
+  "generator": "tools/models/build.ts",
+  "assets": [
+    {
+      "name": "tl_char_fan_cap_red_v01",
+      "file": "characters/tl_char_fan_cap_red_v01.glb",
+      "url": "/models/characters/tl_char_fan_cap_red_v01.glb",
+      "triangles": 1620,
+      "trianglesByMaterial": {
+        "tl_matte": 1620
+      },
+      "budget": 2500,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -0.3597,
+          0,
+          -0.1615
+        ],
+        "max": [
+          0.3597,
+          1.7655,
+          0.2969
+        ]
+      },
+      "size": [
+        0.7194,
+        1.7655,
+        0.4584
+      ],
+      "nodes": [
+        "tl_char_fan_cap_red_v01",
+        "hips",
+        "spine",
+        "neck",
+        "head",
+        "arm_upper_l",
+        "arm_lower_l",
+        "arm_upper_r",
+        "arm_lower_r",
+        "leg_upper_l",
+        "leg_lower_l",
+        "leg_upper_r",
+        "leg_lower_r"
+      ],
+      "emissive": [],
+      "materials": [
+        "tl_matte"
+      ],
+      "notes": "Fan avatar (cap_red). Red cap, black tee with crimson shoulders + sleeve bands, worn-white towel scarf, dark grey pants, white sneakers. Rig (world rest pivots): hips 0.94; spine 1.01; neck 1.345; head 1.385; arm_upper_l (0.27, 1.31) > arm_lower_l elbow (0.2895, 1.0307), hand incl.; arm_*_r mirrored (-X); leg_upper_l (0.1, 0.84) > leg_lower_l knee y 0.52, shoe incl.; leg_*_r mirrored. All rest rotations 0; limbs hang along -Y. Verified poses: sit on a 0.45 m seat = root on the floor under the seat centre, hips at [0, 0.645, -0.05], leg_upper X -86, leg_lower X 86 (soles on the floor), spine 8; head_in_hands = sit legs + spine 56, neck 6, head 15, arm_upper_l [-48,-20,-44], arm_lower_l [-87,-39,-19] (r mirrored: Y,Z negated); slump = spine 14, head 20, knees soft (hips at [0,0.939,-0.028]); wave = arm_upper_r [-10,0,-140], arm_lower_r Z swinging -25..-60; walk_a/b = thighs -22/+14, knees 5/22, arms +-18..20, hips y 0.936. Poses list every joint (absolute local euler; hips also has `at`).",
+      "anchors": {
+        "hand_l": [
+          0.308,
+          0.7663,
+          0.004
+        ],
+        "hand_r": [
+          -0.308,
+          0.7663,
+          0.004
+        ],
+        "eyes": [
+          0,
+          1.525,
+          0.15
+        ],
+        "head_top": [
+          0,
+          1.7655,
+          0
+        ],
+        "name_tag": [
+          0,
+          1.9855,
+          0
+        ],
+        "seat_contact": [
+          0,
+          0.45,
+          -0.05
+        ]
+      },
+      "lights": [],
+      "poses": {
+        "walk_a": {
+          "hips": {
+            "at": [
+              0,
+              0.936,
+              0
+            ],
+            "rot": [
+              0,
+              4,
+              0
+            ]
+          },
+          "spine": [
+            3,
+            -5,
+            0
+          ],
+          "neck": [
+            0,
+            0,
+            0
+          ],
+          "head": [
+            0,
+            0,
+            0
+          ],
+          "arm_upper_l": [
+            18,
+            0,
+            0
+          ],
+          "arm_lower_l": [
+            -10,
+            0,
+            0
+          ],
+          "arm_upper_r": [
+            -20,
+            0,
+            0
+          ],
+          "arm_lower_r": [
+            -22,
+            0,
+            0
+          ],
+          "leg_upper_l": [
+            -22,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            5,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            14,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            22,
+            0,
+            0
+          ]
+        },
+        "walk_b": {
+          "hips": {
+            "at": [
+              0,
+              0.936,
+              0
+            ],
+            "rot": [
+              0,
+              -4,
+              0
+            ]
+          },
+          "spine": [
+            3,
+            5,
+            0
+          ],
+          "neck": [
+            0,
+            0,
+            0
+          ],
+          "head": [
+            0,
+            0,
+            0
+          ],
+          "arm_upper_l": [
+            -20,
+            0,
+            0
+          ],
+          "arm_lower_l": [
+            -22,
+            0,
+            0
+          ],
+          "arm_upper_r": [
+            18,
+            0,
+            0
+          ],
+          "arm_lower_r": [
+            -10,
+            0,
+            0
+          ],
+          "leg_upper_l": [
+            14,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            22,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            -22,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            5,
+            0,
+            0
+          ]
+        },
+        "sit": {
+          "hips": {
+            "at": [
+              0,
+              0.645,
+              -0.05
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            8,
+            0,
+            0
+          ],
+          "neck": [
+            4,
+            0,
+            0
+          ],
+          "head": [
+            10,
+            0,
+            0
+          ],
+          "arm_upper_l": [
+            2,
+            0,
+            -28
+          ],
+          "arm_lower_l": [
+            -75,
+            0,
+            -3
+          ],
+          "arm_upper_r": [
+            2,
+            0,
+            28
+          ],
+          "arm_lower_r": [
+            -75,
+            0,
+            3
+          ],
+          "leg_upper_l": [
+            -86,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            86,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            -86,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            86,
+            0,
+            0
+          ]
+        },
+        "head_in_hands": {
+          "hips": {
+            "at": [
+              0,
+              0.645,
+              -0.05
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            56,
+            0,
+            0
+          ],
+          "neck": [
+            6,
+            0,
+            0
+          ],
+          "head": [
+            15,
+            0,
+            0
+          ],
+          "arm_upper_l": [
+            -48,
+            -20,
+            -44
+          ],
+          "arm_lower_l": [
+            -87,
+            -39,
+            -19
+          ],
+          "arm_upper_r": [
+            -48,
+            20,
+            44
+          ],
+          "arm_lower_r": [
+            -87,
+            39,
+            19
+          ],
+          "leg_upper_l": [
+            -86,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            86,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            -86,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            86,
+            0,
+            0
+          ]
+        },
+        "sit_stool": {
+          "hips": {
+            "at": [
+              0,
+              0.6148,
+              -0.05
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            8,
+            0,
+            0
+          ],
+          "neck": [
+            4,
+            0,
+            0
+          ],
+          "head": [
+            10,
+            0,
+            0
+          ],
+          "arm_upper_l": [
+            6,
+            0,
+            -30
+          ],
+          "arm_lower_l": [
+            -82,
+            0,
+            -1
+          ],
+          "arm_upper_r": [
+            6,
+            0,
+            30
+          ],
+          "arm_lower_r": [
+            -82,
+            0,
+            1
+          ],
+          "leg_upper_l": [
+            -91,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            91,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            -91,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            91,
+            0,
+            0
+          ]
+        },
+        "sit_chair": {
+          "hips": {
+            "at": [
+              0,
+              0.6658,
+              -0.1
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            -15,
+            0,
+            0
+          ],
+          "neck": [
+            12,
+            0,
+            0
+          ],
+          "head": [
+            3,
+            0,
+            0
+          ],
+          "arm_upper_l": [
+            20,
+            -26,
+            -17
+          ],
+          "arm_lower_l": [
+            -96,
+            22,
+            -12
+          ],
+          "arm_upper_r": [
+            20,
+            26,
+            17
+          ],
+          "arm_lower_r": [
+            -96,
+            -22,
+            12
+          ],
+          "leg_upper_l": [
+            -82,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            82,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            -82,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            82,
+            0,
+            0
+          ]
+        },
+        "sit_wheelchair": {
+          "hips": {
+            "at": [
+              0,
+              0.735,
+              -0.03
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            -4,
+            0,
+            0
+          ],
+          "neck": [
+            6,
+            0,
+            0
+          ],
+          "head": [
+            8,
+            0,
+            0
+          ],
+          "arm_upper_l": [
+            10,
+            0,
+            -26
+          ],
+          "arm_lower_l": [
+            -83,
+            0,
+            7
+          ],
+          "arm_upper_r": [
+            10,
+            0,
+            26
+          ],
+          "arm_lower_r": [
+            -83,
+            0,
+            -7
+          ],
+          "leg_upper_l": [
+            -100,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            100,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            -100,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            100,
+            0,
+            0
+          ]
+        },
+        "lie_bed": {
+          "hips": {
+            "at": [
+              0,
+              0.5,
+              -0.1
+            ],
+            "rot": [
+              -90,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            11,
+            0,
+            0
+          ],
+          "neck": [
+            19,
+            0,
+            0
+          ],
+          "head": [
+            4,
+            0,
+            0
+          ],
+          "arm_upper_l": [
+            2,
+            0,
+            6
+          ],
+          "arm_lower_l": [
+            0,
+            0,
+            0
+          ],
+          "arm_upper_r": [
+            -53,
+            28,
+            40
+          ],
+          "arm_lower_r": [
+            -52,
+            -6,
+            32
+          ],
+          "leg_upper_l": [
+            1,
+            0,
+            2
+          ],
+          "leg_lower_l": [
+            -1,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            1,
+            0,
+            -2
+          ],
+          "leg_lower_r": [
+            -1,
+            0,
+            0
+          ]
+        },
+        "slump": {
+          "hips": {
+            "at": [
+              0,
+              0.939,
+              -0.028
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            14,
+            0,
+            0
+          ],
+          "neck": [
+            6,
+            0,
+            0
+          ],
+          "head": [
+            20,
+            0,
+            0
+          ],
+          "arm_upper_l": [
+            10,
+            0,
+            3
+          ],
+          "arm_lower_l": [
+            -8,
+            0,
+            0
+          ],
+          "arm_upper_r": [
+            10,
+            0,
+            -3
+          ],
+          "arm_lower_r": [
+            -8,
+            0,
+            0
+          ],
+          "leg_upper_l": [
+            -5,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            5,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            -5,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            5,
+            0,
+            0
+          ]
+        },
+        "wave": {
+          "hips": {
+            "at": [
+              0,
+              0.94,
+              0
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            0,
+            0,
+            2
+          ],
+          "neck": [
+            0,
+            0,
+            0
+          ],
+          "head": [
+            -4,
+            -8,
+            -4
+          ],
+          "arm_upper_l": [
+            0,
+            0,
+            0
+          ],
+          "arm_lower_l": [
+            0,
+            0,
+            0
+          ],
+          "arm_upper_r": [
+            -10,
+            0,
+            -140
+          ],
+          "arm_lower_r": [
+            0,
+            0,
+            -25
+          ],
+          "leg_upper_l": [
+            0,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            0,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            0,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            0,
+            0,
+            0
+          ]
+        },
+        "wave_b": {
+          "hips": {
+            "at": [
+              0,
+              0.94,
+              0
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            0,
+            0,
+            2
+          ],
+          "neck": [
+            0,
+            0,
+            0
+          ],
+          "head": [
+            -4,
+            -8,
+            -4
+          ],
+          "arm_upper_l": [
+            0,
+            0,
+            0
+          ],
+          "arm_lower_l": [
+            0,
+            0,
+            0
+          ],
+          "arm_upper_r": [
+            -10,
+            0,
+            -140
+          ],
+          "arm_lower_r": [
+            0,
+            0,
+            -60
+          ],
+          "leg_upper_l": [
+            0,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            0,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            0,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "collider": {
+        "type": "capsule",
+        "center": [
+          0,
+          0.875,
+          0
+        ],
+        "radius": 0.3,
+        "height": 1.75
+      },
+      "meta": {
+        "kind": "avatar",
+        "variant": "cap_red",
+        "rig": {
+          "version": 1,
+          "facing": "+Z",
+          "left": "+X",
+          "units": "m",
+          "nominalHeight": 1.75,
+          "skullTop": 1.69,
+          "boundsHeight": 1.7655,
+          "restRotations": "all zero (rest pose = standing, arms down; the 4 deg arm splay is baked into the mesh)",
+          "eulerOrder": "PlayCanvas setLocalEulerAngles (R = Rz*Ry*Rx)",
+          "jointWorldRest": {
+            "hips": [
+              0,
+              0.94,
+              0
+            ],
+            "spine": [
+              0,
+              1.01,
+              0
+            ],
+            "neck": [
+              0,
+              1.345,
+              -0.005
+            ],
+            "head": [
+              0,
+              1.385,
+              -0.005
+            ],
+            "arm_upper_l": [
+              0.27,
+              1.31,
+              0
+            ],
+            "arm_lower_l": [
+              0.2895,
+              1.0307,
+              0
+            ],
+            "arm_upper_r": [
+              -0.27,
+              1.31,
+              0
+            ],
+            "arm_lower_r": [
+              -0.2895,
+              1.0307,
+              0
+            ],
+            "leg_upper_l": [
+              0.1,
+              0.84,
+              0
+            ],
+            "leg_lower_l": [
+              0.1,
+              0.52,
+              0
+            ],
+            "leg_upper_r": [
+              -0.1,
+              0.84,
+              0
+            ],
+            "leg_lower_r": [
+              -0.1,
+              0.52,
+              0
+            ]
+          },
+          "lengths": {
+            "upperArm": 0.28,
+            "forearm": 0.21,
+            "hand": 0.115,
+            "thigh": 0.32,
+            "shinToSole": 0.52
+          },
+          "armTiltBakedDeg": 4,
+          "conventions": "limbs hang along -Y; X<0 swings an arm/thigh forward, X>0 back; leg_lower X>0 bends the knee (foot back); arm_lower X<0 bends the elbow (hand forward/up); arm_upper_r Z<0 / arm_upper_l Z>0 raise the arm sideways; spine/head X>0 lean/nod forward"
+        },
+        "sit": {
+          "seatHeight": 0.45,
+          "rootAt": "floor under the seat centre, facing away from the backrest",
+          "hipsAt": [
+            0,
+            0.645,
+            -0.05
+          ],
+          "otherSeatHeights": "raise/lower the root by (seatY - 0.45); for seats lower than ~0.4 bend the knees more"
+        }
+      },
+      "bytes": 133004
+    },
+    {
+      "name": "tl_char_fan_hoodie_white_v01",
+      "file": "characters/tl_char_fan_hoodie_white_v01.glb",
+      "url": "/models/characters/tl_char_fan_hoodie_white_v01.glb",
+      "triangles": 1648,
+      "trianglesByMaterial": {
+        "tl_matte": 1648
+      },
+      "budget": 2500,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -0.3729,
+          0,
+          -0.2245
+        ],
+        "max": [
+          0.3729,
+          1.798,
+          0.186
+        ]
+      },
+      "size": [
+        0.7457,
+        1.798,
+        0.4105
+      ],
+      "nodes": [
+        "tl_char_fan_hoodie_white_v01",
+        "hips",
+        "spine",
+        "neck",
+        "head",
+        "arm_upper_l",
+        "arm_lower_l",
+        "arm_upper_r",
+        "arm_lower_r",
+        "leg_upper_l",
+        "leg_lower_l",
+        "leg_upper_r",
+        "leg_lower_r"
+      ],
+      "emissive": [],
+      "materials": [
+        "tl_matte"
+      ],
+      "notes": "Fan avatar (hoodie_white). Worn-white hoodie with crimson hood (down) and sleeves, kangaroo pocket, dark denim, dark sneakers. Rig (world rest pivots): hips 0.94; spine 1.01; neck 1.345; head 1.385; arm_upper_l (0.27, 1.31) > arm_lower_l elbow (0.2895, 1.0307), hand incl.; arm_*_r mirrored (-X); leg_upper_l (0.1, 0.84) > leg_lower_l knee y 0.52, shoe incl.; leg_*_r mirrored. All rest rotations 0; limbs hang along -Y. Verified poses: sit on a 0.45 m seat = root on the floor under the seat centre, hips at [0, 0.645, -0.05], leg_upper X -86, leg_lower X 86 (soles on the floor), spine 8; head_in_hands = sit legs + spine 56, neck 6, head 15, arm_upper_l [-48,-20,-44], arm_lower_l [-87,-39,-19] (r mirrored: Y,Z negated); slump = spine 14, head 20, knees soft (hips at [0,0.939,-0.028]); wave = arm_upper_r [-10,0,-140], arm_lower_r Z swinging -25..-60; walk_a/b = thighs -22/+14, knees 5/22, arms +-18..20, hips y 0.936. Poses list every joint (absolute local euler; hips also has `at`).",
+      "anchors": {
+        "hand_l": [
+          0.308,
+          0.7663,
+          0.004
+        ],
+        "hand_r": [
+          -0.308,
+          0.7663,
+          0.004
+        ],
+        "eyes": [
+          0,
+          1.525,
+          0.15
+        ],
+        "head_top": [
+          0,
+          1.798,
+          0
+        ],
+        "name_tag": [
+          0,
+          2.018,
+          0
+        ],
+        "seat_contact": [
+          0,
+          0.45,
+          -0.05
+        ]
+      },
+      "lights": [],
+      "poses": {
+        "walk_a": {
+          "hips": {
+            "at": [
+              0,
+              0.936,
+              0
+            ],
+            "rot": [
+              0,
+              4,
+              0
+            ]
+          },
+          "spine": [
+            3,
+            -5,
+            0
+          ],
+          "neck": [
+            0,
+            0,
+            0
+          ],
+          "head": [
+            0,
+            0,
+            0
+          ],
+          "arm_upper_l": [
+            18,
+            0,
+            0
+          ],
+          "arm_lower_l": [
+            -10,
+            0,
+            0
+          ],
+          "arm_upper_r": [
+            -20,
+            0,
+            0
+          ],
+          "arm_lower_r": [
+            -22,
+            0,
+            0
+          ],
+          "leg_upper_l": [
+            -22,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            5,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            14,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            22,
+            0,
+            0
+          ]
+        },
+        "walk_b": {
+          "hips": {
+            "at": [
+              0,
+              0.936,
+              0
+            ],
+            "rot": [
+              0,
+              -4,
+              0
+            ]
+          },
+          "spine": [
+            3,
+            5,
+            0
+          ],
+          "neck": [
+            0,
+            0,
+            0
+          ],
+          "head": [
+            0,
+            0,
+            0
+          ],
+          "arm_upper_l": [
+            -20,
+            0,
+            0
+          ],
+          "arm_lower_l": [
+            -22,
+            0,
+            0
+          ],
+          "arm_upper_r": [
+            18,
+            0,
+            0
+          ],
+          "arm_lower_r": [
+            -10,
+            0,
+            0
+          ],
+          "leg_upper_l": [
+            14,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            22,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            -22,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            5,
+            0,
+            0
+          ]
+        },
+        "sit": {
+          "hips": {
+            "at": [
+              0,
+              0.645,
+              -0.05
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            8,
+            0,
+            0
+          ],
+          "neck": [
+            4,
+            0,
+            0
+          ],
+          "head": [
+            10,
+            0,
+            0
+          ],
+          "arm_upper_l": [
+            2,
+            0,
+            -28
+          ],
+          "arm_lower_l": [
+            -75,
+            0,
+            -3
+          ],
+          "arm_upper_r": [
+            2,
+            0,
+            28
+          ],
+          "arm_lower_r": [
+            -75,
+            0,
+            3
+          ],
+          "leg_upper_l": [
+            -86,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            86,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            -86,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            86,
+            0,
+            0
+          ]
+        },
+        "head_in_hands": {
+          "hips": {
+            "at": [
+              0,
+              0.645,
+              -0.05
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            56,
+            0,
+            0
+          ],
+          "neck": [
+            6,
+            0,
+            0
+          ],
+          "head": [
+            15,
+            0,
+            0
+          ],
+          "arm_upper_l": [
+            -48,
+            -20,
+            -44
+          ],
+          "arm_lower_l": [
+            -87,
+            -39,
+            -19
+          ],
+          "arm_upper_r": [
+            -48,
+            20,
+            44
+          ],
+          "arm_lower_r": [
+            -87,
+            39,
+            19
+          ],
+          "leg_upper_l": [
+            -86,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            86,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            -86,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            86,
+            0,
+            0
+          ]
+        },
+        "sit_stool": {
+          "hips": {
+            "at": [
+              0,
+              0.6148,
+              -0.05
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            8,
+            0,
+            0
+          ],
+          "neck": [
+            4,
+            0,
+            0
+          ],
+          "head": [
+            10,
+            0,
+            0
+          ],
+          "arm_upper_l": [
+            6,
+            0,
+            -30
+          ],
+          "arm_lower_l": [
+            -82,
+            0,
+            -1
+          ],
+          "arm_upper_r": [
+            6,
+            0,
+            30
+          ],
+          "arm_lower_r": [
+            -82,
+            0,
+            1
+          ],
+          "leg_upper_l": [
+            -91,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            91,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            -91,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            91,
+            0,
+            0
+          ]
+        },
+        "sit_chair": {
+          "hips": {
+            "at": [
+              0,
+              0.6658,
+              -0.1
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            -15,
+            0,
+            0
+          ],
+          "neck": [
+            12,
+            0,
+            0
+          ],
+          "head": [
+            3,
+            0,
+            0
+          ],
+          "arm_upper_l": [
+            20,
+            -26,
+            -17
+          ],
+          "arm_lower_l": [
+            -96,
+            22,
+            -12
+          ],
+          "arm_upper_r": [
+            20,
+            26,
+            17
+          ],
+          "arm_lower_r": [
+            -96,
+            -22,
+            12
+          ],
+          "leg_upper_l": [
+            -82,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            82,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            -82,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            82,
+            0,
+            0
+          ]
+        },
+        "sit_wheelchair": {
+          "hips": {
+            "at": [
+              0,
+              0.735,
+              -0.03
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            -4,
+            0,
+            0
+          ],
+          "neck": [
+            6,
+            0,
+            0
+          ],
+          "head": [
+            8,
+            0,
+            0
+          ],
+          "arm_upper_l": [
+            10,
+            0,
+            -26
+          ],
+          "arm_lower_l": [
+            -83,
+            0,
+            7
+          ],
+          "arm_upper_r": [
+            10,
+            0,
+            26
+          ],
+          "arm_lower_r": [
+            -83,
+            0,
+            -7
+          ],
+          "leg_upper_l": [
+            -100,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            100,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            -100,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            100,
+            0,
+            0
+          ]
+        },
+        "lie_bed": {
+          "hips": {
+            "at": [
+              0,
+              0.5,
+              -0.1
+            ],
+            "rot": [
+              -90,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            11,
+            0,
+            0
+          ],
+          "neck": [
+            19,
+            0,
+            0
+          ],
+          "head": [
+            4,
+            0,
+            0
+          ],
+          "arm_upper_l": [
+            2,
+            0,
+            6
+          ],
+          "arm_lower_l": [
+            0,
+            0,
+            0
+          ],
+          "arm_upper_r": [
+            -53,
+            28,
+            40
+          ],
+          "arm_lower_r": [
+            -52,
+            -6,
+            32
+          ],
+          "leg_upper_l": [
+            1,
+            0,
+            2
+          ],
+          "leg_lower_l": [
+            -1,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            1,
+            0,
+            -2
+          ],
+          "leg_lower_r": [
+            -1,
+            0,
+            0
+          ]
+        },
+        "slump": {
+          "hips": {
+            "at": [
+              0,
+              0.939,
+              -0.028
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            14,
+            0,
+            0
+          ],
+          "neck": [
+            6,
+            0,
+            0
+          ],
+          "head": [
+            20,
+            0,
+            0
+          ],
+          "arm_upper_l": [
+            10,
+            0,
+            3
+          ],
+          "arm_lower_l": [
+            -8,
+            0,
+            0
+          ],
+          "arm_upper_r": [
+            10,
+            0,
+            -3
+          ],
+          "arm_lower_r": [
+            -8,
+            0,
+            0
+          ],
+          "leg_upper_l": [
+            -5,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            5,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            -5,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            5,
+            0,
+            0
+          ]
+        },
+        "wave": {
+          "hips": {
+            "at": [
+              0,
+              0.94,
+              0
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            0,
+            0,
+            2
+          ],
+          "neck": [
+            0,
+            0,
+            0
+          ],
+          "head": [
+            -4,
+            -8,
+            -4
+          ],
+          "arm_upper_l": [
+            0,
+            0,
+            0
+          ],
+          "arm_lower_l": [
+            0,
+            0,
+            0
+          ],
+          "arm_upper_r": [
+            -10,
+            0,
+            -140
+          ],
+          "arm_lower_r": [
+            0,
+            0,
+            -25
+          ],
+          "leg_upper_l": [
+            0,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            0,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            0,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            0,
+            0,
+            0
+          ]
+        },
+        "wave_b": {
+          "hips": {
+            "at": [
+              0,
+              0.94,
+              0
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            0,
+            0,
+            2
+          ],
+          "neck": [
+            0,
+            0,
+            0
+          ],
+          "head": [
+            -4,
+            -8,
+            -4
+          ],
+          "arm_upper_l": [
+            0,
+            0,
+            0
+          ],
+          "arm_lower_l": [
+            0,
+            0,
+            0
+          ],
+          "arm_upper_r": [
+            -10,
+            0,
+            -140
+          ],
+          "arm_lower_r": [
+            0,
+            0,
+            -60
+          ],
+          "leg_upper_l": [
+            0,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            0,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            0,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "collider": {
+        "type": "capsule",
+        "center": [
+          0,
+          0.875,
+          0
+        ],
+        "radius": 0.3,
+        "height": 1.75
+      },
+      "meta": {
+        "kind": "avatar",
+        "variant": "hoodie_white",
+        "rig": {
+          "version": 1,
+          "facing": "+Z",
+          "left": "+X",
+          "units": "m",
+          "nominalHeight": 1.75,
+          "skullTop": 1.69,
+          "boundsHeight": 1.798,
+          "restRotations": "all zero (rest pose = standing, arms down; the 4 deg arm splay is baked into the mesh)",
+          "eulerOrder": "PlayCanvas setLocalEulerAngles (R = Rz*Ry*Rx)",
+          "jointWorldRest": {
+            "hips": [
+              0,
+              0.94,
+              0
+            ],
+            "spine": [
+              0,
+              1.01,
+              0
+            ],
+            "neck": [
+              0,
+              1.345,
+              -0.005
+            ],
+            "head": [
+              0,
+              1.385,
+              -0.005
+            ],
+            "arm_upper_l": [
+              0.27,
+              1.31,
+              0
+            ],
+            "arm_lower_l": [
+              0.2895,
+              1.0307,
+              0
+            ],
+            "arm_upper_r": [
+              -0.27,
+              1.31,
+              0
+            ],
+            "arm_lower_r": [
+              -0.2895,
+              1.0307,
+              0
+            ],
+            "leg_upper_l": [
+              0.1,
+              0.84,
+              0
+            ],
+            "leg_lower_l": [
+              0.1,
+              0.52,
+              0
+            ],
+            "leg_upper_r": [
+              -0.1,
+              0.84,
+              0
+            ],
+            "leg_lower_r": [
+              -0.1,
+              0.52,
+              0
+            ]
+          },
+          "lengths": {
+            "upperArm": 0.28,
+            "forearm": 0.21,
+            "hand": 0.115,
+            "thigh": 0.32,
+            "shinToSole": 0.52
+          },
+          "armTiltBakedDeg": 4,
+          "conventions": "limbs hang along -Y; X<0 swings an arm/thigh forward, X>0 back; leg_lower X>0 bends the knee (foot back); arm_lower X<0 bends the elbow (hand forward/up); arm_upper_r Z<0 / arm_upper_l Z>0 raise the arm sideways; spine/head X>0 lean/nod forward"
+        },
+        "sit": {
+          "seatHeight": 0.45,
+          "rootAt": "floor under the seat centre, facing away from the backrest",
+          "hipsAt": [
+            0,
+            0.645,
+            -0.05
+          ],
+          "otherSeatHeights": "raise/lower the root by (seatY - 0.45); for seats lower than ~0.4 bend the knees more"
+        }
+      },
+      "bytes": 138452
+    },
+    {
+      "name": "tl_char_fan_hoodie_black_v01",
+      "file": "characters/tl_char_fan_hoodie_black_v01.glb",
+      "url": "/models/characters/tl_char_fan_hoodie_black_v01.glb",
+      "triangles": 1498,
+      "trianglesByMaterial": {
+        "tl_matte": 1498
+      },
+      "budget": 2500,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -0.3729,
+          0,
+          -0.23
+        ],
+        "max": [
+          0.3729,
+          1.765,
+          0.186
+        ]
+      },
+      "size": [
+        0.7457,
+        1.765,
+        0.416
+      ],
+      "nodes": [
+        "tl_char_fan_hoodie_black_v01",
+        "hips",
+        "spine",
+        "neck",
+        "head",
+        "arm_upper_l",
+        "arm_lower_l",
+        "arm_upper_r",
+        "arm_lower_r",
+        "leg_upper_l",
+        "leg_lower_l",
+        "leg_upper_r",
+        "leg_lower_r"
+      ],
+      "emissive": [],
+      "materials": [
+        "tl_matte"
+      ],
+      "notes": "Fan avatar (hoodie_black). Black hoodie with the hood up, crimson trim (hood rim, cuffs, hem) and the small red symbol on the back; warm grey pants. Rig (world rest pivots): hips 0.94; spine 1.01; neck 1.345; head 1.385; arm_upper_l (0.27, 1.31) > arm_lower_l elbow (0.2895, 1.0307), hand incl.; arm_*_r mirrored (-X); leg_upper_l (0.1, 0.84) > leg_lower_l knee y 0.52, shoe incl.; leg_*_r mirrored. All rest rotations 0; limbs hang along -Y. Verified poses: sit on a 0.45 m seat = root on the floor under the seat centre, hips at [0, 0.645, -0.05], leg_upper X -86, leg_lower X 86 (soles on the floor), spine 8; head_in_hands = sit legs + spine 56, neck 6, head 15, arm_upper_l [-48,-20,-44], arm_lower_l [-87,-39,-19] (r mirrored: Y,Z negated); slump = spine 14, head 20, knees soft (hips at [0,0.939,-0.028]); wave = arm_upper_r [-10,0,-140], arm_lower_r Z swinging -25..-60; walk_a/b = thighs -22/+14, knees 5/22, arms +-18..20, hips y 0.936. Poses list every joint (absolute local euler; hips also has `at`).",
+      "anchors": {
+        "hand_l": [
+          0.308,
+          0.7663,
+          0.004
+        ],
+        "hand_r": [
+          -0.308,
+          0.7663,
+          0.004
+        ],
+        "eyes": [
+          0,
+          1.525,
+          0.15
+        ],
+        "head_top": [
+          0,
+          1.765,
+          0
+        ],
+        "name_tag": [
+          0,
+          1.985,
+          0
+        ],
+        "seat_contact": [
+          0,
+          0.45,
+          -0.05
+        ],
+        "back_emblem": [
+          0,
+          1.165,
+          -0.135
+        ]
+      },
+      "lights": [],
+      "poses": {
+        "walk_a": {
+          "hips": {
+            "at": [
+              0,
+              0.936,
+              0
+            ],
+            "rot": [
+              0,
+              4,
+              0
+            ]
+          },
+          "spine": [
+            3,
+            -5,
+            0
+          ],
+          "neck": [
+            0,
+            0,
+            0
+          ],
+          "head": [
+            0,
+            0,
+            0
+          ],
+          "arm_upper_l": [
+            18,
+            0,
+            0
+          ],
+          "arm_lower_l": [
+            -10,
+            0,
+            0
+          ],
+          "arm_upper_r": [
+            -20,
+            0,
+            0
+          ],
+          "arm_lower_r": [
+            -22,
+            0,
+            0
+          ],
+          "leg_upper_l": [
+            -22,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            5,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            14,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            22,
+            0,
+            0
+          ]
+        },
+        "walk_b": {
+          "hips": {
+            "at": [
+              0,
+              0.936,
+              0
+            ],
+            "rot": [
+              0,
+              -4,
+              0
+            ]
+          },
+          "spine": [
+            3,
+            5,
+            0
+          ],
+          "neck": [
+            0,
+            0,
+            0
+          ],
+          "head": [
+            0,
+            0,
+            0
+          ],
+          "arm_upper_l": [
+            -20,
+            0,
+            0
+          ],
+          "arm_lower_l": [
+            -22,
+            0,
+            0
+          ],
+          "arm_upper_r": [
+            18,
+            0,
+            0
+          ],
+          "arm_lower_r": [
+            -10,
+            0,
+            0
+          ],
+          "leg_upper_l": [
+            14,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            22,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            -22,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            5,
+            0,
+            0
+          ]
+        },
+        "sit": {
+          "hips": {
+            "at": [
+              0,
+              0.645,
+              -0.05
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            8,
+            0,
+            0
+          ],
+          "neck": [
+            4,
+            0,
+            0
+          ],
+          "head": [
+            10,
+            0,
+            0
+          ],
+          "arm_upper_l": [
+            2,
+            0,
+            -28
+          ],
+          "arm_lower_l": [
+            -75,
+            0,
+            -3
+          ],
+          "arm_upper_r": [
+            2,
+            0,
+            28
+          ],
+          "arm_lower_r": [
+            -75,
+            0,
+            3
+          ],
+          "leg_upper_l": [
+            -86,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            86,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            -86,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            86,
+            0,
+            0
+          ]
+        },
+        "head_in_hands": {
+          "hips": {
+            "at": [
+              0,
+              0.645,
+              -0.05
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            56,
+            0,
+            0
+          ],
+          "neck": [
+            6,
+            0,
+            0
+          ],
+          "head": [
+            15,
+            0,
+            0
+          ],
+          "arm_upper_l": [
+            -48,
+            -20,
+            -44
+          ],
+          "arm_lower_l": [
+            -87,
+            -39,
+            -19
+          ],
+          "arm_upper_r": [
+            -48,
+            20,
+            44
+          ],
+          "arm_lower_r": [
+            -87,
+            39,
+            19
+          ],
+          "leg_upper_l": [
+            -86,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            86,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            -86,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            86,
+            0,
+            0
+          ]
+        },
+        "sit_stool": {
+          "hips": {
+            "at": [
+              0,
+              0.6148,
+              -0.05
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            8,
+            0,
+            0
+          ],
+          "neck": [
+            4,
+            0,
+            0
+          ],
+          "head": [
+            10,
+            0,
+            0
+          ],
+          "arm_upper_l": [
+            6,
+            0,
+            -30
+          ],
+          "arm_lower_l": [
+            -82,
+            0,
+            -1
+          ],
+          "arm_upper_r": [
+            6,
+            0,
+            30
+          ],
+          "arm_lower_r": [
+            -82,
+            0,
+            1
+          ],
+          "leg_upper_l": [
+            -91,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            91,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            -91,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            91,
+            0,
+            0
+          ]
+        },
+        "sit_chair": {
+          "hips": {
+            "at": [
+              0,
+              0.6658,
+              -0.1
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            -15,
+            0,
+            0
+          ],
+          "neck": [
+            12,
+            0,
+            0
+          ],
+          "head": [
+            3,
+            0,
+            0
+          ],
+          "arm_upper_l": [
+            20,
+            -26,
+            -17
+          ],
+          "arm_lower_l": [
+            -96,
+            22,
+            -12
+          ],
+          "arm_upper_r": [
+            20,
+            26,
+            17
+          ],
+          "arm_lower_r": [
+            -96,
+            -22,
+            12
+          ],
+          "leg_upper_l": [
+            -82,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            82,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            -82,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            82,
+            0,
+            0
+          ]
+        },
+        "sit_wheelchair": {
+          "hips": {
+            "at": [
+              0,
+              0.735,
+              -0.03
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            -4,
+            0,
+            0
+          ],
+          "neck": [
+            6,
+            0,
+            0
+          ],
+          "head": [
+            8,
+            0,
+            0
+          ],
+          "arm_upper_l": [
+            10,
+            0,
+            -26
+          ],
+          "arm_lower_l": [
+            -83,
+            0,
+            7
+          ],
+          "arm_upper_r": [
+            10,
+            0,
+            26
+          ],
+          "arm_lower_r": [
+            -83,
+            0,
+            -7
+          ],
+          "leg_upper_l": [
+            -100,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            100,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            -100,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            100,
+            0,
+            0
+          ]
+        },
+        "lie_bed": {
+          "hips": {
+            "at": [
+              0,
+              0.5,
+              -0.1
+            ],
+            "rot": [
+              -90,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            11,
+            0,
+            0
+          ],
+          "neck": [
+            19,
+            0,
+            0
+          ],
+          "head": [
+            4,
+            0,
+            0
+          ],
+          "arm_upper_l": [
+            2,
+            0,
+            6
+          ],
+          "arm_lower_l": [
+            0,
+            0,
+            0
+          ],
+          "arm_upper_r": [
+            -53,
+            28,
+            40
+          ],
+          "arm_lower_r": [
+            -52,
+            -6,
+            32
+          ],
+          "leg_upper_l": [
+            1,
+            0,
+            2
+          ],
+          "leg_lower_l": [
+            -1,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            1,
+            0,
+            -2
+          ],
+          "leg_lower_r": [
+            -1,
+            0,
+            0
+          ]
+        },
+        "slump": {
+          "hips": {
+            "at": [
+              0,
+              0.939,
+              -0.028
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            14,
+            0,
+            0
+          ],
+          "neck": [
+            6,
+            0,
+            0
+          ],
+          "head": [
+            20,
+            0,
+            0
+          ],
+          "arm_upper_l": [
+            10,
+            0,
+            3
+          ],
+          "arm_lower_l": [
+            -8,
+            0,
+            0
+          ],
+          "arm_upper_r": [
+            10,
+            0,
+            -3
+          ],
+          "arm_lower_r": [
+            -8,
+            0,
+            0
+          ],
+          "leg_upper_l": [
+            -5,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            5,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            -5,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            5,
+            0,
+            0
+          ]
+        },
+        "wave": {
+          "hips": {
+            "at": [
+              0,
+              0.94,
+              0
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            0,
+            0,
+            2
+          ],
+          "neck": [
+            0,
+            0,
+            0
+          ],
+          "head": [
+            -4,
+            -8,
+            -4
+          ],
+          "arm_upper_l": [
+            0,
+            0,
+            0
+          ],
+          "arm_lower_l": [
+            0,
+            0,
+            0
+          ],
+          "arm_upper_r": [
+            -10,
+            0,
+            -140
+          ],
+          "arm_lower_r": [
+            0,
+            0,
+            -25
+          ],
+          "leg_upper_l": [
+            0,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            0,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            0,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            0,
+            0,
+            0
+          ]
+        },
+        "wave_b": {
+          "hips": {
+            "at": [
+              0,
+              0.94,
+              0
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            0,
+            0,
+            2
+          ],
+          "neck": [
+            0,
+            0,
+            0
+          ],
+          "head": [
+            -4,
+            -8,
+            -4
+          ],
+          "arm_upper_l": [
+            0,
+            0,
+            0
+          ],
+          "arm_lower_l": [
+            0,
+            0,
+            0
+          ],
+          "arm_upper_r": [
+            -10,
+            0,
+            -140
+          ],
+          "arm_lower_r": [
+            0,
+            0,
+            -60
+          ],
+          "leg_upper_l": [
+            0,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            0,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            0,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "collider": {
+        "type": "capsule",
+        "center": [
+          0,
+          0.875,
+          0
+        ],
+        "radius": 0.3,
+        "height": 1.75
+      },
+      "meta": {
+        "kind": "avatar",
+        "variant": "hoodie_black",
+        "rig": {
+          "version": 1,
+          "facing": "+Z",
+          "left": "+X",
+          "units": "m",
+          "nominalHeight": 1.75,
+          "skullTop": 1.69,
+          "boundsHeight": 1.765,
+          "restRotations": "all zero (rest pose = standing, arms down; the 4 deg arm splay is baked into the mesh)",
+          "eulerOrder": "PlayCanvas setLocalEulerAngles (R = Rz*Ry*Rx)",
+          "jointWorldRest": {
+            "hips": [
+              0,
+              0.94,
+              0
+            ],
+            "spine": [
+              0,
+              1.01,
+              0
+            ],
+            "neck": [
+              0,
+              1.345,
+              -0.005
+            ],
+            "head": [
+              0,
+              1.385,
+              -0.005
+            ],
+            "arm_upper_l": [
+              0.27,
+              1.31,
+              0
+            ],
+            "arm_lower_l": [
+              0.2895,
+              1.0307,
+              0
+            ],
+            "arm_upper_r": [
+              -0.27,
+              1.31,
+              0
+            ],
+            "arm_lower_r": [
+              -0.2895,
+              1.0307,
+              0
+            ],
+            "leg_upper_l": [
+              0.1,
+              0.84,
+              0
+            ],
+            "leg_lower_l": [
+              0.1,
+              0.52,
+              0
+            ],
+            "leg_upper_r": [
+              -0.1,
+              0.84,
+              0
+            ],
+            "leg_lower_r": [
+              -0.1,
+              0.52,
+              0
+            ]
+          },
+          "lengths": {
+            "upperArm": 0.28,
+            "forearm": 0.21,
+            "hand": 0.115,
+            "thigh": 0.32,
+            "shinToSole": 0.52
+          },
+          "armTiltBakedDeg": 4,
+          "conventions": "limbs hang along -Y; X<0 swings an arm/thigh forward, X>0 back; leg_lower X>0 bends the knee (foot back); arm_lower X<0 bends the elbow (hand forward/up); arm_upper_r Z<0 / arm_upper_l Z>0 raise the arm sideways; spine/head X>0 lean/nod forward"
+        },
+        "sit": {
+          "seatHeight": 0.45,
+          "rootAt": "floor under the seat centre, facing away from the backrest",
+          "hipsAt": [
+            0,
+            0.645,
+            -0.05
+          ],
+          "otherSeatHeights": "raise/lower the root by (seatY - 0.45); for seats lower than ~0.4 bend the knees more"
+        }
+      },
+      "bytes": 122280
+    },
+    {
+      "name": "tl_char_fan_torn_jersey_v01",
+      "file": "characters/tl_char_fan_torn_jersey_v01.glb",
+      "url": "/models/characters/tl_char_fan_torn_jersey_v01.glb",
+      "triangles": 2368,
+      "trianglesByMaterial": {
+        "tl_matte": 2368
+      },
+      "budget": 2500,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -0.3589,
+          0,
+          -0.1914
+        ],
+        "max": [
+          0.3595,
+          1.7872,
+          0.1923
+        ]
+      },
+      "size": [
+        0.7185,
+        1.7872,
+        0.3837
+      ],
+      "nodes": [
+        "tl_char_fan_torn_jersey_v01",
+        "hips",
+        "spine",
+        "neck",
+        "head",
+        "arm_upper_l",
+        "arm_lower_l",
+        "arm_upper_r",
+        "arm_lower_r",
+        "leg_upper_l",
+        "leg_lower_l",
+        "leg_upper_r",
+        "leg_lower_r"
+      ],
+      "emissive": [],
+      "materials": [
+        "tl_matte"
+      ],
+      "notes": "Fan avatar (torn_jersey). Tenure 01 'Rach ruoi': faded crimson jersey with ragged hem/sleeves, rips and a sewn patch, worn-white chevrons; torn shorts, white socks, sandals. Rig (world rest pivots): hips 0.94; spine 1.01; neck 1.345; head 1.385; arm_upper_l (0.27, 1.31) > arm_lower_l elbow (0.2895, 1.0307), hand incl.; arm_*_r mirrored (-X); leg_upper_l (0.1, 0.84) > leg_lower_l knee y 0.52, shoe incl.; leg_*_r mirrored. All rest rotations 0; limbs hang along -Y. Verified poses: sit on a 0.45 m seat = root on the floor under the seat centre, hips at [0, 0.645, -0.05], leg_upper X -86, leg_lower X 86 (soles on the floor), spine 8; head_in_hands = sit legs + spine 56, neck 6, head 15, arm_upper_l [-48,-20,-44], arm_lower_l [-87,-39,-19] (r mirrored: Y,Z negated); slump = spine 14, head 20, knees soft (hips at [0,0.939,-0.028]); wave = arm_upper_r [-10,0,-140], arm_lower_r Z swinging -25..-60; walk_a/b = thighs -22/+14, knees 5/22, arms +-18..20, hips y 0.936. Poses list every joint (absolute local euler; hips also has `at`).",
+      "anchors": {
+        "hand_l": [
+          0.308,
+          0.7663,
+          0.004
+        ],
+        "hand_r": [
+          -0.308,
+          0.7663,
+          0.004
+        ],
+        "eyes": [
+          0,
+          1.525,
+          0.15
+        ],
+        "head_top": [
+          0,
+          1.7872,
+          0
+        ],
+        "name_tag": [
+          0,
+          2.0072,
+          0
+        ],
+        "seat_contact": [
+          0,
+          0.45,
+          -0.05
+        ]
+      },
+      "lights": [],
+      "poses": {
+        "walk_a": {
+          "hips": {
+            "at": [
+              0,
+              0.936,
+              0
+            ],
+            "rot": [
+              0,
+              4,
+              0
+            ]
+          },
+          "spine": [
+            3,
+            -5,
+            0
+          ],
+          "neck": [
+            0,
+            0,
+            0
+          ],
+          "head": [
+            0,
+            0,
+            0
+          ],
+          "arm_upper_l": [
+            18,
+            0,
+            0
+          ],
+          "arm_lower_l": [
+            -10,
+            0,
+            0
+          ],
+          "arm_upper_r": [
+            -20,
+            0,
+            0
+          ],
+          "arm_lower_r": [
+            -22,
+            0,
+            0
+          ],
+          "leg_upper_l": [
+            -22,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            5,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            14,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            22,
+            0,
+            0
+          ]
+        },
+        "walk_b": {
+          "hips": {
+            "at": [
+              0,
+              0.936,
+              0
+            ],
+            "rot": [
+              0,
+              -4,
+              0
+            ]
+          },
+          "spine": [
+            3,
+            5,
+            0
+          ],
+          "neck": [
+            0,
+            0,
+            0
+          ],
+          "head": [
+            0,
+            0,
+            0
+          ],
+          "arm_upper_l": [
+            -20,
+            0,
+            0
+          ],
+          "arm_lower_l": [
+            -22,
+            0,
+            0
+          ],
+          "arm_upper_r": [
+            18,
+            0,
+            0
+          ],
+          "arm_lower_r": [
+            -10,
+            0,
+            0
+          ],
+          "leg_upper_l": [
+            14,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            22,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            -22,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            5,
+            0,
+            0
+          ]
+        },
+        "sit": {
+          "hips": {
+            "at": [
+              0,
+              0.645,
+              -0.05
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            8,
+            0,
+            0
+          ],
+          "neck": [
+            4,
+            0,
+            0
+          ],
+          "head": [
+            10,
+            0,
+            0
+          ],
+          "arm_upper_l": [
+            2,
+            0,
+            -28
+          ],
+          "arm_lower_l": [
+            -75,
+            0,
+            -3
+          ],
+          "arm_upper_r": [
+            2,
+            0,
+            28
+          ],
+          "arm_lower_r": [
+            -75,
+            0,
+            3
+          ],
+          "leg_upper_l": [
+            -86,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            86,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            -86,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            86,
+            0,
+            0
+          ]
+        },
+        "head_in_hands": {
+          "hips": {
+            "at": [
+              0,
+              0.645,
+              -0.05
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            56,
+            0,
+            0
+          ],
+          "neck": [
+            6,
+            0,
+            0
+          ],
+          "head": [
+            15,
+            0,
+            0
+          ],
+          "arm_upper_l": [
+            -48,
+            -20,
+            -44
+          ],
+          "arm_lower_l": [
+            -87,
+            -39,
+            -19
+          ],
+          "arm_upper_r": [
+            -48,
+            20,
+            44
+          ],
+          "arm_lower_r": [
+            -87,
+            39,
+            19
+          ],
+          "leg_upper_l": [
+            -86,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            86,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            -86,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            86,
+            0,
+            0
+          ]
+        },
+        "sit_stool": {
+          "hips": {
+            "at": [
+              0,
+              0.6148,
+              -0.05
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            8,
+            0,
+            0
+          ],
+          "neck": [
+            4,
+            0,
+            0
+          ],
+          "head": [
+            10,
+            0,
+            0
+          ],
+          "arm_upper_l": [
+            6,
+            0,
+            -30
+          ],
+          "arm_lower_l": [
+            -82,
+            0,
+            -1
+          ],
+          "arm_upper_r": [
+            6,
+            0,
+            30
+          ],
+          "arm_lower_r": [
+            -82,
+            0,
+            1
+          ],
+          "leg_upper_l": [
+            -91,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            91,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            -91,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            91,
+            0,
+            0
+          ]
+        },
+        "sit_chair": {
+          "hips": {
+            "at": [
+              0,
+              0.6658,
+              -0.1
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            -15,
+            0,
+            0
+          ],
+          "neck": [
+            12,
+            0,
+            0
+          ],
+          "head": [
+            3,
+            0,
+            0
+          ],
+          "arm_upper_l": [
+            20,
+            -26,
+            -17
+          ],
+          "arm_lower_l": [
+            -96,
+            22,
+            -12
+          ],
+          "arm_upper_r": [
+            20,
+            26,
+            17
+          ],
+          "arm_lower_r": [
+            -96,
+            -22,
+            12
+          ],
+          "leg_upper_l": [
+            -82,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            82,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            -82,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            82,
+            0,
+            0
+          ]
+        },
+        "sit_wheelchair": {
+          "hips": {
+            "at": [
+              0,
+              0.735,
+              -0.03
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            -4,
+            0,
+            0
+          ],
+          "neck": [
+            6,
+            0,
+            0
+          ],
+          "head": [
+            8,
+            0,
+            0
+          ],
+          "arm_upper_l": [
+            10,
+            0,
+            -26
+          ],
+          "arm_lower_l": [
+            -83,
+            0,
+            7
+          ],
+          "arm_upper_r": [
+            10,
+            0,
+            26
+          ],
+          "arm_lower_r": [
+            -83,
+            0,
+            -7
+          ],
+          "leg_upper_l": [
+            -100,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            100,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            -100,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            100,
+            0,
+            0
+          ]
+        },
+        "lie_bed": {
+          "hips": {
+            "at": [
+              0,
+              0.5,
+              -0.1
+            ],
+            "rot": [
+              -90,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            11,
+            0,
+            0
+          ],
+          "neck": [
+            19,
+            0,
+            0
+          ],
+          "head": [
+            4,
+            0,
+            0
+          ],
+          "arm_upper_l": [
+            2,
+            0,
+            6
+          ],
+          "arm_lower_l": [
+            0,
+            0,
+            0
+          ],
+          "arm_upper_r": [
+            -53,
+            28,
+            40
+          ],
+          "arm_lower_r": [
+            -52,
+            -6,
+            32
+          ],
+          "leg_upper_l": [
+            1,
+            0,
+            2
+          ],
+          "leg_lower_l": [
+            -1,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            1,
+            0,
+            -2
+          ],
+          "leg_lower_r": [
+            -1,
+            0,
+            0
+          ]
+        },
+        "slump": {
+          "hips": {
+            "at": [
+              0,
+              0.939,
+              -0.028
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            14,
+            0,
+            0
+          ],
+          "neck": [
+            6,
+            0,
+            0
+          ],
+          "head": [
+            20,
+            0,
+            0
+          ],
+          "arm_upper_l": [
+            10,
+            0,
+            3
+          ],
+          "arm_lower_l": [
+            -8,
+            0,
+            0
+          ],
+          "arm_upper_r": [
+            10,
+            0,
+            -3
+          ],
+          "arm_lower_r": [
+            -8,
+            0,
+            0
+          ],
+          "leg_upper_l": [
+            -5,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            5,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            -5,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            5,
+            0,
+            0
+          ]
+        },
+        "wave": {
+          "hips": {
+            "at": [
+              0,
+              0.94,
+              0
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            0,
+            0,
+            2
+          ],
+          "neck": [
+            0,
+            0,
+            0
+          ],
+          "head": [
+            -4,
+            -8,
+            -4
+          ],
+          "arm_upper_l": [
+            0,
+            0,
+            0
+          ],
+          "arm_lower_l": [
+            0,
+            0,
+            0
+          ],
+          "arm_upper_r": [
+            -10,
+            0,
+            -140
+          ],
+          "arm_lower_r": [
+            0,
+            0,
+            -25
+          ],
+          "leg_upper_l": [
+            0,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            0,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            0,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            0,
+            0,
+            0
+          ]
+        },
+        "wave_b": {
+          "hips": {
+            "at": [
+              0,
+              0.94,
+              0
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            0,
+            0,
+            2
+          ],
+          "neck": [
+            0,
+            0,
+            0
+          ],
+          "head": [
+            -4,
+            -8,
+            -4
+          ],
+          "arm_upper_l": [
+            0,
+            0,
+            0
+          ],
+          "arm_lower_l": [
+            0,
+            0,
+            0
+          ],
+          "arm_upper_r": [
+            -10,
+            0,
+            -140
+          ],
+          "arm_lower_r": [
+            0,
+            0,
+            -60
+          ],
+          "leg_upper_l": [
+            0,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            0,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            0,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "collider": {
+        "type": "capsule",
+        "center": [
+          0,
+          0.875,
+          0
+        ],
+        "radius": 0.3,
+        "height": 1.75
+      },
+      "meta": {
+        "kind": "avatar",
+        "variant": "torn_jersey",
+        "rig": {
+          "version": 1,
+          "facing": "+Z",
+          "left": "+X",
+          "units": "m",
+          "nominalHeight": 1.75,
+          "skullTop": 1.69,
+          "boundsHeight": 1.7872,
+          "restRotations": "all zero (rest pose = standing, arms down; the 4 deg arm splay is baked into the mesh)",
+          "eulerOrder": "PlayCanvas setLocalEulerAngles (R = Rz*Ry*Rx)",
+          "jointWorldRest": {
+            "hips": [
+              0,
+              0.94,
+              0
+            ],
+            "spine": [
+              0,
+              1.01,
+              0
+            ],
+            "neck": [
+              0,
+              1.345,
+              -0.005
+            ],
+            "head": [
+              0,
+              1.385,
+              -0.005
+            ],
+            "arm_upper_l": [
+              0.27,
+              1.31,
+              0
+            ],
+            "arm_lower_l": [
+              0.2895,
+              1.0307,
+              0
+            ],
+            "arm_upper_r": [
+              -0.27,
+              1.31,
+              0
+            ],
+            "arm_lower_r": [
+              -0.2895,
+              1.0307,
+              0
+            ],
+            "leg_upper_l": [
+              0.1,
+              0.84,
+              0
+            ],
+            "leg_lower_l": [
+              0.1,
+              0.52,
+              0
+            ],
+            "leg_upper_r": [
+              -0.1,
+              0.84,
+              0
+            ],
+            "leg_lower_r": [
+              -0.1,
+              0.52,
+              0
+            ]
+          },
+          "lengths": {
+            "upperArm": 0.28,
+            "forearm": 0.21,
+            "hand": 0.115,
+            "thigh": 0.32,
+            "shinToSole": 0.52
+          },
+          "armTiltBakedDeg": 4,
+          "conventions": "limbs hang along -Y; X<0 swings an arm/thigh forward, X>0 back; leg_lower X>0 bends the knee (foot back); arm_lower X<0 bends the elbow (hand forward/up); arm_upper_r Z<0 / arm_upper_l Z>0 raise the arm sideways; spine/head X>0 lean/nod forward"
+        },
+        "sit": {
+          "seatHeight": 0.45,
+          "rootAt": "floor under the seat centre, facing away from the backrest",
+          "hipsAt": [
+            0,
+            0.645,
+            -0.05
+          ],
+          "otherSeatHeights": "raise/lower the root by (seatY - 0.45); for seats lower than ~0.4 bend the knees more"
+        }
+      },
+      "bytes": 206096
+    },
+    {
+      "name": "tl_char_fan_headband_v01",
+      "file": "characters/tl_char_fan_headband_v01.glb",
+      "url": "/models/characters/tl_char_fan_headband_v01.glb",
+      "triangles": 1822,
+      "trianglesByMaterial": {
+        "tl_matte": 1822
+      },
+      "budget": 2500,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -0.3729,
+          0,
+          -0.2245
+        ],
+        "max": [
+          0.3729,
+          1.7961,
+          0.186
+        ]
+      },
+      "size": [
+        0.7457,
+        1.7961,
+        0.4105
+      ],
+      "nodes": [
+        "tl_char_fan_headband_v01",
+        "hips",
+        "spine",
+        "neck",
+        "head",
+        "arm_upper_l",
+        "arm_lower_l",
+        "arm_upper_r",
+        "arm_lower_r",
+        "leg_upper_l",
+        "leg_lower_l",
+        "leg_upper_r",
+        "leg_lower_r"
+      ],
+      "emissive": [],
+      "materials": [
+        "tl_matte"
+      ],
+      "notes": "Fan avatar (headband). Tenure 02 style: white spiky hair, crimson headband with trailing tails, torn black hoodie (hood down), dark brown pants. Rig (world rest pivots): hips 0.94; spine 1.01; neck 1.345; head 1.385; arm_upper_l (0.27, 1.31) > arm_lower_l elbow (0.2895, 1.0307), hand incl.; arm_*_r mirrored (-X); leg_upper_l (0.1, 0.84) > leg_lower_l knee y 0.52, shoe incl.; leg_*_r mirrored. All rest rotations 0; limbs hang along -Y. Verified poses: sit on a 0.45 m seat = root on the floor under the seat centre, hips at [0, 0.645, -0.05], leg_upper X -86, leg_lower X 86 (soles on the floor), spine 8; head_in_hands = sit legs + spine 56, neck 6, head 15, arm_upper_l [-48,-20,-44], arm_lower_l [-87,-39,-19] (r mirrored: Y,Z negated); slump = spine 14, head 20, knees soft (hips at [0,0.939,-0.028]); wave = arm_upper_r [-10,0,-140], arm_lower_r Z swinging -25..-60; walk_a/b = thighs -22/+14, knees 5/22, arms +-18..20, hips y 0.936. Poses list every joint (absolute local euler; hips also has `at`).",
+      "anchors": {
+        "hand_l": [
+          0.308,
+          0.7663,
+          0.004
+        ],
+        "hand_r": [
+          -0.308,
+          0.7663,
+          0.004
+        ],
+        "eyes": [
+          0,
+          1.525,
+          0.15
+        ],
+        "head_top": [
+          0,
+          1.7961,
+          0
+        ],
+        "name_tag": [
+          0,
+          2.0161,
+          0
+        ],
+        "seat_contact": [
+          0,
+          0.45,
+          -0.05
+        ]
+      },
+      "lights": [],
+      "poses": {
+        "walk_a": {
+          "hips": {
+            "at": [
+              0,
+              0.936,
+              0
+            ],
+            "rot": [
+              0,
+              4,
+              0
+            ]
+          },
+          "spine": [
+            3,
+            -5,
+            0
+          ],
+          "neck": [
+            0,
+            0,
+            0
+          ],
+          "head": [
+            0,
+            0,
+            0
+          ],
+          "arm_upper_l": [
+            18,
+            0,
+            0
+          ],
+          "arm_lower_l": [
+            -10,
+            0,
+            0
+          ],
+          "arm_upper_r": [
+            -20,
+            0,
+            0
+          ],
+          "arm_lower_r": [
+            -22,
+            0,
+            0
+          ],
+          "leg_upper_l": [
+            -22,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            5,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            14,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            22,
+            0,
+            0
+          ]
+        },
+        "walk_b": {
+          "hips": {
+            "at": [
+              0,
+              0.936,
+              0
+            ],
+            "rot": [
+              0,
+              -4,
+              0
+            ]
+          },
+          "spine": [
+            3,
+            5,
+            0
+          ],
+          "neck": [
+            0,
+            0,
+            0
+          ],
+          "head": [
+            0,
+            0,
+            0
+          ],
+          "arm_upper_l": [
+            -20,
+            0,
+            0
+          ],
+          "arm_lower_l": [
+            -22,
+            0,
+            0
+          ],
+          "arm_upper_r": [
+            18,
+            0,
+            0
+          ],
+          "arm_lower_r": [
+            -10,
+            0,
+            0
+          ],
+          "leg_upper_l": [
+            14,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            22,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            -22,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            5,
+            0,
+            0
+          ]
+        },
+        "sit": {
+          "hips": {
+            "at": [
+              0,
+              0.645,
+              -0.05
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            8,
+            0,
+            0
+          ],
+          "neck": [
+            4,
+            0,
+            0
+          ],
+          "head": [
+            10,
+            0,
+            0
+          ],
+          "arm_upper_l": [
+            2,
+            0,
+            -28
+          ],
+          "arm_lower_l": [
+            -75,
+            0,
+            -3
+          ],
+          "arm_upper_r": [
+            2,
+            0,
+            28
+          ],
+          "arm_lower_r": [
+            -75,
+            0,
+            3
+          ],
+          "leg_upper_l": [
+            -86,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            86,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            -86,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            86,
+            0,
+            0
+          ]
+        },
+        "head_in_hands": {
+          "hips": {
+            "at": [
+              0,
+              0.645,
+              -0.05
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            56,
+            0,
+            0
+          ],
+          "neck": [
+            6,
+            0,
+            0
+          ],
+          "head": [
+            15,
+            0,
+            0
+          ],
+          "arm_upper_l": [
+            -48,
+            -20,
+            -44
+          ],
+          "arm_lower_l": [
+            -87,
+            -39,
+            -19
+          ],
+          "arm_upper_r": [
+            -48,
+            20,
+            44
+          ],
+          "arm_lower_r": [
+            -87,
+            39,
+            19
+          ],
+          "leg_upper_l": [
+            -86,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            86,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            -86,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            86,
+            0,
+            0
+          ]
+        },
+        "sit_stool": {
+          "hips": {
+            "at": [
+              0,
+              0.6148,
+              -0.05
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            8,
+            0,
+            0
+          ],
+          "neck": [
+            4,
+            0,
+            0
+          ],
+          "head": [
+            10,
+            0,
+            0
+          ],
+          "arm_upper_l": [
+            6,
+            0,
+            -30
+          ],
+          "arm_lower_l": [
+            -82,
+            0,
+            -1
+          ],
+          "arm_upper_r": [
+            6,
+            0,
+            30
+          ],
+          "arm_lower_r": [
+            -82,
+            0,
+            1
+          ],
+          "leg_upper_l": [
+            -91,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            91,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            -91,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            91,
+            0,
+            0
+          ]
+        },
+        "sit_chair": {
+          "hips": {
+            "at": [
+              0,
+              0.6658,
+              -0.1
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            -15,
+            0,
+            0
+          ],
+          "neck": [
+            12,
+            0,
+            0
+          ],
+          "head": [
+            3,
+            0,
+            0
+          ],
+          "arm_upper_l": [
+            20,
+            -26,
+            -17
+          ],
+          "arm_lower_l": [
+            -96,
+            22,
+            -12
+          ],
+          "arm_upper_r": [
+            20,
+            26,
+            17
+          ],
+          "arm_lower_r": [
+            -96,
+            -22,
+            12
+          ],
+          "leg_upper_l": [
+            -82,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            82,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            -82,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            82,
+            0,
+            0
+          ]
+        },
+        "sit_wheelchair": {
+          "hips": {
+            "at": [
+              0,
+              0.735,
+              -0.03
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            -4,
+            0,
+            0
+          ],
+          "neck": [
+            6,
+            0,
+            0
+          ],
+          "head": [
+            8,
+            0,
+            0
+          ],
+          "arm_upper_l": [
+            10,
+            0,
+            -26
+          ],
+          "arm_lower_l": [
+            -83,
+            0,
+            7
+          ],
+          "arm_upper_r": [
+            10,
+            0,
+            26
+          ],
+          "arm_lower_r": [
+            -83,
+            0,
+            -7
+          ],
+          "leg_upper_l": [
+            -100,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            100,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            -100,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            100,
+            0,
+            0
+          ]
+        },
+        "lie_bed": {
+          "hips": {
+            "at": [
+              0,
+              0.5,
+              -0.1
+            ],
+            "rot": [
+              -90,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            11,
+            0,
+            0
+          ],
+          "neck": [
+            19,
+            0,
+            0
+          ],
+          "head": [
+            4,
+            0,
+            0
+          ],
+          "arm_upper_l": [
+            2,
+            0,
+            6
+          ],
+          "arm_lower_l": [
+            0,
+            0,
+            0
+          ],
+          "arm_upper_r": [
+            -53,
+            28,
+            40
+          ],
+          "arm_lower_r": [
+            -52,
+            -6,
+            32
+          ],
+          "leg_upper_l": [
+            1,
+            0,
+            2
+          ],
+          "leg_lower_l": [
+            -1,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            1,
+            0,
+            -2
+          ],
+          "leg_lower_r": [
+            -1,
+            0,
+            0
+          ]
+        },
+        "slump": {
+          "hips": {
+            "at": [
+              0,
+              0.939,
+              -0.028
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            14,
+            0,
+            0
+          ],
+          "neck": [
+            6,
+            0,
+            0
+          ],
+          "head": [
+            20,
+            0,
+            0
+          ],
+          "arm_upper_l": [
+            10,
+            0,
+            3
+          ],
+          "arm_lower_l": [
+            -8,
+            0,
+            0
+          ],
+          "arm_upper_r": [
+            10,
+            0,
+            -3
+          ],
+          "arm_lower_r": [
+            -8,
+            0,
+            0
+          ],
+          "leg_upper_l": [
+            -5,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            5,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            -5,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            5,
+            0,
+            0
+          ]
+        },
+        "wave": {
+          "hips": {
+            "at": [
+              0,
+              0.94,
+              0
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            0,
+            0,
+            2
+          ],
+          "neck": [
+            0,
+            0,
+            0
+          ],
+          "head": [
+            -4,
+            -8,
+            -4
+          ],
+          "arm_upper_l": [
+            0,
+            0,
+            0
+          ],
+          "arm_lower_l": [
+            0,
+            0,
+            0
+          ],
+          "arm_upper_r": [
+            -10,
+            0,
+            -140
+          ],
+          "arm_lower_r": [
+            0,
+            0,
+            -25
+          ],
+          "leg_upper_l": [
+            0,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            0,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            0,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            0,
+            0,
+            0
+          ]
+        },
+        "wave_b": {
+          "hips": {
+            "at": [
+              0,
+              0.94,
+              0
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            0,
+            0,
+            2
+          ],
+          "neck": [
+            0,
+            0,
+            0
+          ],
+          "head": [
+            -4,
+            -8,
+            -4
+          ],
+          "arm_upper_l": [
+            0,
+            0,
+            0
+          ],
+          "arm_lower_l": [
+            0,
+            0,
+            0
+          ],
+          "arm_upper_r": [
+            -10,
+            0,
+            -140
+          ],
+          "arm_lower_r": [
+            0,
+            0,
+            -60
+          ],
+          "leg_upper_l": [
+            0,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            0,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            0,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "collider": {
+        "type": "capsule",
+        "center": [
+          0,
+          0.875,
+          0
+        ],
+        "radius": 0.3,
+        "height": 1.75
+      },
+      "meta": {
+        "kind": "avatar",
+        "variant": "headband",
+        "rig": {
+          "version": 1,
+          "facing": "+Z",
+          "left": "+X",
+          "units": "m",
+          "nominalHeight": 1.75,
+          "skullTop": 1.69,
+          "boundsHeight": 1.7961,
+          "restRotations": "all zero (rest pose = standing, arms down; the 4 deg arm splay is baked into the mesh)",
+          "eulerOrder": "PlayCanvas setLocalEulerAngles (R = Rz*Ry*Rx)",
+          "jointWorldRest": {
+            "hips": [
+              0,
+              0.94,
+              0
+            ],
+            "spine": [
+              0,
+              1.01,
+              0
+            ],
+            "neck": [
+              0,
+              1.345,
+              -0.005
+            ],
+            "head": [
+              0,
+              1.385,
+              -0.005
+            ],
+            "arm_upper_l": [
+              0.27,
+              1.31,
+              0
+            ],
+            "arm_lower_l": [
+              0.2895,
+              1.0307,
+              0
+            ],
+            "arm_upper_r": [
+              -0.27,
+              1.31,
+              0
+            ],
+            "arm_lower_r": [
+              -0.2895,
+              1.0307,
+              0
+            ],
+            "leg_upper_l": [
+              0.1,
+              0.84,
+              0
+            ],
+            "leg_lower_l": [
+              0.1,
+              0.52,
+              0
+            ],
+            "leg_upper_r": [
+              -0.1,
+              0.84,
+              0
+            ],
+            "leg_lower_r": [
+              -0.1,
+              0.52,
+              0
+            ]
+          },
+          "lengths": {
+            "upperArm": 0.28,
+            "forearm": 0.21,
+            "hand": 0.115,
+            "thigh": 0.32,
+            "shinToSole": 0.52
+          },
+          "armTiltBakedDeg": 4,
+          "conventions": "limbs hang along -Y; X<0 swings an arm/thigh forward, X>0 back; leg_lower X>0 bends the knee (foot back); arm_lower X<0 bends the elbow (hand forward/up); arm_upper_r Z<0 / arm_upper_l Z>0 raise the arm sideways; spine/head X>0 lean/nod forward"
+        },
+        "sit": {
+          "seatHeight": 0.45,
+          "rootAt": "floor under the seat centre, facing away from the backrest",
+          "hipsAt": [
+            0,
+            0.645,
+            -0.05
+          ],
+          "otherSeatHeights": "raise/lower the root by (seatY - 0.45); for seats lower than ~0.4 bend the knees more"
+        }
+      },
+      "bytes": 152240
+    },
+    {
+      "name": "tl_char_fan_glasses_v01",
+      "file": "characters/tl_char_fan_glasses_v01.glb",
+      "url": "/models/characters/tl_char_fan_glasses_v01.glb",
+      "triangles": 1600,
+      "trianglesByMaterial": {
+        "tl_matte": 1600
+      },
+      "budget": 2500,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -0.3597,
+          0,
+          -0.1635
+        ],
+        "max": [
+          0.3597,
+          1.7602,
+          0.186
+        ]
+      },
+      "size": [
+        0.7194,
+        1.7602,
+        0.3495
+      ],
+      "nodes": [
+        "tl_char_fan_glasses_v01",
+        "hips",
+        "spine",
+        "neck",
+        "head",
+        "arm_upper_l",
+        "arm_lower_l",
+        "arm_upper_r",
+        "arm_lower_r",
+        "leg_upper_l",
+        "leg_lower_l",
+        "leg_upper_r",
+        "leg_lower_r"
+      ],
+      "emissive": [],
+      "materials": [
+        "tl_matte"
+      ],
+      "notes": "Fan avatar (glasses). Tenure 04 style: black hair, black square glasses, crimson/black jersey (black sleeves + side panels, worn-white V collar), dark denim. Rig (world rest pivots): hips 0.94; spine 1.01; neck 1.345; head 1.385; arm_upper_l (0.27, 1.31) > arm_lower_l elbow (0.2895, 1.0307), hand incl.; arm_*_r mirrored (-X); leg_upper_l (0.1, 0.84) > leg_lower_l knee y 0.52, shoe incl.; leg_*_r mirrored. All rest rotations 0; limbs hang along -Y. Verified poses: sit on a 0.45 m seat = root on the floor under the seat centre, hips at [0, 0.645, -0.05], leg_upper X -86, leg_lower X 86 (soles on the floor), spine 8; head_in_hands = sit legs + spine 56, neck 6, head 15, arm_upper_l [-48,-20,-44], arm_lower_l [-87,-39,-19] (r mirrored: Y,Z negated); slump = spine 14, head 20, knees soft (hips at [0,0.939,-0.028]); wave = arm_upper_r [-10,0,-140], arm_lower_r Z swinging -25..-60; walk_a/b = thighs -22/+14, knees 5/22, arms +-18..20, hips y 0.936. Poses list every joint (absolute local euler; hips also has `at`).",
+      "anchors": {
+        "hand_l": [
+          0.308,
+          0.7663,
+          0.004
+        ],
+        "hand_r": [
+          -0.308,
+          0.7663,
+          0.004
+        ],
+        "eyes": [
+          0,
+          1.525,
+          0.15
+        ],
+        "head_top": [
+          0,
+          1.7602,
+          0
+        ],
+        "name_tag": [
+          0,
+          1.9802,
+          0
+        ],
+        "seat_contact": [
+          0,
+          0.45,
+          -0.05
+        ]
+      },
+      "lights": [],
+      "poses": {
+        "walk_a": {
+          "hips": {
+            "at": [
+              0,
+              0.936,
+              0
+            ],
+            "rot": [
+              0,
+              4,
+              0
+            ]
+          },
+          "spine": [
+            3,
+            -5,
+            0
+          ],
+          "neck": [
+            0,
+            0,
+            0
+          ],
+          "head": [
+            0,
+            0,
+            0
+          ],
+          "arm_upper_l": [
+            18,
+            0,
+            0
+          ],
+          "arm_lower_l": [
+            -10,
+            0,
+            0
+          ],
+          "arm_upper_r": [
+            -20,
+            0,
+            0
+          ],
+          "arm_lower_r": [
+            -22,
+            0,
+            0
+          ],
+          "leg_upper_l": [
+            -22,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            5,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            14,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            22,
+            0,
+            0
+          ]
+        },
+        "walk_b": {
+          "hips": {
+            "at": [
+              0,
+              0.936,
+              0
+            ],
+            "rot": [
+              0,
+              -4,
+              0
+            ]
+          },
+          "spine": [
+            3,
+            5,
+            0
+          ],
+          "neck": [
+            0,
+            0,
+            0
+          ],
+          "head": [
+            0,
+            0,
+            0
+          ],
+          "arm_upper_l": [
+            -20,
+            0,
+            0
+          ],
+          "arm_lower_l": [
+            -22,
+            0,
+            0
+          ],
+          "arm_upper_r": [
+            18,
+            0,
+            0
+          ],
+          "arm_lower_r": [
+            -10,
+            0,
+            0
+          ],
+          "leg_upper_l": [
+            14,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            22,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            -22,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            5,
+            0,
+            0
+          ]
+        },
+        "sit": {
+          "hips": {
+            "at": [
+              0,
+              0.645,
+              -0.05
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            8,
+            0,
+            0
+          ],
+          "neck": [
+            4,
+            0,
+            0
+          ],
+          "head": [
+            10,
+            0,
+            0
+          ],
+          "arm_upper_l": [
+            2,
+            0,
+            -28
+          ],
+          "arm_lower_l": [
+            -75,
+            0,
+            -3
+          ],
+          "arm_upper_r": [
+            2,
+            0,
+            28
+          ],
+          "arm_lower_r": [
+            -75,
+            0,
+            3
+          ],
+          "leg_upper_l": [
+            -86,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            86,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            -86,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            86,
+            0,
+            0
+          ]
+        },
+        "head_in_hands": {
+          "hips": {
+            "at": [
+              0,
+              0.645,
+              -0.05
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            56,
+            0,
+            0
+          ],
+          "neck": [
+            6,
+            0,
+            0
+          ],
+          "head": [
+            15,
+            0,
+            0
+          ],
+          "arm_upper_l": [
+            -48,
+            -20,
+            -44
+          ],
+          "arm_lower_l": [
+            -87,
+            -39,
+            -19
+          ],
+          "arm_upper_r": [
+            -48,
+            20,
+            44
+          ],
+          "arm_lower_r": [
+            -87,
+            39,
+            19
+          ],
+          "leg_upper_l": [
+            -86,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            86,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            -86,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            86,
+            0,
+            0
+          ]
+        },
+        "sit_stool": {
+          "hips": {
+            "at": [
+              0,
+              0.6148,
+              -0.05
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            8,
+            0,
+            0
+          ],
+          "neck": [
+            4,
+            0,
+            0
+          ],
+          "head": [
+            10,
+            0,
+            0
+          ],
+          "arm_upper_l": [
+            6,
+            0,
+            -30
+          ],
+          "arm_lower_l": [
+            -82,
+            0,
+            -1
+          ],
+          "arm_upper_r": [
+            6,
+            0,
+            30
+          ],
+          "arm_lower_r": [
+            -82,
+            0,
+            1
+          ],
+          "leg_upper_l": [
+            -91,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            91,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            -91,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            91,
+            0,
+            0
+          ]
+        },
+        "sit_chair": {
+          "hips": {
+            "at": [
+              0,
+              0.6658,
+              -0.1
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            -15,
+            0,
+            0
+          ],
+          "neck": [
+            12,
+            0,
+            0
+          ],
+          "head": [
+            3,
+            0,
+            0
+          ],
+          "arm_upper_l": [
+            20,
+            -26,
+            -17
+          ],
+          "arm_lower_l": [
+            -96,
+            22,
+            -12
+          ],
+          "arm_upper_r": [
+            20,
+            26,
+            17
+          ],
+          "arm_lower_r": [
+            -96,
+            -22,
+            12
+          ],
+          "leg_upper_l": [
+            -82,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            82,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            -82,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            82,
+            0,
+            0
+          ]
+        },
+        "sit_wheelchair": {
+          "hips": {
+            "at": [
+              0,
+              0.735,
+              -0.03
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            -4,
+            0,
+            0
+          ],
+          "neck": [
+            6,
+            0,
+            0
+          ],
+          "head": [
+            8,
+            0,
+            0
+          ],
+          "arm_upper_l": [
+            10,
+            0,
+            -26
+          ],
+          "arm_lower_l": [
+            -83,
+            0,
+            7
+          ],
+          "arm_upper_r": [
+            10,
+            0,
+            26
+          ],
+          "arm_lower_r": [
+            -83,
+            0,
+            -7
+          ],
+          "leg_upper_l": [
+            -100,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            100,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            -100,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            100,
+            0,
+            0
+          ]
+        },
+        "lie_bed": {
+          "hips": {
+            "at": [
+              0,
+              0.5,
+              -0.1
+            ],
+            "rot": [
+              -90,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            11,
+            0,
+            0
+          ],
+          "neck": [
+            19,
+            0,
+            0
+          ],
+          "head": [
+            4,
+            0,
+            0
+          ],
+          "arm_upper_l": [
+            2,
+            0,
+            6
+          ],
+          "arm_lower_l": [
+            0,
+            0,
+            0
+          ],
+          "arm_upper_r": [
+            -53,
+            28,
+            40
+          ],
+          "arm_lower_r": [
+            -52,
+            -6,
+            32
+          ],
+          "leg_upper_l": [
+            1,
+            0,
+            2
+          ],
+          "leg_lower_l": [
+            -1,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            1,
+            0,
+            -2
+          ],
+          "leg_lower_r": [
+            -1,
+            0,
+            0
+          ]
+        },
+        "slump": {
+          "hips": {
+            "at": [
+              0,
+              0.939,
+              -0.028
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            14,
+            0,
+            0
+          ],
+          "neck": [
+            6,
+            0,
+            0
+          ],
+          "head": [
+            20,
+            0,
+            0
+          ],
+          "arm_upper_l": [
+            10,
+            0,
+            3
+          ],
+          "arm_lower_l": [
+            -8,
+            0,
+            0
+          ],
+          "arm_upper_r": [
+            10,
+            0,
+            -3
+          ],
+          "arm_lower_r": [
+            -8,
+            0,
+            0
+          ],
+          "leg_upper_l": [
+            -5,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            5,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            -5,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            5,
+            0,
+            0
+          ]
+        },
+        "wave": {
+          "hips": {
+            "at": [
+              0,
+              0.94,
+              0
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            0,
+            0,
+            2
+          ],
+          "neck": [
+            0,
+            0,
+            0
+          ],
+          "head": [
+            -4,
+            -8,
+            -4
+          ],
+          "arm_upper_l": [
+            0,
+            0,
+            0
+          ],
+          "arm_lower_l": [
+            0,
+            0,
+            0
+          ],
+          "arm_upper_r": [
+            -10,
+            0,
+            -140
+          ],
+          "arm_lower_r": [
+            0,
+            0,
+            -25
+          ],
+          "leg_upper_l": [
+            0,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            0,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            0,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            0,
+            0,
+            0
+          ]
+        },
+        "wave_b": {
+          "hips": {
+            "at": [
+              0,
+              0.94,
+              0
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            0,
+            0,
+            2
+          ],
+          "neck": [
+            0,
+            0,
+            0
+          ],
+          "head": [
+            -4,
+            -8,
+            -4
+          ],
+          "arm_upper_l": [
+            0,
+            0,
+            0
+          ],
+          "arm_lower_l": [
+            0,
+            0,
+            0
+          ],
+          "arm_upper_r": [
+            -10,
+            0,
+            -140
+          ],
+          "arm_lower_r": [
+            0,
+            0,
+            -60
+          ],
+          "leg_upper_l": [
+            0,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            0,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            0,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "collider": {
+        "type": "capsule",
+        "center": [
+          0,
+          0.875,
+          0
+        ],
+        "radius": 0.3,
+        "height": 1.75
+      },
+      "meta": {
+        "kind": "avatar",
+        "variant": "glasses",
+        "rig": {
+          "version": 1,
+          "facing": "+Z",
+          "left": "+X",
+          "units": "m",
+          "nominalHeight": 1.75,
+          "skullTop": 1.69,
+          "boundsHeight": 1.7602,
+          "restRotations": "all zero (rest pose = standing, arms down; the 4 deg arm splay is baked into the mesh)",
+          "eulerOrder": "PlayCanvas setLocalEulerAngles (R = Rz*Ry*Rx)",
+          "jointWorldRest": {
+            "hips": [
+              0,
+              0.94,
+              0
+            ],
+            "spine": [
+              0,
+              1.01,
+              0
+            ],
+            "neck": [
+              0,
+              1.345,
+              -0.005
+            ],
+            "head": [
+              0,
+              1.385,
+              -0.005
+            ],
+            "arm_upper_l": [
+              0.27,
+              1.31,
+              0
+            ],
+            "arm_lower_l": [
+              0.2895,
+              1.0307,
+              0
+            ],
+            "arm_upper_r": [
+              -0.27,
+              1.31,
+              0
+            ],
+            "arm_lower_r": [
+              -0.2895,
+              1.0307,
+              0
+            ],
+            "leg_upper_l": [
+              0.1,
+              0.84,
+              0
+            ],
+            "leg_lower_l": [
+              0.1,
+              0.52,
+              0
+            ],
+            "leg_upper_r": [
+              -0.1,
+              0.84,
+              0
+            ],
+            "leg_lower_r": [
+              -0.1,
+              0.52,
+              0
+            ]
+          },
+          "lengths": {
+            "upperArm": 0.28,
+            "forearm": 0.21,
+            "hand": 0.115,
+            "thigh": 0.32,
+            "shinToSole": 0.52
+          },
+          "armTiltBakedDeg": 4,
+          "conventions": "limbs hang along -Y; X<0 swings an arm/thigh forward, X>0 back; leg_lower X>0 bends the knee (foot back); arm_lower X<0 bends the elbow (hand forward/up); arm_upper_r Z<0 / arm_upper_l Z>0 raise the arm sideways; spine/head X>0 lean/nod forward"
+        },
+        "sit": {
+          "seatHeight": 0.45,
+          "rootAt": "floor under the seat centre, facing away from the backrest",
+          "hipsAt": [
+            0,
+            0.645,
+            -0.05
+          ],
+          "otherSeatHeights": "raise/lower the root by (seatY - 0.45); for seats lower than ~0.4 bend the knees more"
+        }
+      },
+      "bytes": 132308
+    },
+    {
+      "name": "tl_char_fan_oxygen_v01",
+      "file": "characters/tl_char_fan_oxygen_v01.glb",
+      "url": "/models/characters/tl_char_fan_oxygen_v01.glb",
+      "triangles": 1555,
+      "trianglesByMaterial": {
+        "tl_matte": 1555
+      },
+      "budget": 2500,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -0.3597,
+          0,
+          -0.1605
+        ],
+        "max": [
+          0.3597,
+          1.7437,
+          0.1864
+        ]
+      },
+      "size": [
+        0.7194,
+        1.7437,
+        0.3469
+      ],
+      "nodes": [
+        "tl_char_fan_oxygen_v01",
+        "hips",
+        "spine",
+        "neck",
+        "head",
+        "arm_upper_l",
+        "arm_lower_l",
+        "arm_upper_r",
+        "arm_lower_r",
+        "leg_upper_l",
+        "leg_lower_l",
+        "leg_upper_r",
+        "leg_lower_r"
+      ],
+      "emissive": [],
+      "materials": [
+        "tl_matte"
+      ],
+      "notes": "Fan avatar (oxygen). Tenure 03 'Tho oxy': buzz cut, crimson jersey with a worn-white belly band, black sleeves and V collar, nasal cannula looped over the ears; dark pants with a torn knee. Pairs with tl_prop_wooden_chair_v01 + oxygen cylinder/hose (pose sit_chair). Rig (world rest pivots): hips 0.94; spine 1.01; neck 1.345; head 1.385; arm_upper_l (0.27, 1.31) > arm_lower_l elbow (0.2895, 1.0307), hand incl.; arm_*_r mirrored (-X); leg_upper_l (0.1, 0.84) > leg_lower_l knee y 0.52, shoe incl.; leg_*_r mirrored. All rest rotations 0; limbs hang along -Y. Verified poses: sit on a 0.45 m seat = root on the floor under the seat centre, hips at [0, 0.645, -0.05], leg_upper X -86, leg_lower X 86 (soles on the floor), spine 8; head_in_hands = sit legs + spine 56, neck 6, head 15, arm_upper_l [-48,-20,-44], arm_lower_l [-87,-39,-19] (r mirrored: Y,Z negated); slump = spine 14, head 20, knees soft (hips at [0,0.939,-0.028]); wave = arm_upper_r [-10,0,-140], arm_lower_r Z swinging -25..-60; walk_a/b = thighs -22/+14, knees 5/22, arms +-18..20, hips y 0.936. Poses list every joint (absolute local euler; hips also has `at`).",
+      "anchors": {
+        "hand_l": [
+          0.308,
+          0.7663,
+          0.004
+        ],
+        "hand_r": [
+          -0.308,
+          0.7663,
+          0.004
+        ],
+        "eyes": [
+          0,
+          1.525,
+          0.15
+        ],
+        "head_top": [
+          0,
+          1.7437,
+          0
+        ],
+        "name_tag": [
+          0,
+          1.9637,
+          0
+        ],
+        "seat_contact": [
+          0,
+          0.45,
+          -0.05
+        ]
+      },
+      "lights": [],
+      "poses": {
+        "walk_a": {
+          "hips": {
+            "at": [
+              0,
+              0.936,
+              0
+            ],
+            "rot": [
+              0,
+              4,
+              0
+            ]
+          },
+          "spine": [
+            3,
+            -5,
+            0
+          ],
+          "neck": [
+            0,
+            0,
+            0
+          ],
+          "head": [
+            0,
+            0,
+            0
+          ],
+          "arm_upper_l": [
+            18,
+            0,
+            0
+          ],
+          "arm_lower_l": [
+            -10,
+            0,
+            0
+          ],
+          "arm_upper_r": [
+            -20,
+            0,
+            0
+          ],
+          "arm_lower_r": [
+            -22,
+            0,
+            0
+          ],
+          "leg_upper_l": [
+            -22,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            5,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            14,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            22,
+            0,
+            0
+          ]
+        },
+        "walk_b": {
+          "hips": {
+            "at": [
+              0,
+              0.936,
+              0
+            ],
+            "rot": [
+              0,
+              -4,
+              0
+            ]
+          },
+          "spine": [
+            3,
+            5,
+            0
+          ],
+          "neck": [
+            0,
+            0,
+            0
+          ],
+          "head": [
+            0,
+            0,
+            0
+          ],
+          "arm_upper_l": [
+            -20,
+            0,
+            0
+          ],
+          "arm_lower_l": [
+            -22,
+            0,
+            0
+          ],
+          "arm_upper_r": [
+            18,
+            0,
+            0
+          ],
+          "arm_lower_r": [
+            -10,
+            0,
+            0
+          ],
+          "leg_upper_l": [
+            14,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            22,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            -22,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            5,
+            0,
+            0
+          ]
+        },
+        "sit": {
+          "hips": {
+            "at": [
+              0,
+              0.645,
+              -0.05
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            8,
+            0,
+            0
+          ],
+          "neck": [
+            4,
+            0,
+            0
+          ],
+          "head": [
+            10,
+            0,
+            0
+          ],
+          "arm_upper_l": [
+            2,
+            0,
+            -28
+          ],
+          "arm_lower_l": [
+            -75,
+            0,
+            -3
+          ],
+          "arm_upper_r": [
+            2,
+            0,
+            28
+          ],
+          "arm_lower_r": [
+            -75,
+            0,
+            3
+          ],
+          "leg_upper_l": [
+            -86,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            86,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            -86,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            86,
+            0,
+            0
+          ]
+        },
+        "head_in_hands": {
+          "hips": {
+            "at": [
+              0,
+              0.645,
+              -0.05
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            56,
+            0,
+            0
+          ],
+          "neck": [
+            6,
+            0,
+            0
+          ],
+          "head": [
+            15,
+            0,
+            0
+          ],
+          "arm_upper_l": [
+            -48,
+            -20,
+            -44
+          ],
+          "arm_lower_l": [
+            -87,
+            -39,
+            -19
+          ],
+          "arm_upper_r": [
+            -48,
+            20,
+            44
+          ],
+          "arm_lower_r": [
+            -87,
+            39,
+            19
+          ],
+          "leg_upper_l": [
+            -86,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            86,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            -86,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            86,
+            0,
+            0
+          ]
+        },
+        "sit_stool": {
+          "hips": {
+            "at": [
+              0,
+              0.6148,
+              -0.05
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            8,
+            0,
+            0
+          ],
+          "neck": [
+            4,
+            0,
+            0
+          ],
+          "head": [
+            10,
+            0,
+            0
+          ],
+          "arm_upper_l": [
+            6,
+            0,
+            -30
+          ],
+          "arm_lower_l": [
+            -82,
+            0,
+            -1
+          ],
+          "arm_upper_r": [
+            6,
+            0,
+            30
+          ],
+          "arm_lower_r": [
+            -82,
+            0,
+            1
+          ],
+          "leg_upper_l": [
+            -91,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            91,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            -91,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            91,
+            0,
+            0
+          ]
+        },
+        "sit_chair": {
+          "hips": {
+            "at": [
+              0,
+              0.6658,
+              -0.1
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            -15,
+            0,
+            0
+          ],
+          "neck": [
+            12,
+            0,
+            0
+          ],
+          "head": [
+            3,
+            0,
+            0
+          ],
+          "arm_upper_l": [
+            20,
+            -26,
+            -17
+          ],
+          "arm_lower_l": [
+            -96,
+            22,
+            -12
+          ],
+          "arm_upper_r": [
+            20,
+            26,
+            17
+          ],
+          "arm_lower_r": [
+            -96,
+            -22,
+            12
+          ],
+          "leg_upper_l": [
+            -82,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            82,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            -82,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            82,
+            0,
+            0
+          ]
+        },
+        "sit_wheelchair": {
+          "hips": {
+            "at": [
+              0,
+              0.735,
+              -0.03
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            -4,
+            0,
+            0
+          ],
+          "neck": [
+            6,
+            0,
+            0
+          ],
+          "head": [
+            8,
+            0,
+            0
+          ],
+          "arm_upper_l": [
+            10,
+            0,
+            -26
+          ],
+          "arm_lower_l": [
+            -83,
+            0,
+            7
+          ],
+          "arm_upper_r": [
+            10,
+            0,
+            26
+          ],
+          "arm_lower_r": [
+            -83,
+            0,
+            -7
+          ],
+          "leg_upper_l": [
+            -100,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            100,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            -100,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            100,
+            0,
+            0
+          ]
+        },
+        "lie_bed": {
+          "hips": {
+            "at": [
+              0,
+              0.5,
+              -0.1
+            ],
+            "rot": [
+              -90,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            11,
+            0,
+            0
+          ],
+          "neck": [
+            19,
+            0,
+            0
+          ],
+          "head": [
+            4,
+            0,
+            0
+          ],
+          "arm_upper_l": [
+            2,
+            0,
+            6
+          ],
+          "arm_lower_l": [
+            0,
+            0,
+            0
+          ],
+          "arm_upper_r": [
+            -53,
+            28,
+            40
+          ],
+          "arm_lower_r": [
+            -52,
+            -6,
+            32
+          ],
+          "leg_upper_l": [
+            1,
+            0,
+            2
+          ],
+          "leg_lower_l": [
+            -1,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            1,
+            0,
+            -2
+          ],
+          "leg_lower_r": [
+            -1,
+            0,
+            0
+          ]
+        },
+        "slump": {
+          "hips": {
+            "at": [
+              0,
+              0.939,
+              -0.028
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            14,
+            0,
+            0
+          ],
+          "neck": [
+            6,
+            0,
+            0
+          ],
+          "head": [
+            20,
+            0,
+            0
+          ],
+          "arm_upper_l": [
+            10,
+            0,
+            3
+          ],
+          "arm_lower_l": [
+            -8,
+            0,
+            0
+          ],
+          "arm_upper_r": [
+            10,
+            0,
+            -3
+          ],
+          "arm_lower_r": [
+            -8,
+            0,
+            0
+          ],
+          "leg_upper_l": [
+            -5,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            5,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            -5,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            5,
+            0,
+            0
+          ]
+        },
+        "wave": {
+          "hips": {
+            "at": [
+              0,
+              0.94,
+              0
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            0,
+            0,
+            2
+          ],
+          "neck": [
+            0,
+            0,
+            0
+          ],
+          "head": [
+            -4,
+            -8,
+            -4
+          ],
+          "arm_upper_l": [
+            0,
+            0,
+            0
+          ],
+          "arm_lower_l": [
+            0,
+            0,
+            0
+          ],
+          "arm_upper_r": [
+            -10,
+            0,
+            -140
+          ],
+          "arm_lower_r": [
+            0,
+            0,
+            -25
+          ],
+          "leg_upper_l": [
+            0,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            0,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            0,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            0,
+            0,
+            0
+          ]
+        },
+        "wave_b": {
+          "hips": {
+            "at": [
+              0,
+              0.94,
+              0
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            0,
+            0,
+            2
+          ],
+          "neck": [
+            0,
+            0,
+            0
+          ],
+          "head": [
+            -4,
+            -8,
+            -4
+          ],
+          "arm_upper_l": [
+            0,
+            0,
+            0
+          ],
+          "arm_lower_l": [
+            0,
+            0,
+            0
+          ],
+          "arm_upper_r": [
+            -10,
+            0,
+            -140
+          ],
+          "arm_lower_r": [
+            0,
+            0,
+            -60
+          ],
+          "leg_upper_l": [
+            0,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            0,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            0,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "collider": {
+        "type": "capsule",
+        "center": [
+          0,
+          0.875,
+          0
+        ],
+        "radius": 0.3,
+        "height": 1.75
+      },
+      "meta": {
+        "kind": "avatar",
+        "variant": "oxygen",
+        "rig": {
+          "version": 1,
+          "facing": "+Z",
+          "left": "+X",
+          "units": "m",
+          "nominalHeight": 1.75,
+          "skullTop": 1.69,
+          "boundsHeight": 1.7437,
+          "restRotations": "all zero (rest pose = standing, arms down; the 4 deg arm splay is baked into the mesh)",
+          "eulerOrder": "PlayCanvas setLocalEulerAngles (R = Rz*Ry*Rx)",
+          "jointWorldRest": {
+            "hips": [
+              0,
+              0.94,
+              0
+            ],
+            "spine": [
+              0,
+              1.01,
+              0
+            ],
+            "neck": [
+              0,
+              1.345,
+              -0.005
+            ],
+            "head": [
+              0,
+              1.385,
+              -0.005
+            ],
+            "arm_upper_l": [
+              0.27,
+              1.31,
+              0
+            ],
+            "arm_lower_l": [
+              0.2895,
+              1.0307,
+              0
+            ],
+            "arm_upper_r": [
+              -0.27,
+              1.31,
+              0
+            ],
+            "arm_lower_r": [
+              -0.2895,
+              1.0307,
+              0
+            ],
+            "leg_upper_l": [
+              0.1,
+              0.84,
+              0
+            ],
+            "leg_lower_l": [
+              0.1,
+              0.52,
+              0
+            ],
+            "leg_upper_r": [
+              -0.1,
+              0.84,
+              0
+            ],
+            "leg_lower_r": [
+              -0.1,
+              0.52,
+              0
+            ]
+          },
+          "lengths": {
+            "upperArm": 0.28,
+            "forearm": 0.21,
+            "hand": 0.115,
+            "thigh": 0.32,
+            "shinToSole": 0.52
+          },
+          "armTiltBakedDeg": 4,
+          "conventions": "limbs hang along -Y; X<0 swings an arm/thigh forward, X>0 back; leg_lower X>0 bends the knee (foot back); arm_lower X<0 bends the elbow (hand forward/up); arm_upper_r Z<0 / arm_upper_l Z>0 raise the arm sideways; spine/head X>0 lean/nod forward"
+        },
+        "sit": {
+          "seatHeight": 0.45,
+          "rootAt": "floor under the seat centre, facing away from the backrest",
+          "hipsAt": [
+            0,
+            0.645,
+            -0.05
+          ],
+          "otherSeatHeights": "raise/lower the root by (seatY - 0.45); for seats lower than ~0.4 bend the knees more"
+        }
+      },
+      "bytes": 128616
+    }
+  ]
+}

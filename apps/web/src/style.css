@@ -19,6 +19,43 @@ canvas {
   inset: 0;
   pointer-events: none;
 }
+/* Bảng tên trên đầu người chơi (nametags.ts): mỗi khung hình chỉ đổi transform / opacity. */
+#tags {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  contain: strict;
+}
+.tag {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform-origin: 50% 100%;
+  will-change: transform, opacity;
+  max-width: 16em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 1px 8px 2px;
+  border: 1px solid #c1a17a33;
+  border-radius: 10px;
+  background: #140f0cb3;
+  color: #f1e6d0;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.35;
+  text-shadow: 0 1px 2px #000a;
+}
+.tag.self {
+  background: #8a302bd9;
+  border-color: #e0806a99;
+  color: #fff3e2;
+}
+.tag.away {
+  color: #a39684;
+  font-style: italic;
+}
 header {
   display: flex;
   justify-content: space-between;
@@ -37,11 +74,27 @@ header {
   letter-spacing: 5px;
   color: #ba9b7b;
 }
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
 .presence {
   border: 1px solid #c1a17a44;
   border-radius: 24px;
   padding: 9px 15px;
   background: #1b1613aa;
+}
+.leave {
+  border-radius: 24px;
+  padding: 9px 14px;
+  background: #1b1613aa;
+  font-size: 12px;
+}
+.leave.armed {
+  background: #8a302b;
+  border-color: #e0806a99;
+  color: #fff3e2;
 }
 .presence i {
   display: inline-block;
@@ -51,14 +104,17 @@ header {
   border-radius: 50%;
   margin-right: 8px;
 }
+/* Thẻ chào hẹp, trong mờ: góc TV và vũng nước bên trái vẫn lộ ra sau nó. */
 .welcome {
   pointer-events: auto;
   position: absolute;
   top: 23%;
   left: 6%;
-  width: 350px;
-  padding: 28px;
-  background: #1a1512df;
+  width: 300px;
+  padding: 24px;
+  background: #191410b3;
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
   border: 1px solid #8f705544;
   border-radius: 4px;
   box-shadow: 0 24px 100px #0006;
@@ -70,7 +126,7 @@ header {
   letter-spacing: 2px;
 }
 h1 {
-  font-size: 39px;
+  font-size: 36px;
   line-height: 1.12;
   font-weight: 800;
   letter-spacing: -1px;
@@ -132,35 +188,62 @@ small {
   font-size: 11px;
   color: #aa9882;
 }
+/*
+ * Chat: thu gọn = vài dòng mới nhất trên nền trong (tự mờ sau 12 s) + ô nhập đặc; mở (đang gõ hoặc
+ * rê chuột vào) = khung có toàn bộ lịch sử, cuộn được.
+ */
 .chat {
   pointer-events: auto;
   position: absolute;
   left: 28px;
   bottom: 80px;
   width: 330px;
-  background: #191410e8;
-  border: 1px solid #876c4444;
-  padding: 16px;
+  padding: 8px;
+  border: 1px solid transparent;
+}
+.chat.open {
+  background: #191410cc;
+  border-color: #876c4444;
 }
 .chat-title {
+  display: none;
+  margin: 2px 2px 6px;
   font-size: 9px;
   letter-spacing: 1.5px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
 }
-.chat-title button {
-  font-size: 10px;
-  padding: 4px;
+.chat.open .chat-title {
+  display: block;
 }
 .messages {
-  height: 130px;
-  overflow-y: auto;
   font-size: 12px;
   overflow-wrap: anywhere;
 }
+.chat.open .messages {
+  height: 130px;
+  overflow-y: auto;
+}
 .messages p {
-  margin: 6px 0;
+  width: fit-content;
+  max-width: 100%;
+  margin: 4px 0;
+  padding: 2px 8px;
+  border-radius: 3px;
+  background: #19141066;
+  color: #e3d5c0;
+  text-shadow: 0 1px 2px #000c;
+  transition: opacity 0.9s ease;
+}
+.chat.open .messages p {
+  background: none;
+  padding: 0 2px;
+}
+.messages p.fading {
+  opacity: 0;
+}
+.chat-hint {
+  margin: 4px 0;
+  font-size: 11px;
+  color: #e8b77a;
 }
 .muted {
   opacity: 0.6;
@@ -168,29 +251,144 @@ small {
 .chat form {
   display: flex;
   gap: 6px;
+  margin-top: 6px;
+  padding: 6px;
+  background: #191410e8;
+  border: 1px solid #876c4444;
+}
+.chat.open form {
+  padding: 0;
+  background: none;
+  border-color: transparent;
 }
 .chat input {
   padding: 9px;
   font-size: 12px;
 }
+/* Chỉ cho trình đọc màn hình. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
 .toolbar {
   position: absolute;
-  bottom: 85px;
+  bottom: 64px;
   right: 28px;
   display: flex;
   gap: 8px;
   pointer-events: auto;
 }
+.shortcuts {
+  position: absolute;
+  top: 96px;
+  right: 36px;
+  display: flex;
+  gap: 6px;
+}
+.shortcuts button {
+  padding: 6px 10px;
+  background: #1b1613b3;
+  font-size: 11px;
+}
+kbd {
+  display: inline-block;
+  min-width: 1.7em;
+  padding: 0 4px;
+  border: 1px solid #c1a17a77;
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  background: #0007;
+  color: #f4dcb0;
+  font:
+    700 10px/1.5 ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace;
+  text-align: center;
+}
+.prompt {
+  position: absolute;
+  left: 50%;
+  bottom: 150px;
+  transform: translateX(-50%);
+  padding: 10px 18px;
+  border: 1px solid #f4b95688;
+  border-radius: 22px;
+  background: #1b1613eb;
+  color: #f6e7cc;
+  font-weight: 700;
+  box-shadow: 0 8px 30px #0008;
+  animation: prompt-in 0.18s ease-out;
+}
+.prompt kbd {
+  margin-right: 6px;
+}
+@keyframes prompt-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 6px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .prompt {
+    animation: none;
+  }
+}
 .movement {
   position: absolute;
   right: 28px;
-  bottom: 140px;
-  display: flex;
+  bottom: 116px;
+  display: grid;
+  grid-template-columns: repeat(3, 44px);
+  grid-template-areas:
+    ". w ."
+    "a s d";
   gap: 5px;
 }
 .movement button {
   touch-action: none;
   background: #201810bb;
+  padding: 10px 0;
+}
+.movement .move-w {
+  grid-area: w;
+}
+.movement .move-a {
+  grid-area: a;
+}
+.movement .move-s {
+  grid-area: s;
+}
+.movement .move-d {
+  grid-area: d;
+}
+/* Bàn phím + chuột: đã có WASD, khỏi hiện bàn phím ảo. */
+@media (hover: hover) and (pointer: fine) {
+  .movement {
+    display: none;
+  }
+}
+/* Chỉ bản dev (?stats=1). */
+.dev-stats {
+  position: fixed;
+  top: 92px;
+  left: 36px;
+  z-index: 5;
+  padding: 4px 8px;
+  border-radius: 3px;
+  background: #0a0705b3;
+  color: #e9dfcc;
+  font:
+    11px/1.45 ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace;
+  white-space: pre;
+  pointer-events: none;
 }
 footer {
   position: absolute;
@@ -233,12 +431,34 @@ footer {
 a {
   color: #e8b77a;
 }
+@media (max-height: 660px) and (min-width: 701px) {
+  .welcome {
+    top: 92px;
+    padding: 22px 28px;
+  }
+  .welcome h1 {
+    font-size: 32px;
+    margin: 10px 0;
+  }
+}
 @media (max-width: 700px) {
   header {
     padding: 18px;
   }
   .brand {
     font-size: 23px;
+  }
+  .presence {
+    padding: 9px 12px;
+    font-size: 12px;
+  }
+  /* Mục tiêu chạm ≥ 44 px. */
+  .leave,
+  .toolbar button,
+  .shortcuts button,
+  .chat button,
+  .movement button {
+    min-height: 44px;
   }
   .welcome {
     top: 18%;
@@ -251,31 +471,41 @@ a {
     font-size: 32px;
   }
   .chat {
-    left: 12px;
-    bottom: 112px;
-    width: 270px;
-    padding: 10px;
+    left: 6px;
+    bottom: 104px;
+    width: min(270px, calc(100vw - 196px));
+    padding: 6px;
   }
-  .messages {
-    height: 78px;
+  .chat.open .messages {
+    height: 96px;
   }
   .toolbar {
-    bottom: 65px;
+    bottom: 52px;
     left: 12px;
     right: 12px;
     gap: 4px;
   }
   .toolbar button {
     font-size: 11px;
-    padding: 8px;
+    padding: 7px 8px;
+  }
+  .shortcuts {
+    top: 70px;
+    right: 12px;
+  }
+  /* Dưới hàng nút "Vách ký ức / Thâm niên" (cao 44 px), không đè lên nhau. */
+  .prompt {
+    bottom: auto;
+    top: 124px;
+    max-width: calc(100vw - 24px);
   }
   .movement {
     right: 12px;
-    bottom: 225px;
-    flex-direction: column;
+    bottom: 132px;
+    grid-template-columns: repeat(3, 50px);
   }
   .movement button {
-    padding: 12px;
+    padding: 14px 0;
   }
   footer {
     padding: 12px;

@@ -1,0 +1,1094 @@
+{
+  "group": "furniture",
+  "version": 1,
+  "generator": "tools/models/build.ts",
+  "assets": [
+    {
+      "name": "tl_furn_stool_v01",
+      "file": "furniture/tl_furn_stool_v01.glb",
+      "url": "/models/furniture/tl_furn_stool_v01.glb",
+      "triangles": 142,
+      "trianglesByMaterial": {
+        "tl_matte": 142
+      },
+      "budget": 300,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -0.1711,
+          0,
+          -0.1685
+        ],
+        "max": [
+          0.1711,
+          0.4215,
+          0.1685
+        ]
+      },
+      "size": [
+        0.3422,
+        0.4215,
+        0.3371
+      ],
+      "nodes": [
+        "tl_furn_stool_v01"
+      ],
+      "emissive": [],
+      "materials": [
+        "tl_matte"
+      ],
+      "notes": "Crude round stool (04 STOOL, 02 quiz/living corners): irregular octagonal seat with chamfered top, 4 splayed square legs, staggered stretcher ring. Seat top 0.42 m, footprint ~0.4 m.",
+      "anchors": {
+        "seat": [
+          -0.0031,
+          0.42,
+          0.0009
+        ]
+      },
+      "lights": [],
+      "poses": {},
+      "collider": {
+        "type": "cylinder",
+        "center": [
+          0,
+          0.21,
+          0
+        ],
+        "radius": 0.2,
+        "height": 0.42
+      },
+      "meta": {
+        "seatHeight": 0.42,
+        "footprint": [
+          0.4,
+          0.4
+        ]
+      },
+      "bytes": 11948
+    },
+    {
+      "name": "tl_furn_stool_square_v01",
+      "file": "furniture/tl_furn_stool_square_v01.glb",
+      "url": "/models/furniture/tl_furn_stool_square_v01.glb",
+      "triangles": 144,
+      "trianglesByMaterial": {
+        "tl_matte": 144
+      },
+      "budget": 300,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -0.2032,
+          0,
+          -0.1956
+        ],
+        "max": [
+          0.2031,
+          0.44,
+          0.1956
+        ]
+      },
+      "size": [
+        0.4062,
+        0.44,
+        0.3912
+      ],
+      "nodes": [
+        "tl_furn_stool_square_v01"
+      ],
+      "emissive": [],
+      "materials": [
+        "tl_matte"
+      ],
+      "notes": "Square plank stool variant: two seat planks on cleats, 4 splayed legs, stretchers at two heights. Seat top 0.44 m, footprint ~0.4 m.",
+      "anchors": {
+        "seat": [
+          0.0074,
+          0.44,
+          0.0021
+        ]
+      },
+      "lights": [],
+      "poses": {},
+      "collider": {
+        "type": "box",
+        "center": [
+          0,
+          0.22,
+          0
+        ],
+        "size": [
+          0.38,
+          0.44,
+          0.38
+        ]
+      },
+      "meta": {
+        "seatHeight": 0.44,
+        "footprint": [
+          0.38,
+          0.38
+        ]
+      },
+      "bytes": 12340
+    },
+    {
+      "name": "tl_furn_table_v01",
+      "file": "furniture/tl_furn_table_v01.glb",
+      "url": "/models/furniture/tl_furn_table_v01.glb",
+      "triangles": 146,
+      "trianglesByMaterial": {
+        "tl_matte": 146
+      },
+      "budget": 400,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -0.7784,
+          0,
+          -0.3675
+        ],
+        "max": [
+          0.7785,
+          0.752,
+          0.3675
+        ]
+      },
+      "size": [
+        1.5569,
+        0.752,
+        0.735
+      ],
+      "nodes": [
+        "tl_furn_table_v01"
+      ],
+      "emissive": [],
+      "materials": [
+        "tl_matte"
+      ],
+      "notes": "Rough plank table 1.5 x 0.7 x 0.75 m (04 TABLE, 02 living corner): 3 top planks, end battens, 4 thick legs, H stretchers.",
+      "anchors": {
+        "top": [
+          -0.0028,
+          0.75,
+          0
+        ]
+      },
+      "lights": [],
+      "poses": {},
+      "collider": {
+        "type": "box",
+        "center": [
+          0,
+          0.375,
+          0
+        ],
+        "size": [
+          1.5,
+          0.75,
+          0.7
+        ]
+      },
+      "meta": {
+        "topHeight": 0.75,
+        "footprint": [
+          1.5,
+          0.7
+        ]
+      },
+      "bytes": 12544
+    },
+    {
+      "name": "tl_furn_table_low_v01",
+      "file": "furniture/tl_furn_table_low_v01.glb",
+      "url": "/models/furniture/tl_furn_table_low_v01.glb",
+      "triangles": 121,
+      "trianglesByMaterial": {
+        "tl_matte": 121
+      },
+      "budget": 350,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -0.5123,
+          0,
+          -0.2742
+        ],
+        "max": [
+          0.5123,
+          0.4634,
+          0.2741
+        ]
+      },
+      "size": [
+        1.0246,
+        0.4634,
+        0.5483
+      ],
+      "nodes": [
+        "tl_furn_table_low_v01"
+      ],
+      "emissive": [],
+      "materials": [
+        "tl_matte"
+      ],
+      "notes": "Low plank table 1.0 x 0.52 x 0.46 m for cups / noodles near the campfire (04 main scene).",
+      "anchors": {
+        "top": [
+          0.0112,
+          0.46,
+          -0.0012
+        ]
+      },
+      "lights": [],
+      "poses": {},
+      "collider": {
+        "type": "box",
+        "center": [
+          0,
+          0.23,
+          0
+        ],
+        "size": [
+          1,
+          0.46,
+          0.52
+        ]
+      },
+      "meta": {
+        "topHeight": 0.46,
+        "footprint": [
+          1,
+          0.52
+        ]
+      },
+      "bytes": 10568
+    },
+    {
+      "name": "tl_furn_crate_small_v01",
+      "file": "furniture/tl_furn_crate_small_v01.glb",
+      "url": "/models/furniture/tl_furn_crate_small_v01.glb",
+      "triangles": 312,
+      "trianglesByMaterial": {
+        "tl_matte": 312
+      },
+      "budget": 400,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -0.306,
+          0,
+          -0.301
+        ],
+        "max": [
+          0.306,
+          0.6,
+          0.3009
+        ]
+      },
+      "size": [
+        0.6121,
+        0.6,
+        0.6019
+      ],
+      "nodes": [
+        "tl_furn_crate_small_v01"
+      ],
+      "emissive": [],
+      "materials": [
+        "tl_matte"
+      ],
+      "notes": "Small wooden crate 0.6 m cube: corner posts, rails, diagonal brace on every side, plank lid. Seat / TV stand / side table.",
+      "anchors": {
+        "top": [
+          -0.0002,
+          0.6,
+          -0.0004
+        ]
+      },
+      "lights": [],
+      "poses": {},
+      "collider": {
+        "type": "box",
+        "center": [
+          0,
+          0.3,
+          0
+        ],
+        "size": [
+          0.6,
+          0.6,
+          0.6
+        ]
+      },
+      "meta": {
+        "topHeight": 0.6,
+        "footprint": [
+          0.6,
+          0.6
+        ],
+        "stackable": true
+      },
+      "bytes": 25440
+    },
+    {
+      "name": "tl_furn_crate_large_v01",
+      "file": "furniture/tl_furn_crate_large_v01.glb",
+      "url": "/models/furniture/tl_furn_crate_large_v01.glb",
+      "triangles": 348,
+      "trianglesByMaterial": {
+        "tl_matte": 348
+      },
+      "budget": 500,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -0.4561,
+          0,
+          -0.4012
+        ],
+        "max": [
+          0.4561,
+          0.8,
+          0.4013
+        ]
+      },
+      "size": [
+        0.9122,
+        0.8,
+        0.8025
+      ],
+      "nodes": [
+        "tl_furn_crate_large_v01"
+      ],
+      "emissive": [],
+      "materials": [
+        "tl_matte"
+      ],
+      "notes": "Large wooden crate 0.9 x 0.8 x 0.8 m: X brace front/back, diagonal on the sides, plank lid. TV stand / storage.",
+      "anchors": {
+        "top": [
+          0,
+          0.8,
+          -0.0006
+        ]
+      },
+      "lights": [],
+      "poses": {},
+      "collider": {
+        "type": "box",
+        "center": [
+          0,
+          0.4,
+          0
+        ],
+        "size": [
+          0.9,
+          0.8,
+          0.8
+        ]
+      },
+      "meta": {
+        "topHeight": 0.8,
+        "footprint": [
+          0.9,
+          0.8
+        ],
+        "stackable": true
+      },
+      "bytes": 28244
+    },
+    {
+      "name": "tl_furn_pallet_v01",
+      "file": "furniture/tl_furn_pallet_v01.glb",
+      "url": "/models/furniture/tl_furn_pallet_v01.glb",
+      "triangles": 240,
+      "trianglesByMaterial": {
+        "tl_matte": 240
+      },
+      "budget": 400,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -0.6021,
+          0,
+          -0.5012
+        ],
+        "max": [
+          0.602,
+          0.144,
+          0.5012
+        ]
+      },
+      "size": [
+        1.2042,
+        0.144,
+        1.0024
+      ],
+      "nodes": [
+        "tl_furn_pallet_v01"
+      ],
+      "emissive": [],
+      "materials": [
+        "tl_matte"
+      ],
+      "notes": "Wooden pallet 1.2 x 0.144 x 1.0 m (EUR style: 5 deck boards along X, 3 stringer boards, 9 blocks, 3 bottom boards). Bed base for a mattress in the rest corner (two pallets side by side = 2.0 m bed).",
+      "anchors": {
+        "top": [
+          -0.0002,
+          0.144,
+          0.0001
+        ]
+      },
+      "lights": [],
+      "poses": {},
+      "collider": {
+        "type": "box",
+        "center": [
+          0,
+          0.072,
+          0
+        ],
+        "size": [
+          1.2,
+          0.144,
+          1
+        ]
+      },
+      "meta": {
+        "topHeight": 0.144,
+        "footprint": [
+          1.2,
+          1
+        ]
+      },
+      "bytes": 19808
+    },
+    {
+      "name": "tl_furn_memory_board_v01",
+      "file": "furniture/tl_furn_memory_board_v01.glb",
+      "url": "/models/furniture/tl_furn_memory_board_v01.glb",
+      "triangles": 808,
+      "trianglesByMaterial": {
+        "tl_matte": 808
+      },
+      "budget": 1500,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -2.1582,
+          0,
+          -0.4594
+        ],
+        "max": [
+          2.1582,
+          2.8643,
+          0.4595
+        ]
+      },
+      "size": [
+        4.3165,
+        2.8643,
+        0.9189
+      ],
+      "nodes": [
+        "tl_furn_memory_board_v01"
+      ],
+      "emissive": [],
+      "materials": [
+        "tl_matte"
+      ],
+      "notes": "Wall of memories (02 main view): ~4.2 x 2.8 m wall of mismatched nailed planks standing on two posts with back struts. Old newspapers with crowd silhouettes (no faces), pinned notes, two small photo frames, faded red cards. No readable text, no dates. Board front faces +Z.",
+      "anchors": {
+        "mem_news_a": [
+          -1.0264,
+          1.9,
+          0.4461
+        ],
+        "mem_news_b": [
+          -0.2264,
+          1.08,
+          0.4461
+        ],
+        "mem_news_c": [
+          0.7136,
+          1.6,
+          0.4461
+        ],
+        "mem_photo_a": [
+          1.5536,
+          2.06,
+          0.4461
+        ],
+        "mem_photo_b": [
+          -1.7464,
+          1,
+          0.4461
+        ],
+        "center": [
+          -0.0064,
+          1.55,
+          0.4461
+        ]
+      },
+      "lights": [],
+      "poses": {},
+      "collider": {
+        "type": "box",
+        "center": [
+          0,
+          1.4322,
+          0
+        ],
+        "size": [
+          4.3165,
+          2.8643,
+          0.9189
+        ]
+      },
+      "meta": {
+        "frontZ": 0.4306,
+        "footprint": [
+          4.3165,
+          0.9189
+        ],
+        "note": "Board front plane is at meta.frontZ (struts reach back). anchors mem_* = centres of the memory items for DOM prompts."
+      },
+      "bytes": 62044
+    },
+    {
+      "name": "tl_furn_quiz_board_v01",
+      "file": "furniture/tl_furn_quiz_board_v01.glb",
+      "url": "/models/furniture/tl_furn_quiz_board_v01.glb",
+      "triangles": 276,
+      "trianglesByMaterial": {
+        "tl_matte": 276
+      },
+      "budget": 600,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -1.18,
+          0,
+          -0.4037
+        ],
+        "max": [
+          1.18,
+          1.69,
+          0.4038
+        ]
+      },
+      "size": [
+        2.36,
+        1.69,
+        0.8075
+      ],
+      "nodes": [
+        "tl_furn_quiz_board_v01"
+      ],
+      "emissive": [],
+      "materials": [
+        "tl_matte"
+      ],
+      "notes": "Quiz corner chalkboard on a wooden easel (02 QUIZ CORNER): 2.2 m wide, 1.65 m tall, writing surface 2.06 x 0.95 m. Flat chalk drawing: big '?' with rays, 3 + 2 check boxes with answer lines, chalk tray.",
+      "anchors": {
+        "board_center": [
+          0,
+          1.07,
+          0.3053
+        ]
+      },
+      "lights": [],
+      "poses": {},
+      "collider": {
+        "type": "box",
+        "center": [
+          0,
+          0.845,
+          0
+        ],
+        "size": [
+          2.36,
+          1.69,
+          0.8075
+        ]
+      },
+      "meta": {
+        "board": {
+          "center": [
+            0,
+            1.07,
+            0.3038
+          ],
+          "size": [
+            2.05,
+            0.95
+          ],
+          "normal": [
+            0,
+            0,
+            1
+          ]
+        },
+        "note": "meta.board = writable chalk area (model space) for runtime quiz overlays."
+      },
+      "bytes": 21044
+    },
+    {
+      "name": "tl_sign_entrance_v01",
+      "file": "furniture/tl_sign_entrance_v01.glb",
+      "url": "/models/furniture/tl_sign_entrance_v01.glb",
+      "triangles": 346,
+      "trianglesByMaterial": {
+        "tl_matte": 346
+      },
+      "budget": 500,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -0.8492,
+          0,
+          -0.0671
+        ],
+        "max": [
+          0.8492,
+          0.964,
+          0.067
+        ]
+      },
+      "size": [
+        1.6985,
+        0.964,
+        0.1341
+      ],
+      "nodes": [
+        "tl_sign_entrance_v01"
+      ],
+      "emissive": [],
+      "materials": [
+        "tl_matte"
+      ],
+      "notes": "Cave-exit sign (01/02/04): three crooked weathered planks ~1.6 x 0.6 m with the raised red emblem, hanging from two short ropes. Anchors hang_l / hang_r = top rope points (hang height); small iron spikes there go back (-Z) into the rock/beam. Pivot = bottom centre of the boards.",
+      "anchors": {
+        "hang_l": [
+          -0.4655,
+          0.946,
+          0.0129
+        ],
+        "hang_r": [
+          0.4545,
+          0.946,
+          0.0129
+        ],
+        "emblem_center": [
+          0.0245,
+          0.326,
+          0.0639
+        ]
+      },
+      "lights": [],
+      "poses": {},
+      "meta": {
+        "hangPoints": [
+          [
+            -0.4655,
+            0.946,
+            0.0129
+          ],
+          [
+            0.4545,
+            0.946,
+            0.0129
+          ]
+        ],
+        "note": "Place so hang_l/hang_r touch the beam or rock above the tunnel; the boards hang ~0.33 m below them."
+      },
+      "bytes": 26668
+    },
+    {
+      "name": "tl_sign_entrance_standing_v01",
+      "file": "furniture/tl_sign_entrance_standing_v01.glb",
+      "url": "/models/furniture/tl_sign_entrance_standing_v01.glb",
+      "triangles": 282,
+      "trianglesByMaterial": {
+        "tl_matte": 282
+      },
+      "budget": 600,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -0.83,
+          0,
+          -0.0767
+        ],
+        "max": [
+          0.8299,
+          1.5455,
+          0.0768
+        ]
+      },
+      "size": [
+        1.6599,
+        1.5455,
+        0.1535
+      ],
+      "nodes": [
+        "tl_sign_entrance_standing_v01"
+      ],
+      "emissive": [],
+      "materials": [
+        "tl_matte"
+      ],
+      "notes": "Free-standing version of the entrance sign (04 catalog ENTRANCE SIGN): same crooked planks + red emblem on two splayed legs. Board centre ~1.2 m above the floor; total height ~1.55 m.",
+      "anchors": {
+        "emblem_center": [
+          0.039,
+          1.21,
+          0.0768
+        ]
+      },
+      "lights": [],
+      "poses": {},
+      "collider": {
+        "type": "box",
+        "center": [
+          0,
+          0.7727,
+          0.0001
+        ],
+        "size": [
+          1.6599,
+          1.5455,
+          0.1535
+        ]
+      },
+      "meta": {},
+      "bytes": 21680
+    },
+    {
+      "name": "tl_furn_tarp_shelter_v01",
+      "file": "furniture/tl_furn_tarp_shelter_v01.glb",
+      "url": "/models/furniture/tl_furn_tarp_shelter_v01.glb",
+      "triangles": 1067,
+      "trianglesByMaterial": {
+        "tl_cloth": 587,
+        "tl_matte": 480
+      },
+      "budget": 1500,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -2.3495,
+          0,
+          -2.3495
+        ],
+        "max": [
+          2.3495,
+          3.32,
+          2.3495
+        ]
+      },
+      "size": [
+        4.699,
+        3.32,
+        4.699
+      ],
+      "nodes": [
+        "tl_furn_tarp_shelter_v01"
+      ],
+      "emissive": [],
+      "materials": [
+        "tl_cloth",
+        "tl_matte"
+      ],
+      "notes": "Rest-corner tarp shelter (01/03 rest corner), hypar pitch: two tall poles hold the high front-right (+X) and back-left corners (~3.1 m; the front pole is braced by a crossing strut), a short T-pole holds the low front-left corner (2.35 m) and the back-right corner is staked out by a rope (2.45 m), so the front edge rises toward the tall pole as in the concept and the faded-crimson underside faces the hub. Double-sided cloth with stitched worn-white patches, holes and irregular hanging tatters on every edge. Covers ~3.2 x 3 m. Guy ropes to ground stakes. Only the poles should collide (meta.poleColliders).",
+      "anchors": {
+        "pole_fr_top": [
+          1.72,
+          3.3,
+          1.52
+        ],
+        "pole_bl_top": [
+          -1.72,
+          3.28,
+          -1.47
+        ],
+        "pole_fl_top": [
+          -1.71,
+          2.52,
+          1.5
+        ],
+        "lantern_hook": [
+          -1.61,
+          1.93,
+          -1.34
+        ],
+        "floor_center": [
+          0,
+          0,
+          0
+        ]
+      },
+      "lights": [],
+      "poses": {},
+      "meta": {
+        "coverage": {
+          "x": [
+            -1.6,
+            1.6
+          ],
+          "z": [
+            -1.45,
+            1.5
+          ],
+          "cornerHeights": {
+            "fl": 2.35,
+            "fr": 3.1,
+            "bl": 3.1,
+            "br": 2.45
+          },
+          "minRoofHeight": 2.35,
+          "tattersHangTo": 1.6639
+        },
+        "poleColliders": [
+          {
+            "type": "segment",
+            "a": [
+              1.74,
+              0,
+              1.53
+            ],
+            "b": [
+              1.72,
+              3.3,
+              1.52
+            ],
+            "radius": 0.07
+          },
+          {
+            "type": "segment",
+            "a": [
+              -1.75,
+              0,
+              -1.48
+            ],
+            "b": [
+              -1.72,
+              3.28,
+              -1.47
+            ],
+            "radius": 0.07
+          },
+          {
+            "type": "segment",
+            "a": [
+              -1.73,
+              0,
+              1.53
+            ],
+            "b": [
+              -1.71,
+              2.52,
+              1.5
+            ],
+            "radius": 0.07
+          },
+          {
+            "type": "segment",
+            "a": [
+              1.84,
+              0,
+              0.42
+            ],
+            "b": [
+              1.7,
+              3.32,
+              1.64
+            ],
+            "radius": 0.07
+          }
+        ],
+        "note": "Open on all sides; place with the low back-right corner toward the cave wall. Tarp/ropes/stakes are cosmetic (no collision). Rest props (pallet bed, wheelchair, crates) fit under it."
+      },
+      "bytes": 91148
+    },
+    {
+      "name": "tl_furn_clothesline_v01",
+      "file": "furniture/tl_furn_clothesline_v01.glb",
+      "url": "/models/furniture/tl_furn_clothesline_v01.glb",
+      "triangles": 319,
+      "trianglesByMaterial": {
+        "tl_matte": 268,
+        "tl_cloth": 51
+      },
+      "budget": 400,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -1.3153,
+          0,
+          -0.0431
+        ],
+        "max": [
+          1.318,
+          1.98,
+          0.0671
+        ]
+      },
+      "size": [
+        2.6334,
+        1.98,
+        0.1102
+      ],
+      "nodes": [
+        "tl_furn_clothesline_v01"
+      ],
+      "emissive": [],
+      "materials": [
+        "tl_cloth",
+        "tl_matte"
+      ],
+      "notes": "Living-corner clothesline (02 LIVING CORNER): two crooked poles 2.5 m apart, a sagging rope with a faded red jersey (plain, no logo), two worn rags and a charcoal towel pegged on it. Rope ~1.85 m high.",
+      "anchors": {
+        "rope_mid": [
+          0,
+          1.73,
+          0
+        ]
+      },
+      "lights": [],
+      "poses": {},
+      "meta": {
+        "poleColliders": [
+          {
+            "type": "cylinder",
+            "center": [
+              -1.25,
+              1,
+              0
+            ],
+            "radius": 0.06,
+            "height": 2
+          },
+          {
+            "type": "cylinder",
+            "center": [
+              1.25,
+              1,
+              0
+            ],
+            "radius": 0.06,
+            "height": 2
+          }
+        ],
+        "note": "Cosmetic; only the two poles should collide."
+      },
+      "bytes": 26828
+    },
+    {
+      "name": "tl_furn_rope_cordon_v01",
+      "file": "furniture/tl_furn_rope_cordon_v01.glb",
+      "url": "/models/furniture/tl_furn_rope_cordon_v01.glb",
+      "triangles": 192,
+      "trianglesByMaterial": {
+        "tl_matte": 184,
+        "tl_cloth": 8
+      },
+      "budget": 400,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -2.4049,
+          0.7243,
+          -0.0285
+        ],
+        "max": [
+          2.4049,
+          1.7334,
+          0.0285
+        ]
+      },
+      "size": [
+        4.8099,
+        1.0091,
+        0.0571
+      ],
+      "nodes": [
+        "tl_furn_rope_cordon_v01"
+      ],
+      "emissive": [],
+      "materials": [
+        "tl_cloth",
+        "tl_matte"
+      ],
+      "notes": "Exit-tunnel cordon: a rope tied between two tripod torches 4.8 m apart (ends at x = +-2.4 m, y = 1.72 m: the tripods' lashing) sagging to ~1.05 m, with a blank weathered plank hanging from the middle and faded rag strips. Place it on the line between the two tripods, facing the hub. Cosmetic, no collider (it marks the walk limit).",
+      "anchors": {
+        "end_l": [
+          2.4,
+          1.72,
+          0
+        ],
+        "end_r": [
+          -2.4,
+          1.72,
+          0
+        ]
+      },
+      "lights": [],
+      "poses": {},
+      "meta": {
+        "span": 4.8,
+        "endHeight": 1.72,
+        "lowest": 1.05,
+        "note": "Ends tie to tl_fx_torch_tripod_v01 lashings (1.75 m)."
+      },
+      "bytes": 17248
+    },
+    {
+      "name": "tl_furn_rug_worn_v01",
+      "file": "furniture/tl_furn_rug_worn_v01.glb",
+      "url": "/models/furniture/tl_furn_rug_worn_v01.glb",
+      "triangles": 94,
+      "trianglesByMaterial": {
+        "tl_matte": 94
+      },
+      "budget": 250,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -0.6508,
+          0.0051,
+          -0.4264
+        ],
+        "max": [
+          0.6514,
+          0.0109,
+          0.4262
+        ]
+      },
+      "size": [
+        1.3022,
+        0.0058,
+        0.8526
+      ],
+      "nodes": [
+        "tl_furn_rug_worn_v01"
+      ],
+      "emissive": [],
+      "materials": [
+        "tl_matte"
+      ],
+      "notes": "Small worn striped floor mat 1.3 x 0.85 m (faded red / worn white / charcoal), frayed short ends, one hole.",
+      "anchors": {},
+      "lights": [],
+      "poses": {},
+      "meta": {
+        "footprint": [
+          1.3,
+          0.85
+        ]
+      },
+      "bytes": 11832
+    }
+  ]
+}

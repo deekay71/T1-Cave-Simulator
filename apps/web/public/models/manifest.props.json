@@ -1,0 +1,911 @@
+{
+  "group": "props",
+  "version": 1,
+  "generator": "tools/models/build.ts",
+  "assets": [
+    {
+      "name": "tl_prop_tv_crt_v01",
+      "file": "props/tl_prop_tv_crt_v01.glb",
+      "url": "/models/props/tl_prop_tv_crt_v01.glb",
+      "triangles": 388,
+      "trianglesByMaterial": {
+        "tl_matte": 230,
+        "tl_glow": 158
+      },
+      "budget": 500,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -0.3,
+          0,
+          -0.24
+        ],
+        "max": [
+          0.3,
+          0.7884,
+          0.256
+        ]
+      },
+      "size": [
+        0.6,
+        0.7884,
+        0.496
+      ],
+      "nodes": [
+        "tl_prop_tv_crt_v01"
+      ],
+      "emissive": [
+        {
+          "node": "tl_prop_tv_crt_v01",
+          "material": "tl_glow",
+          "strength": 1,
+          "triangles": 158
+        }
+      ],
+      "materials": [
+        "tl_glow",
+        "tl_matte"
+      ],
+      "notes": "Chunky old CRT TV: 0.60 W x 0.49 H body (0.80 H with antennas) x 0.48 D. Inset emissive screen (tl_glow, dim grey static) with DEFEAT in pixel letters (red-tinted white) and a red underline. Screen faces +Z. Pivot bottom centre: stand it on a crate.",
+      "anchors": {
+        "screen_center": [
+          0,
+          0.28,
+          0.222
+        ],
+        "antenna_base": [
+          0,
+          0.469,
+          -0.075
+        ]
+      },
+      "lights": [
+        {
+          "name": "tv_screen",
+          "at": [
+            0,
+            0.3,
+            0.6
+          ],
+          "color": "#B4C4CE",
+          "intensity": 0.7,
+          "range": 3
+        }
+      ],
+      "poses": {},
+      "collider": {
+        "type": "box",
+        "center": [
+          0,
+          0.245,
+          0
+        ],
+        "size": [
+          0.6,
+          0.49,
+          0.48
+        ]
+      },
+      "meta": {
+        "screenGlowMaterial": "tl_glow",
+        "flicker": "animate emissiveIntensity 0.85..1.1 for CRT shimmer"
+      },
+      "bytes": 33640
+    },
+    {
+      "name": "tl_prop_kettle_v01",
+      "file": "props/tl_prop_kettle_v01.glb",
+      "url": "/models/props/tl_prop_kettle_v01.glb",
+      "triangles": 310,
+      "trianglesByMaterial": {
+        "tl_matte": 310
+      },
+      "budget": 500,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -0.2024,
+          0,
+          -0.1124
+        ],
+        "max": [
+          0.1104,
+          0.259,
+          0.1104
+        ]
+      },
+      "size": [
+        0.3128,
+        0.259,
+        0.2228
+      ],
+      "nodes": [
+        "tl_prop_kettle_v01"
+      ],
+      "emissive": [],
+      "materials": [
+        "tl_matte"
+      ],
+      "notes": "Dented low-poly metal kettle: body 0.23 m wide, 0.25 m tall with the arched handle; spout points -X. Pivot bottom centre.",
+      "anchors": {
+        "handle": [
+          0,
+          0.241,
+          0
+        ],
+        "spout": [
+          -0.192,
+          0.148,
+          0
+        ]
+      },
+      "lights": [],
+      "poses": {},
+      "meta": {},
+      "bytes": 28368
+    },
+    {
+      "name": "tl_prop_noodle_cup_v01",
+      "file": "props/tl_prop_noodle_cup_v01.glb",
+      "url": "/models/props/tl_prop_noodle_cup_v01.glb",
+      "triangles": 245,
+      "trianglesByMaterial": {
+        "tl_matte": 240,
+        "tl_cloth": 5
+      },
+      "budget": 500,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -0.062,
+          0,
+          -0.075
+        ],
+        "max": [
+          0.0918,
+          0.2516,
+          0.0504
+        ]
+      },
+      "size": [
+        0.1538,
+        0.2516,
+        0.1254
+      ],
+      "nodes": [
+        "tl_prop_noodle_cup_v01"
+      ],
+      "emissive": [],
+      "materials": [
+        "tl_cloth",
+        "tl_matte"
+      ],
+      "notes": "Instant-noodle paper cup, 0.11 m tall (0.25 m with chopsticks); red band + red label facing +Z / -X. Pivot bottom centre.",
+      "anchors": {
+        "grip": [
+          0,
+          0.06,
+          0
+        ]
+      },
+      "lights": [],
+      "poses": {},
+      "meta": {},
+      "bytes": 21416
+    },
+    {
+      "name": "tl_prop_mug_white_v01",
+      "file": "props/tl_prop_mug_white_v01.glb",
+      "url": "/models/props/tl_prop_mug_white_v01.glb",
+      "triangles": 196,
+      "trianglesByMaterial": {
+        "tl_matte": 196
+      },
+      "budget": 500,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -0.0418,
+          0,
+          -0.044
+        ],
+        "max": [
+          0.0785,
+          0.095,
+          0.044
+        ]
+      },
+      "size": [
+        0.1204,
+        0.095,
+        0.088
+      ],
+      "nodes": [
+        "tl_prop_mug_white_v01"
+      ],
+      "emissive": [],
+      "materials": [
+        "tl_matte"
+      ],
+      "notes": "White enamel camp mug with dark rim, coffee inside; 0.095 m tall, handle on +X. Pivot bottom centre.",
+      "anchors": {
+        "handle": [
+          0.072,
+          0.052,
+          0
+        ]
+      },
+      "lights": [],
+      "poses": {},
+      "meta": {},
+      "bytes": 15884
+    },
+    {
+      "name": "tl_prop_mug_red_v01",
+      "file": "props/tl_prop_mug_red_v01.glb",
+      "url": "/models/props/tl_prop_mug_red_v01.glb",
+      "triangles": 202,
+      "trianglesByMaterial": {
+        "tl_matte": 202
+      },
+      "budget": 500,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -0.0431,
+          0,
+          -0.044
+        ],
+        "max": [
+          0.0785,
+          0.095,
+          0.044
+        ]
+      },
+      "size": [
+        0.1217,
+        0.095,
+        0.088
+      ],
+      "nodes": [
+        "tl_prop_mug_red_v01"
+      ],
+      "emissive": [],
+      "materials": [
+        "tl_matte"
+      ],
+      "notes": "Faded-red enamel camp mug with chipped white rim, tea inside; 0.095 m tall, handle on +X. Pivot bottom centre.",
+      "anchors": {
+        "handle": [
+          0.072,
+          0.052,
+          0
+        ]
+      },
+      "lights": [],
+      "poses": {},
+      "meta": {},
+      "bytes": 16420
+    },
+    {
+      "name": "tl_veh_metal_bed_v01",
+      "file": "props/tl_veh_metal_bed_v01.glb",
+      "url": "/models/props/tl_veh_metal_bed_v01.glb",
+      "triangles": 713,
+      "trianglesByMaterial": {
+        "tl_matte": 492,
+        "tl_cloth": 221
+      },
+      "budget": 2000,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -0.454,
+          0,
+          -1.004
+        ],
+        "max": [
+          0.4675,
+          0.652,
+          1.004
+        ]
+      },
+      "size": [
+        0.9215,
+        0.652,
+        2.008
+      ],
+      "nodes": [
+        "tl_veh_metal_bed_v01",
+        "blanket"
+      ],
+      "emissive": [],
+      "materials": [
+        "tl_cloth",
+        "tl_matte"
+      ],
+      "notes": "Rank 04 metal bed 0.90 W x 0.65 H x 2.00 D: off-white square-tube frame with rust spots, mattress (top 0.41 m), pillow at the headboard (-Z) and a patched faded-crimson blanket (node 'blanket', tl_cloth) draped over both sides. Character lies on its back, head toward -Z, feet toward +Z (the bed's forward).",
+      "anchors": {
+        "mattress_top": [
+          0,
+          0.41,
+          0
+        ],
+        "lie_head": [
+          0,
+          0.53,
+          -0.72
+        ],
+        "lie_hips": [
+          0,
+          0.44,
+          -0.05
+        ]
+      },
+      "lights": [],
+      "poses": {},
+      "collider": {
+        "type": "box",
+        "center": [
+          0,
+          0.325,
+          0
+        ],
+        "size": [
+          0.9,
+          0.65,
+          2
+        ]
+      },
+      "meta": {},
+      "bytes": 65548
+    },
+    {
+      "name": "tl_prop_bed_cover_v01",
+      "file": "props/tl_prop_bed_cover_v01.glb",
+      "url": "/models/props/tl_prop_bed_cover_v01.glb",
+      "triangles": 328,
+      "trianglesByMaterial": {
+        "tl_cloth": 328
+      },
+      "budget": 900,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -0.4737,
+          0.218,
+          -0.475
+        ],
+        "max": [
+          0.4739,
+          0.7458,
+          0.95
+        ]
+      },
+      "size": [
+        0.9477,
+        0.5278,
+        1.425
+      ],
+      "nodes": [
+        "tl_prop_bed_cover_v01"
+      ],
+      "emissive": [],
+      "materials": [
+        "tl_cloth"
+      ],
+      "notes": "ATTACHMENT for tl_veh_metal_bed_v01 (give it the bed's transform; hide the bed's own 'blanket' node): the patched faded-crimson blanket draped over a character lying in the bed (pose lie_bed, head toward -Z), from the foot end to mid-chest (z -0.46), over the body (~0.24 m above the mattress, a tent over the feet) and hanging down both sides, with the worn-white sheet folded back over its top edge.",
+      "anchors": {
+        "top_edge": [
+          0,
+          0.725,
+          -0.46
+        ]
+      },
+      "lights": [],
+      "poses": {},
+      "meta": {},
+      "bytes": 37944
+    },
+    {
+      "name": "tl_veh_wheelchair_v01",
+      "file": "props/tl_veh_wheelchair_v01.glb",
+      "url": "/models/props/tl_veh_wheelchair_v01.glb",
+      "triangles": 1692,
+      "trianglesByMaterial": {
+        "tl_matte": 1692
+      },
+      "budget": 2000,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -0.327,
+          0,
+          -0.3925
+        ],
+        "max": [
+          0.327,
+          0.973,
+          0.4804
+        ]
+      },
+      "size": [
+        0.654,
+        0.973,
+        0.8729
+      ],
+      "nodes": [
+        "tl_veh_wheelchair_v01",
+        "wheel_l",
+        "wheel_r",
+        "caster_l",
+        "caster_r"
+      ],
+      "emissive": [],
+      "materials": [
+        "tl_matte"
+      ],
+      "notes": "Rank 02 patched wheelchair, 0.69 W x 0.96 H x 0.87 D: dark metal frame, crimson seat/back with worn patch, tape wraps, spoked 0.60 m wheels (nodes wheel_l / wheel_r, pivot = axle, spin about local X) and 0.14 m casters (caster_l / caster_r). Faces +Z. Rolling forward d metres: wheel rot X += d / 0.30 rad, casters d / 0.07 rad.",
+      "anchors": {
+        "seat": [
+          0,
+          0.54,
+          0.02
+        ],
+        "backrest": [
+          0,
+          0.72,
+          -0.16
+        ],
+        "push_handles": [
+          0,
+          0.955,
+          -0.3
+        ],
+        "footrest": [
+          0,
+          0.17,
+          0.42
+        ]
+      },
+      "lights": [],
+      "poses": {
+        "rolling": {
+          "wheel_l": [
+            60,
+            0,
+            0
+          ],
+          "wheel_r": [
+            60,
+            0,
+            0
+          ],
+          "caster_l": [
+            150,
+            0,
+            0
+          ],
+          "caster_r": [
+            150,
+            0,
+            0
+          ]
+        }
+      },
+      "collider": {
+        "type": "box",
+        "center": [
+          0,
+          0.48,
+          0.05
+        ],
+        "size": [
+          0.7,
+          0.96,
+          0.88
+        ]
+      },
+      "meta": {},
+      "bytes": 131248
+    },
+    {
+      "name": "tl_prop_oxygen_cylinder_green_v01",
+      "file": "props/tl_prop_oxygen_cylinder_green_v01.glb",
+      "url": "/models/props/tl_prop_oxygen_cylinder_green_v01.glb",
+      "triangles": 288,
+      "trianglesByMaterial": {
+        "tl_matte": 288
+      },
+      "budget": 500,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -0.0831,
+          0,
+          -0.0831
+        ],
+        "max": [
+          0.0831,
+          1.172,
+          0.0831
+        ]
+      },
+      "size": [
+        0.1663,
+        1.172,
+        0.1663
+      ],
+      "nodes": [
+        "tl_prop_oxygen_cylinder_green_v01"
+      ],
+      "emissive": [],
+      "materials": [
+        "tl_matte"
+      ],
+      "notes": "Rank 03 oxygen cylinder, faded green with a pale label band, 1.17 m tall, 0.18 m diameter; gauge faces +Z, hose outlet on +X (anchor hose_out). Pivot bottom centre.",
+      "anchors": {
+        "hose_out": [
+          0.07,
+          1.1,
+          0
+        ],
+        "top": [
+          0,
+          1.172,
+          0
+        ]
+      },
+      "lights": [],
+      "poses": {},
+      "collider": {
+        "type": "cylinder",
+        "center": [
+          0,
+          0.586,
+          0
+        ],
+        "radius": 0.09,
+        "height": 1.172
+      },
+      "meta": {},
+      "bytes": 22304
+    },
+    {
+      "name": "tl_prop_oxygen_cylinder_white_v01",
+      "file": "props/tl_prop_oxygen_cylinder_white_v01.glb",
+      "url": "/models/props/tl_prop_oxygen_cylinder_white_v01.glb",
+      "triangles": 288,
+      "trianglesByMaterial": {
+        "tl_matte": 288
+      },
+      "budget": 500,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -0.0831,
+          0,
+          -0.0831
+        ],
+        "max": [
+          0.0831,
+          1.172,
+          0.0831
+        ]
+      },
+      "size": [
+        0.1663,
+        1.172,
+        0.1663
+      ],
+      "nodes": [
+        "tl_prop_oxygen_cylinder_white_v01"
+      ],
+      "emissive": [],
+      "materials": [
+        "tl_matte"
+      ],
+      "notes": "White oxygen cylinder with a crimson band (04 catalog), 1.17 m tall, 0.18 m diameter; gauge faces +Z, hose outlet on +X (anchor hose_out). Pivot bottom centre.",
+      "anchors": {
+        "hose_out": [
+          0.07,
+          1.1,
+          0
+        ],
+        "top": [
+          0,
+          1.172,
+          0
+        ]
+      },
+      "lights": [],
+      "poses": {},
+      "collider": {
+        "type": "cylinder",
+        "center": [
+          0,
+          0.586,
+          0
+        ],
+        "radius": 0.09,
+        "height": 1.172
+      },
+      "meta": {},
+      "bytes": 22304
+    },
+    {
+      "name": "tl_prop_oxygen_hose_v01",
+      "file": "props/tl_prop_oxygen_hose_v01.glb",
+      "url": "/models/props/tl_prop_oxygen_hose_v01.glb",
+      "triangles": 186,
+      "trianglesByMaterial": {
+        "tl_matte": 186
+      },
+      "budget": 500,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          0.0683,
+          0.8803,
+          -0.0051
+        ],
+        "max": [
+          0.4136,
+          1.2154,
+          0.0651
+        ]
+      },
+      "size": [
+        0.3453,
+        0.3352,
+        0.0701
+      ],
+      "nodes": [
+        "tl_prop_oxygen_hose_v01"
+      ],
+      "emissive": [],
+      "materials": [
+        "tl_matte"
+      ],
+      "notes": "Thin oxygen hose, ATTACHMENT (not a floor prop): authored in the oxygen cylinder's frame — give it the same transform as tl_prop_oxygen_cylinder_*_v01. Starts at the cylinder's hose_out anchor (0.07, 1.10, 0) and sags to anchor face_end (0.409, 1.215, 0.044), the right cheek of the rank-03 fan slouched in tl_prop_wooden_chair_v01 placed at (0.50, 0, 0.05) relative to the cylinder (layout.ts rank 03 pose: sit_chair, hips slid forward, head back). The nasal cannula loop belongs to the character.",
+      "anchors": {
+        "start": [
+          0.07,
+          1.1,
+          0
+        ],
+        "face_end": [
+          0.409,
+          1.215,
+          0.044
+        ]
+      },
+      "lights": [],
+      "poses": {},
+      "meta": {},
+      "bytes": 15560
+    },
+    {
+      "name": "tl_prop_wooden_chair_v01",
+      "file": "props/tl_prop_wooden_chair_v01.glb",
+      "url": "/models/props/tl_prop_wooden_chair_v01.glb",
+      "triangles": 260,
+      "trianglesByMaterial": {
+        "tl_matte": 260
+      },
+      "budget": 500,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -0.2613,
+          -0.0006,
+          -0.3057
+        ],
+        "max": [
+          0.265,
+          0.9761,
+          0.2538
+        ]
+      },
+      "size": [
+        0.5263,
+        0.9767,
+        0.5595
+      ],
+      "nodes": [
+        "tl_prop_wooden_chair_v01"
+      ],
+      "emissive": [],
+      "materials": [
+        "tl_matte"
+      ],
+      "notes": "Old wooden armchair for rank 03 (oxygen): seat 0.47 m, back 0.97 m leaning back ~9°, arms 0.69 m. Faces +Z. Pivot bottom centre.",
+      "anchors": {
+        "seat": [
+          0,
+          0.471,
+          0.02
+        ],
+        "back": [
+          0,
+          0.75,
+          -0.24
+        ]
+      },
+      "lights": [],
+      "poses": {},
+      "collider": {
+        "type": "box",
+        "center": [
+          0,
+          0.485,
+          -0.02
+        ],
+        "size": [
+          0.5,
+          0.97,
+          0.5
+        ]
+      },
+      "meta": {},
+      "bytes": 21120
+    },
+    {
+      "name": "tl_prop_blanket_folded_v01",
+      "file": "props/tl_prop_blanket_folded_v01.glb",
+      "url": "/models/props/tl_prop_blanket_folded_v01.glb",
+      "triangles": 349,
+      "trianglesByMaterial": {
+        "tl_matte": 296,
+        "tl_cloth": 53
+      },
+      "budget": 500,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -0.2412,
+          0,
+          -0.1932
+        ],
+        "max": [
+          0.2495,
+          0.1376,
+          0.2137
+        ]
+      },
+      "size": [
+        0.4907,
+        0.1376,
+        0.407
+      ],
+      "nodes": [
+        "tl_prop_blanket_folded_v01"
+      ],
+      "emissive": [],
+      "materials": [
+        "tl_cloth",
+        "tl_matte"
+      ],
+      "notes": "Folded patched blanket, 0.50 x 0.15 x 0.40 m: crimson/worn-white layers, sewn patches, a ragged flap hanging over the +Z edge. Pivot bottom centre.",
+      "anchors": {
+        "top": [
+          0,
+          0.1341,
+          0
+        ]
+      },
+      "lights": [],
+      "poses": {},
+      "meta": {},
+      "bytes": 31696
+    },
+    {
+      "name": "tl_prop_gamepad_v01",
+      "file": "props/tl_prop_gamepad_v01.glb",
+      "url": "/models/props/tl_prop_gamepad_v01.glb",
+      "triangles": 340,
+      "trianglesByMaterial": {
+        "tl_matte": 340
+      },
+      "budget": 500,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -0.0783,
+          0,
+          -0.1378
+        ],
+        "max": [
+          0.0783,
+          0.033,
+          0.0585
+        ]
+      },
+      "size": [
+        0.1567,
+        0.033,
+        0.1963
+      ],
+      "nodes": [
+        "tl_prop_gamepad_v01"
+      ],
+      "emissive": [],
+      "materials": [
+        "tl_matte"
+      ],
+      "notes": "Wired gamepad lying flat (0.16 W x 0.04 H x 0.10 D + short cable toward -Z). Grips toward +Z (the player). Pivot bottom centre.",
+      "anchors": {
+        "grip": [
+          0,
+          0.03,
+          0.01
+        ]
+      },
+      "lights": [],
+      "poses": {},
+      "meta": {},
+      "bytes": 26032
+    },
+    {
+      "name": "tl_prop_phone_v01",
+      "file": "props/tl_prop_phone_v01.glb",
+      "url": "/models/props/tl_prop_phone_v01.glb",
+      "triangles": 58,
+      "trianglesByMaterial": {
+        "tl_matte": 56,
+        "tl_glow": 2
+      },
+      "budget": 500,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -0.036,
+          -0.0022,
+          -0.074
+        ],
+        "max": [
+          0.036,
+          0.0092,
+          0.074
+        ]
+      },
+      "size": [
+        0.072,
+        0.0114,
+        0.148
+      ],
+      "nodes": [
+        "tl_prop_phone_v01"
+      ],
+      "emissive": [
+        {
+          "node": "tl_prop_phone_v01",
+          "material": "tl_glow",
+          "strength": 1,
+          "triangles": 2
+        }
+      ],
+      "materials": [
+        "tl_glow",
+        "tl_matte"
+      ],
+      "notes": "Smartphone lying flat, screen up (+Y), top edge toward -Z: 0.072 x 0.009 x 0.148 m. Dim emissive screen (tl_glow). To hold it upright facing the character, parent to the hand and rotate X +90 (screen toward -Z) or -90.",
+      "anchors": {
+        "grip": [
+          0,
+          0.0045,
+          0.02
+        ],
+        "screen": [
+          0,
+          0.0095,
+          0
+        ]
+      },
+      "lights": [],
+      "poses": {},
+      "meta": {},
+      "bytes": 6684
+    }
+  ]
+}

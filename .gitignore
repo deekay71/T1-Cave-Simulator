@@ -6,3 +6,4 @@ apps/web/dist/
 dist/
 reports/
 .dev-keys/
+.renders/

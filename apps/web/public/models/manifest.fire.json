@@ -1,0 +1,591 @@
+{
+  "group": "fire",
+  "version": 1,
+  "generator": "tools/models/build.ts",
+  "assets": [
+    {
+      "name": "tl_fx_campfire_v01",
+      "file": "fire/tl_fx_campfire_v01.glb",
+      "url": "/models/fire/tl_fx_campfire_v01.glb",
+      "triangles": 1236,
+      "trianglesByMaterial": {
+        "tl_matte": 413,
+        "tl_glow_1.3": 300,
+        "tl_glow_1.5": 523
+      },
+      "budget": 1500,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -1.0715,
+          0,
+          -1.1284
+        ],
+        "max": [
+          1.1285,
+          1.6195,
+          1.0572
+        ]
+      },
+      "size": [
+        2.2,
+        1.6195,
+        2.1856
+      ],
+      "nodes": [
+        "tl_fx_campfire_v01",
+        "flames",
+        "flame_outer",
+        "flame_mid",
+        "flame_core",
+        "sparks",
+        "light_anchor"
+      ],
+      "emissive": [
+        {
+          "node": "tl_fx_campfire_v01",
+          "material": "tl_glow_1.3",
+          "strength": 1.3,
+          "triangles": 300
+        },
+        {
+          "node": "flame_outer",
+          "material": "tl_glow_1.5",
+          "strength": 1.5,
+          "triangles": 266
+        },
+        {
+          "node": "flame_mid",
+          "material": "tl_glow_1.5",
+          "strength": 1.5,
+          "triangles": 140
+        },
+        {
+          "node": "flame_core",
+          "material": "tl_glow_1.5",
+          "strength": 1.5,
+          "triangles": 77
+        },
+        {
+          "node": "sparks",
+          "material": "tl_glow_1.5",
+          "strength": 1.5,
+          "triangles": 40
+        }
+      ],
+      "materials": [
+        "tl_glow_1.3",
+        "tl_glow_1.5",
+        "tl_matte"
+      ],
+      "notes": "Central campfire, 2.2 m stone ring, ~1 m broken-up flames. Child 'flames' (flame_outer/flame_mid/flame_core, emissive) pivots at the ember bed: scale Y 0.9-1.1 out of phase to flicker. 'sparks' can drift/rotate. 'light_anchor' (1.2 m) = omni light position. Collider = stone ring.",
+      "anchors": {
+        "light": [
+          0,
+          1.2,
+          0
+        ],
+        "flame_base": [
+          0,
+          0.06,
+          0
+        ]
+      },
+      "lights": [
+        {
+          "name": "campfire",
+          "at": [
+            0,
+            1.2,
+            0
+          ],
+          "color": "#FF9A4C",
+          "intensity": 2.2,
+          "range": 9
+        }
+      ],
+      "poses": {},
+      "collider": {
+        "type": "cylinder",
+        "center": [
+          0,
+          0.25,
+          0
+        ],
+        "radius": 1.1,
+        "height": 0.5
+      },
+      "meta": {
+        "flicker": {
+          "nodes": [
+            "flame_outer",
+            "flame_mid",
+            "flame_core"
+          ],
+          "scaleY": [
+            0.9,
+            1.1
+          ],
+          "scaleXZ": [
+            0.95,
+            1.05
+          ],
+          "hz": [
+            5,
+            9
+          ],
+          "emissiveIntensity": [
+            1.3,
+            1.7
+          ]
+        },
+        "embers": {
+          "emissiveIntensity": [
+            1.1,
+            1.45
+          ],
+          "hz": [
+            1,
+            3
+          ]
+        },
+        "light": {
+          "color": "#FF9A4C",
+          "intensity": [
+            1.9,
+            2.5
+          ],
+          "range": 9
+        },
+        "sparks": {
+          "node": "sparks",
+          "riseSpeed": 0.35,
+          "loopHeight": 0.8
+        }
+      },
+      "bytes": 136928
+    },
+    {
+      "name": "tl_fx_torch_pole_v01",
+      "file": "fire/tl_fx_torch_pole_v01.glb",
+      "url": "/models/fire/tl_fx_torch_pole_v01.glb",
+      "triangles": 468,
+      "trianglesByMaterial": {
+        "tl_matte": 206,
+        "tl_glow_1.3": 16,
+        "tl_glow_1.5": 246
+      },
+      "budget": 500,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -0.3996,
+          0,
+          -0.3368
+        ],
+        "max": [
+          0.3857,
+          3.2362,
+          0.3493
+        ]
+      },
+      "size": [
+        0.7853,
+        3.2362,
+        0.6861
+      ],
+      "nodes": [
+        "tl_fx_torch_pole_v01",
+        "flames",
+        "light_anchor"
+      ],
+      "emissive": [
+        {
+          "node": "tl_fx_torch_pole_v01",
+          "material": "tl_glow_1.3",
+          "strength": 1.3,
+          "triangles": 16
+        },
+        {
+          "node": "flames",
+          "material": "tl_glow_1.5",
+          "strength": 1.5,
+          "triangles": 246
+        }
+      ],
+      "materials": [
+        "tl_glow_1.3",
+        "tl_glow_1.5",
+        "tl_matte"
+      ],
+      "notes": "Standing torch: 2.3 m hewn pole wedged in a stone base, rope-wrapped head and wooden cup. Child 'flames' (emissive) pivots at the cup rim; 'light_anchor' at the flame centre.",
+      "anchors": {
+        "light": [
+          0.025,
+          2.57,
+          -0.02
+        ],
+        "flame_base": [
+          0.025,
+          2.29,
+          -0.02
+        ]
+      },
+      "lights": [
+        {
+          "name": "torch",
+          "at": [
+            0.025,
+            2.57,
+            -0.02
+          ],
+          "color": "#FFA552",
+          "intensity": 1.4,
+          "range": 6
+        }
+      ],
+      "poses": {},
+      "collider": {
+        "type": "cylinder",
+        "center": [
+          0,
+          1.15,
+          0
+        ],
+        "radius": 0.3,
+        "height": 2.3
+      },
+      "meta": {
+        "flicker": {
+          "nodes": [
+            "flames"
+          ],
+          "scaleY": [
+            0.88,
+            1.12
+          ],
+          "scaleXZ": [
+            0.94,
+            1.06
+          ],
+          "hz": [
+            6,
+            10
+          ],
+          "emissiveIntensity": [
+            1.3,
+            1.7
+          ]
+        },
+        "light": {
+          "color": "#FFA552",
+          "intensity": [
+            1.2,
+            1.6
+          ],
+          "range": 6
+        }
+      },
+      "bytes": 51264
+    },
+    {
+      "name": "tl_fx_torch_tripod_v01",
+      "file": "fire/tl_fx_torch_tripod_v01.glb",
+      "url": "/models/fire/tl_fx_torch_tripod_v01.glb",
+      "triangles": 454,
+      "trianglesByMaterial": {
+        "tl_matte": 166,
+        "tl_glow_1.3": 42,
+        "tl_glow_1.5": 246
+      },
+      "budget": 500,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -0.4706,
+          0.002,
+          -0.313
+        ],
+        "max": [
+          0.4284,
+          3.0734,
+          0.5355
+        ]
+      },
+      "size": [
+        0.8991,
+        3.0715,
+        0.8485
+      ],
+      "nodes": [
+        "tl_fx_torch_tripod_v01",
+        "flames",
+        "light_anchor"
+      ],
+      "emissive": [
+        {
+          "node": "tl_fx_torch_tripod_v01",
+          "material": "tl_glow_1.3",
+          "strength": 1.3,
+          "triangles": 42
+        },
+        {
+          "node": "flames",
+          "material": "tl_glow_1.5",
+          "strength": 1.5,
+          "triangles": 246
+        }
+      ],
+      "materials": [
+        "tl_glow_1.3",
+        "tl_glow_1.5",
+        "tl_matte"
+      ],
+      "notes": "Tripod brazier: three rope-lashed 2.1 m sticks cross at ~1.75 m and cradle an iron fire bowl (rim 2.04 m). Child 'flames' (emissive) pivots at the bowl rim; 'light_anchor' at the flame centre.",
+      "anchors": {
+        "light": [
+          0,
+          2.36,
+          0
+        ],
+        "flame_base": [
+          0,
+          2.04,
+          0
+        ]
+      },
+      "lights": [
+        {
+          "name": "brazier",
+          "at": [
+            0,
+            2.36,
+            0
+          ],
+          "color": "#FFA552",
+          "intensity": 1.5,
+          "range": 6.5
+        }
+      ],
+      "poses": {},
+      "collider": {
+        "type": "cylinder",
+        "center": [
+          0,
+          1,
+          0
+        ],
+        "radius": 0.42,
+        "height": 2
+      },
+      "meta": {
+        "flicker": {
+          "nodes": [
+            "flames"
+          ],
+          "scaleY": [
+            0.88,
+            1.12
+          ],
+          "scaleXZ": [
+            0.94,
+            1.06
+          ],
+          "hz": [
+            6,
+            10
+          ],
+          "emissiveIntensity": [
+            1.3,
+            1.7
+          ]
+        },
+        "light": {
+          "color": "#FFA552",
+          "intensity": [
+            1.3,
+            1.7
+          ],
+          "range": 6.5
+        }
+      },
+      "bytes": 48280
+    },
+    {
+      "name": "tl_fx_lantern_v01",
+      "file": "fire/tl_fx_lantern_v01.glb",
+      "url": "/models/fire/tl_fx_lantern_v01.glb",
+      "triangles": 220,
+      "trianglesByMaterial": {
+        "tl_matte": 192,
+        "tl_glow_1.5": 28
+      },
+      "budget": 500,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -0.093,
+          0,
+          -0.093
+        ],
+        "max": [
+          0.093,
+          0.3445,
+          0.093
+        ]
+      },
+      "size": [
+        0.186,
+        0.3445,
+        0.186
+      ],
+      "nodes": [
+        "tl_fx_lantern_v01",
+        "glow",
+        "light_anchor"
+      ],
+      "emissive": [
+        {
+          "node": "glow",
+          "material": "tl_glow_1.5",
+          "strength": 1.5,
+          "triangles": 28
+        }
+      ],
+      "materials": [
+        "tl_glow_1.5",
+        "tl_matte"
+      ],
+      "notes": "Small square camp lantern (0.35 m with handle) for the rest corner: crate top or hung from the tarp ('hang' anchor). Child 'glow' = emissive glass + flame; 'light_anchor' at its centre.",
+      "anchors": {
+        "light": [
+          0,
+          0.101,
+          0
+        ],
+        "hang": [
+          0,
+          0.3445,
+          0
+        ]
+      },
+      "lights": [
+        {
+          "name": "lantern",
+          "at": [
+            0,
+            0.101,
+            0
+          ],
+          "color": "#FFB65C",
+          "intensity": 1.1,
+          "range": 3.5
+        }
+      ],
+      "poses": {},
+      "collider": {
+        "type": "box",
+        "center": [
+          0,
+          0.13,
+          0
+        ],
+        "size": [
+          0.17,
+          0.26,
+          0.17
+        ]
+      },
+      "meta": {
+        "flicker": {
+          "nodes": [
+            "glow"
+          ],
+          "emissiveIntensity": [
+            1.35,
+            1.6
+          ],
+          "hz": [
+            3,
+            6
+          ]
+        },
+        "light": {
+          "color": "#FFB65C",
+          "intensity": [
+            0.9,
+            1.2
+          ],
+          "range": 3.5
+        }
+      },
+      "bytes": 19108
+    },
+    {
+      "name": "tl_fx_embers_ring_v01",
+      "file": "fire/tl_fx_embers_ring_v01.glb",
+      "url": "/models/fire/tl_fx_embers_ring_v01.glb",
+      "triangles": 208,
+      "trianglesByMaterial": {
+        "tl_glow_1.3": 208
+      },
+      "budget": 300,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -1.3495,
+          0,
+          -1.4896
+        ],
+        "max": [
+          1.2968,
+          0.027,
+          1.1721
+        ]
+      },
+      "size": [
+        2.6463,
+        0.027,
+        2.6616
+      ],
+      "nodes": [
+        "tl_fx_embers_ring_v01"
+      ],
+      "emissive": [
+        {
+          "node": "tl_fx_embers_ring_v01",
+          "material": "tl_glow_1.3",
+          "strength": 1.3,
+          "triangles": 208
+        }
+      ],
+      "materials": [
+        "tl_glow_1.3"
+      ],
+      "notes": "Optional overlay at the campfire origin: glowing specks just inside and outside the stone ring (0.55-1.5 m). Pure emissive, no collider.",
+      "anchors": {
+        "center": [
+          0,
+          0,
+          0
+        ]
+      },
+      "lights": [],
+      "poses": {},
+      "meta": {
+        "placeAt": "campfire origin",
+        "flicker": {
+          "emissiveIntensity": [
+            0.9,
+            1.45
+          ],
+          "hz": [
+            1,
+            3
+          ]
+        }
+      },
+      "bytes": 24964
+    }
+  ]
+}

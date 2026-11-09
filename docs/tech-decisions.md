@@ -132,6 +132,8 @@ Nghiệm thu:
 - Collider là hình 2D trên mặt phẳng XZ (tròn, hộp, đa giác), cộng một đa giác biên cho vùng đi được. Thay cho biên vuông ±14 m hiện tại, vì hang là hình tròn bán kính 15 m và hầm kéo dài tới Z ≈ 32 m.
 - Chưa cần navmesh vì điều khiển là WASD, không có click-to-move.
 
+**Cập nhật 2026-11-10 (bản chơi thử theo concept v3):** asset alpha được sinh bằng code thay vì Blender: `tools/models` dùng `@gltf-transform/core` (chỉ là devDependency), cho ra GLB flat-shaded tô màu theo đỉnh, không có texture, khoảng 3,5 MB cho 63 model. Vì không có texture và file nhỏ nên chưa cần KTX2/Draco; nén gzip hoặc brotli khi host là đủ. Dữ liệu màn chơi là `packages/shared/src/layout.ts`: bảng đặt model kèm collider tròn, dùng chung cho client và server, thay cho `level.json`. Biên đi được là vòng tròn bán kính 16 m. Khi có asset vẽ tay thì quay lại phương án Blender → Draco/KTX2 ở trên.
+
 ### 2.8 Hạ tầng (T13)
 
 - Cloudflare:
