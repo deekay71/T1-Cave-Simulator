@@ -784,6 +784,10 @@ async function join(name: string, invite = "") {
     room.onMessage("chat", (m: { name?: string; text: string }) =>
       log(`${m.name || "Ai đó"}: ${m.text}`),
     );
+    // Thông báo riêng từ server: chat bị chặn (kiểm duyệt, bị mute), kết quả báo cáo…
+    room.onMessage("notice", (text: unknown) => {
+      if (typeof text === "string") log(`⚠ ${text}`);
+    });
     room.onMessage("emote", (m: { id: string; emote: unknown }) => {
       const e = Emote.safeParse(m?.emote);
       if (!e.success) return;
