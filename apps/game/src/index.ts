@@ -41,7 +41,7 @@ for (const signal of ['SIGINT', 'SIGTERM'] as const) {
   process.once(signal, () => { phase = 'draining'; log.info({ signal }, 'draining'); });
 }
 
-await server.listen(port, '0.0.0.0');
-admin.listen(adminPort, '0.0.0.0');
+await server.listen(port, process.env.GAME_HOST || '0.0.0.0');
+admin.listen(adminPort, process.env.ADMIN_HOST || '0.0.0.0');
 phase = 'running';
 log.info({ port, adminPort, redis: Boolean(redis) }, 'Tê Liệt game listening');

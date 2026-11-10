@@ -26,8 +26,14 @@ import {
   LIMITS,
   MoveInput,
 } from "@te-liet/shared";
+import { SHRINE_CENTER, SHRINE_SEATS, SHRINE_RADIUS, applyShrineAwareInput, isInShrine } from "../../../packages/shared/src/shrine.js";
 import "./style.css";
+import { resident } from "./stalls/client.js";
+import { CAVE_STALL_RADIUS } from "../../../packages/shared/src/stalls.js";
+import { STALL_CAMERA_BLOCKERS } from "./world/stalls.js";
+import { requestedRoom, roomInviteUrl } from "./roomInvite.js";
 import {
+  AVATAR_VARIANTS,
   createAvatar,
   preloadAvatars,
   variantFor,
@@ -43,6 +49,7 @@ import { createNameTags } from "./nametags.js";
 import { createNearFlames } from "./nearFlames.js";
 import { createWorld, landmarks } from "./scene.js";
 import { CONTROLS_HELP, focusChat, mountUI, rememberInvite, touch, ui } from "./ui.js";
+import { SHRINE_CAMERA_BLOCKERS } from "./world/shrine.js";
 import { loadManifests } from "./world/manifest.js";
 
 declare global {
@@ -91,7 +98,7 @@ window.addEventListener("resize", () => app.resizeCanvas());
 const world = createWorld(app);
 const camera = world.camera;
 /** Đồ cao (đuốc, bảng, đá, cột bạt) và thân NPC: camera không được nằm bên trong. Điền khi manifest đã tải. */
-const blockers: Blocker[] = [];
+const blockers: Blocker[] = [...STALL_CAMERA_BLOCKERS, ...SHRINE_CAMERA_BLOCKERS];
 const follow = createFollowCamera(camera, {
   bounds: { ...CAVE_BOUNDS, blockers },
 });
@@ -99,6 +106,7 @@ const follow = createFollowCamera(camera, {
 const flames = createNearFlames();
 const tags = createNameTags(document.querySelector<HTMLElement>("#tags")!);
 const log = ui.log;
+const mutedSenders = new Set<string>();
 /** Góc nhìn dọc của camera bám theo (độ) trên màn hình ngang; màn dọc được nới cho đủ bề ngang. */
 const FOLLOW_FOV = 50;
 const aspect = () => window.innerWidth / Math.max(1, window.innerHeight);
@@ -298,7 +306,7 @@ const held = (...names: string[]) => names.some((n) => keys.has(n));
 const STILL = { moveX: 0, moveZ: 0 } as const;
 /** Trục input theo hướng camera (int8, đúng giá trị gửi lên và dùng để dự đoán). */
 function axes(s: Session): { moveX: number; moveZ: number } {
-  if (ui.get().panel || s.dropped) return STILL;
+  if (ui.get().panel || s.dropped || playersOf(s.room)?.get(s.room.sessionId)?.shrineSeat) return STILL;
   const right =
     Number(held("d", "arrowright")) - Number(held("a", "arrowleft"));
   const forward = Number(held("w", "arrowup")) - Number(held("s", "arrowdown"));
@@ -316,6 +324,7 @@ interface PlayerState {
   x: number;
   z: number;
   connected: boolean;
+  shrineSeat: string; shrineGesture: string; shrineGestureAt: number;
 }
 interface HubState {
   players: {
@@ -330,11 +339,15 @@ type Session = {
   predict: Predict;
   input: InputHandle<MoveInput>;
   reconciled: boolean;
+  controller?: { reset(): void };
+  shrinePose?: string;
   idleSteps: number;
   /** Mất kết nối, SDK đang tự nối lại: không gửi di chuyển. */
   dropped: boolean;
 };
 let session: Session | undefined;
+let shrineClockOffset = 0;
+let shrineUiAt = 0;
 
 interface Fan {
   readonly self: boolean;
@@ -468,10 +481,12 @@ function setSelfOpacity(f: Fan, opacity: number) {
 function spawnAvatar(id: string, f: Fan) {
   if (f.avatar || f.failed || !assetsReady) return;
   try {
-    f.avatar = createAvatar(app, { variant: variantFor(id) });
+    const saved = session ? (playersOf(session.room)?.get(id) as { avatarKey?: string } | undefined)?.avatarKey : '';
+    f.avatar = createAvatar(app, { variant: saved && AVATAR_VARIANTS.includes(saved) ? saved : variantFor(id) });
     if (f.self) prepareSelf(f.avatar);
     else batchAvatar(f.avatar);
     f.avatar.entity.enabled = !f.hidden;
+    if(f.self){const p=resident.get();f.avatar.setProgression(p.visualRank??p.state?.experience.rank.level??1,p.visualItem!==undefined?p.visualItem:p.state?.equippedItemId);}
   } catch (err) {
     f.failed = true;
     report(`avatar ${id}: ${describe(err)}`);
@@ -521,6 +536,8 @@ function moveFan(
   a.update(dt, f.speed);
 }
 
+resident.subscribe(()=>{const f=me(),p=resident.get(); if(f?.avatar) f.avatar.setProgression(p.visualRank??p.state?.experience.rank.level??1,p.visualItem!==undefined?p.visualItem:p.state?.equippedItemId);});
+
 /** Điểm tương tác gần nhất trong 3 m. */
 function nearestLandmark(x: number, z: number) {
   let best: (typeof landmarks)[number] | null = null,
@@ -529,7 +546,8 @@ function nearestLandmark(x: number, z: number) {
     const dx = l.x - x,
       dz = l.z - z;
     const d2 = dx * dx + dz * dz;
-    if (d2 < bestD2) {
+    const radius = l.id === "altar" || l.id === "rest" ? 3 : CAVE_STALL_RADIUS;
+    if (d2 <= radius * radius && d2 < bestD2) {
       best = l;
       bestD2 = d2;
     }
@@ -544,7 +562,7 @@ function interact() {
   const f = me();
   const near = f ? nearestLandmark(f.x, f.z) : null;
   if (!near) return;
-  ui.set({ panel: near.id });
+  ui.set({ panel: near.id, destination: null });
   keys.clear();
 }
 
@@ -604,13 +622,25 @@ app.on("update", (dt: number) => {
   // Nhân vật của mình: dự đoán ngay bằng cùng applyInput() với server, rồi đối chiếu khi server xác nhận.
   const self = players.get(room.sessionId);
   if (self && !s.reconciled) {
-    predict.reconciler(self, {
+    s.controller = predict.reconciler(self, {
       input,
       fields: ["x", "z"],
       smoothMs: 65,
-      step: (ctx, st, cmd) => applyInput(st, cmd, ctx.dt),
+      snap: 2,
+      step: (ctx, st, cmd) => { if (!self.shrineSeat) applyShrineAwareInput(st, cmd, ctx.dt); },
     });
     s.reconciled = true;
+  }
+
+  if (self && s.controller) {
+    const pose = `${isInShrine(self) ? "shrine" : "cave"}:${self.shrineSeat || ""}`;
+    if (s.shrinePose !== undefined && s.shrinePose !== pose) {
+      s.controller.reset(); keys.clear();
+      if (s.shrinePose.split(":")[0] !== pose.split(":")[0]) {
+        follow.snapBehind(180); follow.distance = isInShrine(self) ? 7.5 : 5.5; follow.pitch = isInShrine(self) ? 12 : 18;
+      }
+    }
+    s.shrinePose = pose;
   }
 
   // Gửi trước, đọc sau. Đứng yên thì chỉ gửi 5 bước đuôi và 1 bước mỗi giây (giữ đồng hồ đồng bộ),
@@ -631,8 +661,9 @@ app.on("update", (dt: number) => {
   seen.clear();
   players.forEach((p, id) => {
     seen.add(id);
-    const x: number = predict.value(p, "x"),
-      z: number = predict.value(p, "z");
+    const px: number = predict.value(p, "x"), pz: number = predict.value(p, "z");
+    const x = p.shrineSeat ? p.x : px;
+    const z = p.shrineSeat ? p.z : pz;
     let f = fans.get(id);
     if (!f) {
       const face = Math.atan2(-x, -z); // xuất hiện: nhìn về lửa trại
@@ -659,7 +690,13 @@ app.on("update", (dt: number) => {
       tags.set(id, name, { self: f.self, away });
     }
     spawnAvatar(id, f);
-    moveFan(f, x, z, dt, f.self ? a : null);
+    const shrineSeat = SHRINE_SEATS.find(seat => seat.id === p.shrineSeat);
+    if (shrineSeat) f.yaw = f.wantYaw = shrineSeat.yaw * DEG;
+    f.avatar?.setShrinePose(!!shrineSeat, p.shrineGesture === "pray" || p.shrineGesture === "bow" ? p.shrineGesture : null, Math.max(0,(Date.now()+shrineClockOffset-p.shrineGestureAt)/1000));
+    moveFan(f, x, z, dt, f.self && !shrineSeat ? a : null);
+    if (shrineSeat && f.avatar) { f.yaw = f.wantYaw = shrineSeat.yaw * DEG; f.avatar.entity.setEulerAngles(0,shrineSeat.yaw,0); }
+    // Separate spaces share a server room, but residents do not float across the void visually.
+    if (f.avatar) f.avatar.entity.enabled = !f.hidden && isInShrine(p) === isInShrine(self ?? p);
   });
   for (const id of fans.keys()) if (!seen.has(id)) dropFan(id);
   if (ui.get().count !== seen.size) ui.set({ count: seen.size });
@@ -671,7 +708,14 @@ app.on("update", (dt: number) => {
   stillFor = mine.speed < 0.15 && !moving ? stillFor + dt : 0;
   follow.focus = !!near && stillFor >= FOCUS_AFTER;
   setFov(fitFov(FOLLOW_FOV, aspect()));
+  const inShrine = isInShrine(self ?? mine);
+  follow.setBoundsCenter(inShrine ? SHRINE_CENTER.x : 0, 0, inShrine ? 14 : CAVE_BOUNDS.maxRadius);
   follow.update(dt, target.set(mine.x, 0, mine.z));
+  if (performance.now() - shrineUiAt > 120 || ui.get().shrineSeat !== (self?.shrineSeat || "")) {
+    shrineUiAt = performance.now();
+    const nearest = inShrine && !self?.shrineSeat ? SHRINE_SEATS.filter(seat => !ui.get().shrine?.seats.find(s=>s.id===seat.id)?.occupant && Math.hypot(seat.x-mine.x,seat.z-mine.z)<=2).sort((a,b)=>Math.hypot(a.x-mine.x,a.z-mine.z)-Math.hypot(b.x-mine.x,b.z-mine.z))[0] : null;
+    ui.set({ position:{x:mine.x,z:mine.z}, shrineSeat:self?.shrineSeat || "", nearbyShrineSeat: nearest ? {id:nearest.id,label:nearest.label} : null });
+  }
   flames.update(camera); // sau hiệu ứng lửa của world (handler update của world chạy trước)
   // Camera bị ép sát đầu (lưng sát vách, sát đồ cao): avatar mình mờ dần rồi ẩn hẳn.
   setSelfOpacity(mine, smoothstep(SELF_FADE_TO, SELF_FADE_FROM, follow.boom));
@@ -698,7 +742,7 @@ app.on("postrender", () => {
   if (!session) return;
   tags.begin(camera);
   for (const [id, f] of fans) {
-    if (f.avatar) tags.place(id, f.hidden ? null : f.avatar.headTop);
+    if (f.avatar) tags.place(id, f.hidden || !f.avatar.entity.enabled ? null : f.avatar.headTop);
     else if (avatarsFailed) tags.place(id, tagAt.set(f.x, TAG_HEIGHT, f.z));
     else tags.place(id, null);
   }
@@ -724,7 +768,8 @@ async function join(name: string, invite = "") {
     const code = invite.trim();
     const res = await fetch(apiUrl, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      headers: { "Content-Type": "application/json", "X-T1-Request": "1" },
       body: JSON.stringify(code ? { name, invite: code } : { name }),
     });
     if (res.status === 403) {
@@ -738,7 +783,18 @@ async function join(name: string, invite = "") {
     if (!res.ok) throw new Error("Không thể đăng nhập");
     if (code) rememberInvite(code);
     const { ticket } = await res.json();
-    const room = await new Client(gameUrl).joinOrCreate("hub_v1", { ticket });
+    const targetRoom = requestedRoom(location.href);
+    if (new URL(location.href).searchParams.has("room") && !targetRoom) throw new Error("Link phòng không hợp lệ. Bỏ tham số room để tìm hang mới.");
+    const client = new Client(gameUrl);
+    let room: Room;
+    try {
+      room = targetRoom
+        ? await client.joinById(targetRoom, { ticket })
+        : await client.joinOrCreate("hub_v1", { ticket });
+    } catch (error) {
+      if (targetRoom) throw new Error("Không vào được phòng được mời: phòng có thể đã đầy hoặc đã đóng. Bỏ link phòng để tìm hang khác.");
+      throw error;
+    }
     joined = room;
     // Rớt mạng ngay sau khi vào (mặc định SDK: 5 s) vẫn tự nối lại vào đúng chỗ.
     room.reconnection.minUptime = 1000;
@@ -746,7 +802,7 @@ async function join(name: string, invite = "") {
     if (input.tickRate === undefined)
       throw new Error("Server chưa khai báo nhịp mô phỏng cố định");
     const predict = Predict.get(room, { mode: "lerp", delay: 100 });
-    predict.attachAll("players", { x: "lerp", z: "lerp" });
+    predict.attachAll("players", { x: "lerp", z: "lerp", snap: 2 });
     const s: Session = {
       room,
       predict,
@@ -758,6 +814,8 @@ async function join(name: string, invite = "") {
     session = s;
     keys.clear();
     chatLimit.reset();
+    mutedSenders.clear();
+    ui.set({ messages: [] });
     stillFor = 0;
 
     // Camera bám theo avatar mình, nhìn về cửa hang (-Z) lúc xuất hiện.
@@ -769,8 +827,11 @@ async function join(name: string, invite = "") {
     if (dist !== undefined) follow.distance = dist;
     follow.attach(canvas);
 
+    resident.name(name);
+    void resident.load(true);
     ui.set({
       connected: true,
+      selfId: room.sessionId, altar: null, altarBadge: false, shrine:null, shrineSeat:"",
       busy: false,
       panel: null,
       prompt: null,
@@ -781,9 +842,18 @@ async function join(name: string, invite = "") {
           : LOADING,
     });
 
-    room.onMessage("chat", (m: { name?: string; text: string }) =>
-      log(`${m.name || "Ai đó"}: ${m.text}`),
-    );
+    room.onMessage("shrineState", (value) => {
+      shrineClockOffset = value.serverNow - Date.now();
+      ui.set({ shrine:value });
+    });
+    room.send("shrineSync");
+    room.onMessage("altarState", (value) => ui.set({ altar: value }));
+    room.send("altarSync");
+    room.onMessage("altarComplete", () => ui.set({ altarBadge: true }));
+    room.onMessage("chat", (m: { id?: string; senderId?: string; name?: string; text: string }) => {
+      if (m.senderId && mutedSenders.has(m.senderId)) return;
+      log(`${m.name || "Ai đó"}: ${m.text}`, { messageId: m.id, senderId: m.senderId });
+    });
     // Thông báo riêng từ server: chat bị chặn (kiểm duyệt, bị mute), kết quả báo cáo…
     room.onMessage("notice", (text: unknown) => {
       if (typeof text === "string") log(`⚠ ${text}`);
@@ -812,6 +882,8 @@ async function join(name: string, invite = "") {
     });
     room.onReconnect(() => {
       s.dropped = false;
+      room.send("altarSync");
+      room.send("shrineSync");
     });
     room.onLeave((code: number) => {
       predict.dispose();
@@ -825,6 +897,7 @@ async function join(name: string, invite = "") {
       driftT = 0;
       ui.set({
         connected: false,
+        altar: null, altarBadge: false, selfId: "", shrine:null, shrineSeat:"", nearbyShrineSeat:null,
         busy: false,
         count: 0,
         panel: null,
@@ -858,9 +931,37 @@ mountUI({
   chat: sendChat,
   emote: sendEmote,
   interact,
+  visit: (id) => {
+    const landmark = landmarks.find(l => l.id === id); const f=me();
+    if (!landmark || !f) return;
+    const radius=id==='altar'||id==='rest'?3:CAVE_STALL_RADIUS;
+    keys.clear();
+    if (Math.hypot(f.x-landmark.x,f.z-landmark.z)<=radius) ui.set({panel:id,destination:null});
+    else ui.set({panel:null,destination:id});
+  },
   leave: () => {
     keys.clear();
     void session?.room.leave();
+  },
+  report: (messageId, reason) => session?.room.send("report", { messageId, reason }),
+  mute: (senderId) => {
+    mutedSenders.add(senderId);
+    ui.removeSender(senderId);
+    ui.set({ status: "Đã ẩn tin của người này trong phiên hiện tại. Vào lại hang để bỏ ẩn." });
+  },
+  shrine: (request) => {
+    keys.clear(); session?.room.send("shrine", request);
+    ui.set({panel:null});
+  },
+  altar: (action, preset) => {
+    keys.clear();
+    session?.room.send("altar", { action, ...(preset ? { preset } : {}) });
+  },
+  copyInvite: async () => {
+    if (!session) return;
+    const url = roomInviteUrl(location.href, session.room.roomId);
+    try { await navigator.clipboard.writeText(url); ui.set({ status: "Đã sao chép link đúng phòng. Người được mời vẫn cần mã vào hang nếu có." }); }
+    catch { ui.set({ status: `Link phòng: ${url}` }); }
   },
   move: (key, down) => {
     if (down) keys.add(key);
@@ -868,10 +969,31 @@ mountUI({
   },
 });
 
+let seatPointer: {x:number;y:number;id:number;moved:boolean} | null = null;
+canvas.addEventListener("pointerdown", e => {
+  seatPointer=e.isPrimary && e.button===0 ? {x:e.clientX,y:e.clientY,id:e.pointerId,moved:false} : null;
+});
+canvas.addEventListener("pointermove", e => {
+  if(seatPointer && (e.pointerId!==seatPointer.id || Math.hypot(e.clientX-seatPointer.x,e.clientY-seatPointer.y)>6)) seatPointer.moved=true;
+});
+canvas.addEventListener("pointercancel",()=>{seatPointer=null;});
+canvas.addEventListener("pointerup", e => {
+  const down=seatPointer; seatPointer=null;
+  if (!down || down.moved || !e.isPrimary || e.button!==0 || e.pointerId!==down.id || Math.hypot(e.clientX-down.x,e.clientY-down.y)>6 || !session || ui.get().panel || !isInShrine(me() ?? {x:0,z:0})) return;
+  const rect=canvas.getBoundingClientRect(); const x=e.clientX-rect.left,y=e.clientY-rect.top;
+  const from=camera.camera!.screenToWorld(x,y,0); const to=camera.camera!.screenToWorld(x,y,100);
+  const dy=to.y-from.y; if(Math.abs(dy)<1e-6)return;
+  const t=(0.48-from.y)/dy; if(t<0||t>1)return;
+  const hx=from.x+(to.x-from.x)*t,hz=from.z+(to.z-from.z)*t;
+  const seat=SHRINE_SEATS.find(s=>Math.hypot(s.x-hx,s.z-hz)<0.68);
+  if(seat){keys.clear();session.room.send("shrine",{action:"sit",seatId:seat.id});}
+});
+
 /* ------------------------------------------------------------------ dev */
 
 const r = (v: number, k = 1000) => Math.round(v * k) / k;
 /** Trạng thái đọc được cho test headless (window.__game.snapshot()). */
+function selfShrineSeat() { return session ? playersOf(session.room)?.get(session.room.sessionId)?.shrineSeat || "" : ""; }
 function snapshot() {
   const s = session,
     mine = me(),
@@ -891,6 +1013,7 @@ function snapshot() {
           speed: r(mine.speed, 100),
           hidden: mine.hidden,
           opacity: selfOpacity,
+          shrineSeat: selfShrineSeat(),
         }
       : null,
     camera: {

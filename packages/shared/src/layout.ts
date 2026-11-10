@@ -1,3 +1,4 @@
+import { CAVE_STALLS, CAVE_SHRINE_GATE, stallApproach, type CaveStallId } from "./stalls.js";
 /**
  * Bố cục "Hang trú thua" theo concept v3 (design/concepts/v3/01–04): bảng đặt mọi model GLB của
  * hub và collider tròn của chúng. Đây là nguồn sự thật duy nhất: client dựng cảnh từ
@@ -76,7 +77,7 @@ export interface Placement {
   /** Tên node con của GLB cần ẩn (ví dụ "blanket" của giường khi đắp chăn khác lên). */
   readonly hide?: readonly string[];
 }
-export type LandmarkId = "memory" | "rest" | "tv";
+export type LandmarkId = CaveStallId | "rest" | "altar";
 export interface Landmark {
   readonly id: LandmarkId;
   readonly name: string;
@@ -892,8 +893,12 @@ const LANDMARK_SPOTS = [
 
 /* ---------------------------------------------------------------- đá vụn rải nền */
 
+const stallDesks: Placement[] = CAVE_STALLS.filter(s => s.id === "checkin" || s.id === "shop")
+  .map(s => ({ asset: M.crateLarge, x: s.x, z: s.z, yaw: s.yaw,
+    colliders: [{ dx: 0, dz: 0, r: 0.95 }] }));
 const SOLID: Placement[] = [
   ...fire,
+  ...stallDesks,
   ...rank01,
   ...lowTable,
   ...rank02,
@@ -983,14 +988,17 @@ export const HUB_PLACEMENTS: readonly Placement[] = [
 
 /** Điểm tương tác (E): chỗ đứng nhìn đồ vật, ~1,5–2 m trước mặt nó. */
 export const HUB_LANDMARKS: readonly Landmark[] = [
-  { id: "memory", name: "Vách ký ức", ...LANDMARK_SPOTS[0] },
+  ...CAVE_STALLS.map(s => ({ id: s.id, name: s.name, ...stallApproach(s) })),
   { id: "rest", name: "Góc thâm niên", ...LANDMARK_SPOTS[1] },
-  { id: "tv", name: "TV trú thua", ...LANDMARK_SPOTS[2] },
+  { id: "altar", name: "Cửa điện thờ Faker", x: CAVE_SHRINE_GATE.x, z: CAVE_SHRINE_GATE.z },
 ];
 
 /** Gốc + hướng nhìn (yaw) của từng vùng: camera xem trước, debug. */
 export const HUB_ZONES = {
   campfire: { x: 0, z: 0, yaw: 0 },
+  checkin: CAVE_STALLS[0],
+  shop: CAVE_STALLS[1],
+  altar: CAVE_SHRINE_GATE,
   tv: TV,
   water: PUDDLE,
   memory: MEMORY,

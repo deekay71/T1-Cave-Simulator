@@ -42,6 +42,8 @@ import {
 import { applyPose, attachHeld, Breather } from "./world/npc.js";
 import { hubViews, type CameraView } from "./world/views.js";
 import { createWaterGlints, type GlintSource } from "./world/water.js";
+import { buildShrine } from "./world/shrine.js";
+import { buildCaveStalls } from "./world/stalls.js";
 
 export type { LandmarkId } from "@te-liet/shared";
 export type { CameraView } from "./world/views.js";
@@ -415,6 +417,8 @@ export function createWorld(app: pc.AppBase, opts: WorldOptions = {}): World {
   app.scene.lighting.shadowsEnabled = true;
   const root = new pc.Entity("hang-tru-thua");
   app.root.addChild(root);
+  buildShrine(app, root);
+  buildCaveStalls(app, root, withNpcs);
   const fill = new pc.Entity("cave-fill");
   fill.addComponent("light", {
     type: "directional",

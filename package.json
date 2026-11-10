@@ -1,7 +1,7 @@
 {
   "name": "te-liet",
   "version": "0.1.0",
-  "description": "Tê Liệt — 3D multiplayer social hub foundation",
+  "description": "T\u00ea Li\u1ec7t \u2014 3D multiplayer social hub foundation",
   "scripts": {
     "dev:api": "tsx watch apps/api/src/index.ts",
     "dev:game": "tsx watch apps/game/src/index.ts",
@@ -15,7 +15,11 @@
     "db:migrate": "tsx scripts/migrate.ts",
     "start:api": "node dist/server/api.mjs",
     "start:game": "node dist/server/game.mjs",
-    "start:migrate": "node dist/server/migrate.mjs"
+    "start:migrate": "node dist/server/migrate.mjs",
+    "dev:matches": "tsx apps/api/src/matches/worker.ts",
+    "start:matches": "node dist/server/matches.mjs",
+    "start:api:local": "node --env-file=.env.pandascore dist/server/api.mjs",
+    "start:matches:local": "node --env-file=.env.pandascore dist/server/matches.mjs"
   },
   "keywords": [],
   "author": "",

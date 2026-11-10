@@ -7,6 +7,7 @@ COPY apps/game/package.json apps/game/package.json
 COPY apps/web/package.json apps/web/package.json
 COPY packages/shared/package.json packages/shared/package.json
 COPY packages/auth/package.json packages/auth/package.json
+COPY packages/security/package.json packages/security/package.json
 RUN npm ci
 COPY . .
 RUN npm run build
@@ -21,6 +22,7 @@ COPY apps/game/package.json apps/game/package.json
 COPY apps/web/package.json apps/web/package.json
 COPY packages/shared/package.json packages/shared/package.json
 COPY packages/auth/package.json packages/auth/package.json
+COPY packages/security/package.json packages/security/package.json
 RUN npm ci --omit=dev && npm cache clean --force
 COPY --from=build /app/dist/server ./dist/server
 COPY db ./db

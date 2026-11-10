@@ -53,6 +53,7 @@ export interface FollowCamera {
   toWorldAxes(right: number, forward: number): Axes;
   /** Look along a heading (deg) and jump there on the next update (spawn / teleport). */
   snapBehind(yawDeg: number): void;
+  setBoundsCenter(x: number, z: number, radius: number): void;
   attach(el: HTMLElement): void;
   detach(): void;
   yaw: number;
@@ -187,6 +188,12 @@ class OrbitFollowCamera implements FollowCamera {
 
   snapBehind(yawDeg: number): void {
     this.yaw = yawDeg;
+    this.snap = true;
+  }
+
+  setBoundsCenter(x: number, z: number, radius: number): void {
+    if ((this.walls.centerX ?? 0) === x && (this.walls.centerZ ?? 0) === z && this.walls.maxRadius === radius) return;
+    this.walls.centerX = x; this.walls.centerZ = z; this.walls.maxRadius = radius;
     this.snap = true;
   }
 

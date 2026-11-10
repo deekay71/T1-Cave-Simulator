@@ -7,3 +7,5 @@ dist/
 reports/
 .dev-keys/
 .renders/
+*.log
+.DS_Store

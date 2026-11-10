@@ -207,8 +207,12 @@ test("đĩa quanh điểm xuất hiện trống", () => {
 
 test("điểm tương tác đứng được: trong hang, ngoài mọi vật cản", () => {
   assert.deepEqual(HUB_LANDMARKS.map((l) => l.id).sort(), [
+    "altar",
+    "checkin",
     "memory",
+    "quiz",
     "rest",
+    "shop",
     "tv",
   ]);
   for (const l of HUB_LANDMARKS) {
@@ -218,14 +222,20 @@ test("điểm tương tác đứng được: trong hang, ngoài mọi vật cả
   }
 });
 
-test("từ điểm xuất hiện đi thẳng tới từng điểm tương tác, không xuyên vật cản", () => {
+test("từ điểm xuất hiện đi tới từng điểm tương tác, vòng qua lửa khi tới cửa, không xuyên vật cản", () => {
   for (const r of [0, 0.5, 0.999])
     for (const l of HUB_LANDMARKS) {
       const p = spawnPoint(() => r);
+      // The wall door lies behind the campfire. Follow the open right-hand aisle,
+      // rather than asserting that a straight line can pass through the fire.
+      const route = l.id === "altar" ? [{ x: 4, z: 5 }, { x: 4, z: -7 }, l] : [l];
+      let waypoint = 0;
       let near = Infinity;
       for (let i = 0; i < 40 / STEP && near > 0.5; i++) {
-        const dx = l.x - p.x,
-          dz = l.z - p.z,
+        const target = route[waypoint];
+        if (Math.hypot(target.x - p.x, target.z - p.z) < 1.2 && waypoint < route.length - 1) waypoint++;
+        const dx = route[waypoint].x - p.x,
+          dz = route[waypoint].z - p.z,
           len = Math.hypot(dx, dz);
         applyInput(
           p,

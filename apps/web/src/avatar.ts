@@ -26,6 +26,7 @@
  * No per-frame allocations: all scratch quaternions are owned by the avatar.
  */
 import * as pc from "playcanvas";
+import { ProgressionVisuals } from "./avatarProgression.js";
 import {
   LEG,
   WALK_DEFAULT,
@@ -41,6 +42,7 @@ import {
   type WalkExtremes,
 } from "./avatarMath.js";
 import { instantiateModel, loadModelContainer } from "./models.js";
+import { SHRINE_GESTURE_MS, SHRINE_SEAT_HEIGHT } from "../../../packages/shared/src/shrine.js";
 
 /** Character assets in manifest order. Changing this list changes every player's variant. */
 export const AVATAR_VARIANTS: readonly string[] = Object.freeze([
@@ -62,6 +64,7 @@ export function variantFor(key: string): string {
 }
 
 export type AvatarEmote = "wave" | "laugh" | "cheer";
+export type ShrineGesture = "pray" | "bow";
 
 export interface Avatar {
   /** Root at the feet, facing +Z. The caller sets world position and yaw. */
@@ -70,6 +73,10 @@ export interface Avatar {
   update(dt: number, speed: number): void;
   /** ~1.5 s one-shot layered over idle / walk. */
   emote(name: AvatarEmote): void;
+  /** Call before update. Root stays at floor level, facing the shrine centre. */
+  setShrinePose(seated: boolean, gesture: ShrineGesture | null, elapsedSeconds: number): void;
+  /** Local visual preview; ranks 1 rookie, 2 oxygen, 3 walker, 4 wheelchair, 5 bed. */
+  setProgression(rank: number, cosmeticId?: string | null): void;
   /** World point for a name tag (manifest anchor name_tag: 0.22 m over the head), refreshed in update(). */
   readonly headTop: pc.Vec3;
   destroy(): void;
@@ -341,6 +348,11 @@ class FanAvatar implements Avatar {
     { name: null, t: 0, fade: 1 },
   ];
   private dead = false;
+  private seated = false;
+  private rank = 1;
+  private readonly progression: ProgressionVisuals;
+  private shrineGesture: ShrineGesture | null = null;
+  private shrineElapsed = 0;
 
   constructor(app: pc.AppBase, data: VariantData, seed: number) {
     this.data = data;
@@ -355,6 +367,7 @@ class FanAvatar implements Avatar {
       return node;
     });
     this.head = this.nodes[HEAD];
+    this.progression = new ProgressionVisuals(this.entity, model);
     this.qi = JOINTS.map(() => new pc.Quat());
     this.qw = JOINTS.map(() => new pc.Quat());
     this.q = JOINTS.map(() => new pc.Quat());
@@ -366,7 +379,7 @@ class FanAvatar implements Avatar {
   }
 
   emote(name: AvatarEmote): void {
-    if (this.dead || (name !== "wave" && name !== "laugh" && name !== "cheer")) return;
+    if (this.dead || this.seated || (name !== "wave" && name !== "laugh" && name !== "cheer")) return;
     const [cur, prev] = this.emotes;
     if (cur.name && envelope(cur.t) > 0.02) {
       // let the interrupted emote fade out under the new one
@@ -379,11 +392,45 @@ class FanAvatar implements Avatar {
     cur.fade = 1;
   }
 
+  setProgression(rank: number, cosmeticId: string | null = null): void {
+    if (this.dead) return;
+    this.rank = Number.isFinite(rank) ? Math.max(1, Math.min(5, Math.floor(rank))) : 1;
+    this.progression.set(this.rank, cosmeticId);
+  }
+
+  setShrinePose(seated: boolean, gesture: ShrineGesture | null, elapsedSeconds: number): void {
+    if (this.dead) return;
+    if (seated !== this.seated) {
+      this.speed = this.walk = this.shift = 0;
+      for (const slot of this.emotes) slot.name = null;
+    }
+    this.seated = seated;
+    this.shrineGesture = seated && (gesture === "pray" || gesture === "bow") ? gesture : null;
+    this.shrineElapsed = Math.max(0, Number.isFinite(elapsedSeconds) ? elapsedSeconds : 0);
+  }
+
   update(dt: number, speed: number): void {
     if (this.dead) return;
     dt = clamp(Number.isFinite(dt) ? dt : 0, 0, 0.1);
     const sp = clamp(Number.isFinite(speed) ? speed : 0, 0, 8);
     this.time += dt;
+    this.progression.equipment.enabled = !this.seated;
+    this.progression.setShrineSeated(this.seated);
+    if (this.seated || this.rank === 4) {
+      this.shrineLayer();
+      return;
+    }
+    if (this.rank === 5) {
+      for (let j = 0; j < N; j++) this.nodes[j].setLocalEulerAngles(0, 0, 0);
+      this.nodes[HIPS].setLocalPosition(0, 0.79, -0.2);
+      this.nodes[HIPS].setLocalEulerAngles(88, 0, 0);
+      this.nodes[HEAD].setLocalEulerAngles(-12, 0, 0);
+      this.nodes[ALL].setLocalEulerAngles(-35, 0, 0);
+      this.nodes[ALR].setLocalEulerAngles(-35, 0, 0);
+      this.head.getWorldTransform().transformPoint(this.data.headTop, this.headTop);
+      this.headTop.y += this.data.tagGap;
+      return;
+    }
     this.speed += (sp - this.speed) * (1 - Math.exp(-dt / 0.06));
     const goal = smoothstep(0.08, 0.45, this.speed);
     const ramp = dt / 0.15;
@@ -401,6 +448,12 @@ class FanAvatar implements Avatar {
     }
 
     this.emoteLayer(dt);
+    if (this.rank === 3) {
+      q[AUL].setFromEulerAngles(-25, 0, -8);
+      q[AUR].setFromEulerAngles(-25, 0, 8);
+      q[ALL].setFromEulerAngles(-42, 0, 0);
+      q[ALR].setFromEulerAngles(-42, 0, 0);
+    }
 
     // hips height: the lower shoe on the floor, from the blended leg swing (X) angles
     const l = this.legL,
@@ -424,6 +477,59 @@ class FanAvatar implements Avatar {
     nodes[HIPS].setLocalPosition(SHIFT_M * sh * iw, hipsY, 0);
     for (let j = 0; j < N; j++) nodes[j].setLocalRotation(q[j]);
 
+    this.head.getWorldTransform().transformPoint(this.data.headTop, this.headTop);
+    this.headTop.y += this.data.tagGap;
+  }
+
+  /** Rigid rig: thigh underside on a 0.48 m stone, vertical shins and grounded soles. */
+  private shrineLayer() {
+    const q = this.q;
+    const breath = Math.sin(this.time * this.breathHz * Math.PI * 2 + this.breathPhase);
+    // The mesh's thigh underside is 0.0948 m below the hip pivot. Solve instead of
+    // translating the standing avatar, so the shoes remain at y=0 on all variants.
+    const hipY = SHRINE_SEAT_HEIGHT + 0.0948;
+    const thigh = -Math.acos((hipY - LEG.shin) / LEG.thigh) * 180 / Math.PI;
+    q[HIPS].setFromEulerAngles(0, 0, 0);
+    q[SPINE].setFromEulerAngles(5 + breath * 0.65, 0, 0);
+    q[NECK].setFromEulerAngles(-2, 0, 0);
+    q[HEAD].setFromEulerAngles(-2 + breath * 0.35, 0, 0);
+    q[LUL].setFromEulerAngles(thigh, 0, 0);
+    q[LUR].setFromEulerAngles(thigh, 0, 0);
+    q[LLL].setFromEulerAngles(-thigh, 0, 0);
+    q[LLR].setFromEulerAngles(-thigh, 0, 0);
+    q[AUL].setFromEulerAngles(2, 0, -28);
+    q[AUR].setFromEulerAngles(2, 0, 28);
+    q[ALL].setFromEulerAngles(-75, 0, -3);
+    q[ALR].setFromEulerAngles(-75, 0, 3);
+
+    // A complete three-second loop starts/ends at seated rest. The authoritative
+    // gesture clock is supplied by the caller, so remote players share the motion.
+    const duration = SHRINE_GESTURE_MS / 1000;
+    const t = (this.shrineElapsed % duration) * 3 / duration;
+    const w = smoothstep(0, 0.55, t) * (1 - smoothstep(2.35, 3, t));
+    const over = (j: number, x: number, y: number, z: number) =>
+      slerp(q[j], q[j], this.tq.setFromEulerAngles(x, y, z), w);
+    if (this.shrineGesture === "pray") {
+      const lift = 142 + 3 * Math.sin(t * Math.PI * 2 / 3);
+      over(AUL, -20, -12, lift);
+      over(AUR, -20, 12, -lift);
+      over(ALL, -24, -12, 0);
+      over(ALR, -24, 12, 0);
+      over(SPINE, -4, 0, 0);
+      over(HEAD, -16, 0, 0);
+    } else if (this.shrineGesture === "bow") {
+      const bow = Math.sin(Math.PI * clamp((t - 0.2) / 2.6, 0, 1));
+      over(SPINE, 5 + 49 * bow, 0, 0);
+      over(NECK, 8 + 6 * bow, 0, 0);
+      over(HEAD, 13 + 9 * bow, 0, 0);
+      // Palms together in front of the chest; the whole torso bows over the knees.
+      over(AUL, -32, -8, -24);
+      over(AUR, -32, 8, 24);
+      over(ALL, -104, -44, -10);
+      over(ALR, -104, 44, 10);
+    }
+    this.nodes[HIPS].setLocalPosition(0, hipY + LEG.hipDrop, -0.05);
+    for (let j = 0; j < N; j++) this.nodes[j].setLocalRotation(q[j]);
     this.head.getWorldTransform().transformPoint(this.data.headTop, this.headTop);
     this.headTop.y += this.data.tagGap;
   }
@@ -560,6 +666,7 @@ class FanAvatar implements Avatar {
   destroy(): void {
     if (this.dead) return;
     this.dead = true;
+    this.progression.destroy();
     this.entity.destroy();
   }
 }

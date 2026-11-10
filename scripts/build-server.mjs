@@ -6,7 +6,7 @@ import { readFile } from 'node:fs/promises';
 const pkg = JSON.parse(await readFile('package.json', 'utf8'));
 
 await build({
-  entryPoints: { api: 'apps/api/src/index.ts', game: 'apps/game/src/index.ts', migrate: 'scripts/migrate.ts' },
+  entryPoints: { matches: 'apps/api/src/matches/worker.ts', api: 'apps/api/src/index.ts', game: 'apps/game/src/index.ts', migrate: 'scripts/migrate.ts' },
   outdir: 'dist/server',
   outExtension: { '.js': '.mjs' },
   bundle: true,

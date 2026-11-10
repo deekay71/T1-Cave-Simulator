@@ -23,6 +23,9 @@ services:
       INVITE_CODE: ${INVITE_CODE:-}
       GUEST_RATE_LIMIT: ${GUEST_RATE_LIMIT:-120}
     restart: unless-stopped
+  matches:
+    environment:
+      DATABASE_URL: postgres://te_liet:${POSTGRES_PASSWORD}@postgres:5432/te_liet
   game:
     restart: unless-stopped
   web:

@@ -289,3 +289,16 @@ test("fitFov: màn ngang giữ 50°, màn dọc nới để thấy ≥ 60° ngan
   assert.equal(fitFov(64, 0), 64);
   assert.equal(fitFov(64, Number.NaN), 64);
 });
+
+test('translated sanctuary camera bounds behave like origin bounds', () => {
+  const dir = { x: 0.6, y: -0.3, z: 0.74 };
+  const a = containBoom({x:2,y:1.3,z:3}, dir, 7, {maxRadius:8.8,minY:0.6,maxY:9});
+  const b = containBoom({x:50,y:1.3,z:3}, dir, 7, {maxRadius:8.8,minY:0.6,maxY:9,centerX:48,centerZ:0});
+  assert.equal(a,b);
+});
+test('elevated shrine lintel allows camera below but excludes its solid beam', () => {
+  const block = {x:0,z:4,r:1,top:4.6,bottom:3.4};
+  assert.equal(containBoom({x:0,y:1.3,z:0},{x:0,y:0,z:-1},4,{maxRadius:14,minY:.6,maxY:9,blockers:[block]}),4);
+  const b=containBoom({x:0,y:1.3,z:0},{x:0,y:-.6,z:-.8},5,{maxRadius:14,minY:.6,maxY:9,blockers:[block]});
+  assert.ok(b<5);
+});

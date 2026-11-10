@@ -61,11 +61,15 @@ export interface Blocker {
   z: number;
   r: number;
   top: number;
+  /** Elevated architecture can leave clear space below (e.g. an arch lintel). */
+  bottom?: number;
 }
 
 /** Where the camera may be: a vertical cylinder around the cave centre, between two heights. */
 export interface CameraBounds {
   maxRadius: number;
+  centerX?: number;
+  centerZ?: number;
   minY: number;
   maxY: number;
   /**
@@ -89,9 +93,10 @@ export function containBoom(pivot: V3, dir: V3, want: number, bounds: CameraBoun
   else if (dir.y > 1e-9) b = Math.min(b, (pivot.y - bounds.minY) / dir.y);
   const a = dir.x * dir.x + dir.z * dir.z;
   if (a > 1e-12) {
-    const r = Math.max(bounds.maxRadius, Math.sqrt(pivot.x * pivot.x + pivot.z * pivot.z) + 0.3);
-    const pd = pivot.x * dir.x + pivot.z * dir.z;
-    const c = pivot.x * pivot.x + pivot.z * pivot.z - r * r; // <= 0
+    const px = pivot.x - (bounds.centerX ?? 0), pz = pivot.z - (bounds.centerZ ?? 0);
+    const r = Math.max(bounds.maxRadius, Math.sqrt(px * px + pz * pz) + 0.3);
+    const pd = px * dir.x + pz * dir.z;
+    const c = px * px + pz * pz - r * r; // <= 0
     b = Math.min(b, (pd + Math.sqrt(Math.max(0, pd * pd - a * c))) / a);
   }
   if (bounds.blockers?.length && b > 0) b = outsideBlockers(pivot, dir, b, bounds.blockers);
@@ -122,17 +127,18 @@ export function outsideBlockers(pivot: V3, dir: V3, b: number, blockers: readonl
 function blockerEntry(pivot: V3, dir: V3, b: number, k: Blocker): number {
   const cx = pivot.x - dir.x * b - k.x,
     cz = pivot.z - dir.z * b - k.z;
-  if (cx * cx + cz * cz >= k.r * k.r || pivot.y - dir.y * b >= k.top) return b;
+  if (cx * cx + cz * cz >= k.r * k.r || pivot.y - dir.y * b >= k.top || pivot.y - dir.y * b <= (k.bottom ?? -Infinity)) return b;
   const px = pivot.x - k.x,
     pz = pivot.z - k.z;
   const c = px * px + pz * pz - k.r * k.r;
   const a = dir.x * dir.x + dir.z * dir.z;
-  if (c <= 0 || a < 1e-12) return b;
+  if ((c <= 0 && k.bottom === undefined) || a < 1e-12) return b;
   // |p - d t|^2 = r^2: the smaller root is where the boom enters the footprint
   const pd = px * dir.x + pz * dir.z;
-  let t = (pd - Math.sqrt(Math.max(0, pd * pd - a * c))) / a;
+  let t = c <= 0 ? 0 : (pd - Math.sqrt(Math.max(0, pd * pd - a * c))) / a;
   // looking up, the camera sinks as the boom grows: it may enter through the top instead
   if (dir.y > 1e-9 && pivot.y > k.top) t = Math.max(t, (pivot.y - k.top) / dir.y);
+  if (dir.y < -1e-9 && k.bottom !== undefined && pivot.y < k.bottom) t = Math.max(t, (pivot.y - k.bottom) / dir.y);
   return Math.max(0, Math.min(b, t - 1e-6));
 }
 
