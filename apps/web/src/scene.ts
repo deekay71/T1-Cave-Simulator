@@ -90,7 +90,7 @@ export interface World {
   /**
    * Lighting mood. "day" (default): the bright look of the previews and the login scene. "cave" (the
    * game): the hall-wide fill, bounce and wall lights drop to a fraction, the haze turns black and
-   * closes in (sight ends ~27 m from the camera) and the player carries a flickering lantern; fires,
+   * closes in (sight ends ~22 m from the camera) and the player carries a flickering lantern; fires,
    * torches, lanterns and the wall screen stay as they are and become the landmarks. "shrine": the
    * island's own lights, gentler darkness, no lantern.
    */
@@ -169,14 +169,17 @@ const LOOK = {
    * omnis, the black haze, a stronger vignette, and the lantern the player carries.
    */
   dark: {
-    ambient: 0.3,
-    fill: 0.18,
-    hall: 0.22,
-    side: 0.4,
-    focal: 0.85,
-    fog: { color: "#050302", start: 8, end: 27 },
+    ambient: 0.13,
+    fill: 0.05,
+    hall: 0.07,
+    side: 0.18,
+    focal: 0.5,
+    /** Fires, torches, lanterns and candles: dimmer pools of light that flicker harder. */
+    props: 0.42,
+    flicker: 2.4,
+    fog: { color: "#040302", start: 6, end: 22 },
     vignette: 0.5,
-    lantern: { y: 2.1, color: "#FFC98F", intensity: 1.25, range: 10.5, flicker: 0.16, hz: 2.3 },
+    lantern: { y: 2.1, color: "#FFC98F", intensity: 1.05, range: 8.5, flicker: 0.2, hz: 2.3 },
     /** In the shrine (its own lights): gentler darkness, no lantern. */
     shrine: { ambient: 0.75, fog: { start: 14, end: 60 } },
   },
@@ -579,6 +582,8 @@ export function createWorld(app: pc.AppBase, opts: WorldOptions = {}): World {
     mood = next;
     const D = LOOK.dark;
     for (const h of hall) h.light.intensity = h.base * (mood === "cave" ? h.k : 1);
+    propLights.k = mood === "cave" ? D.props : 1;
+    propLights.flicker = mood === "cave" ? D.flicker : 1;
     const amb = mood === "cave" ? D.ambient : mood === "shrine" ? D.shrine.ambient : 1;
     app.scene.ambientLight = new pc.Color(...LOOK.ambient.map((c) => c * amb));
     const f = mood === "cave" ? D.fog : mood === "shrine" ? { color: D.fog.color, ...D.shrine.fog } : LOOK.fog;
@@ -656,6 +661,9 @@ export function createWorld(app: pc.AppBase, opts: WorldOptions = {}): World {
     },
   };
 }
+
+/** Mood factors on every prop light (fires, torches, lanterns): brightness and flicker depth. */
+const propLights = { k: 1, flicker: 1 };
 
 /** NPC fans that can answer an emote: a bounce `want` seconds from now (set by World.cheerNear). */
 interface NpcHop {
@@ -1051,7 +1059,7 @@ function addLights(
       const light = e.light!;
       animators.push((t) => {
         light.intensity =
-          intensity * (1 + look.flicker * wobble(t, look.hz, seed + 3.1));
+          intensity * propLights.k * (1 + look.flicker * propLights.flicker * wobble(t, look.hz, seed + 3.1));
         if (jitter)
           e.setPosition(
             at.x + jitter * wobble(t, 1.3, seed + 5),
