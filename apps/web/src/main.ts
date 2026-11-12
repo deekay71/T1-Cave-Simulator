@@ -95,8 +95,10 @@ const autojoin = devView ? null : dev?.get("autojoin")?.trim() || null;
 /* ------------------------------------------------------------------ cảnh */
 
 const canvas = document.querySelector<HTMLCanvasElement>("#scene")!;
+// alpha: the big screen's video window draws transparent pixels where a YouTube clip shows through
+// from behind the canvas (world/youtubeScreen.ts). Everything else stays opaque.
 const app = new pc.Application(canvas, {
-  graphicsDeviceOptions: { antialias: true, alpha: false },
+  graphicsDeviceOptions: { antialias: true, alpha: true },
 });
 app.setCanvasFillMode(pc.FILLMODE_FILL_WINDOW);
 app.setCanvasResolution(pc.RESOLUTION_AUTO);
@@ -115,6 +117,8 @@ const flames = createNearFlames();
 /** Audio khi vào điện thờ, chỉ người chơi này nghe (tệp do người host cung cấp, xem shrineAudio.ts). */
 const shrineAudio = createShrineAudio(import.meta.env.VITE_SHRINE_AUDIO_URL || "/audio/shrine-entry.mp3");
 shrineAudio.onChange((state) => ui.set({ shrineAudio: state }));
+// Tiếng clip trên màn hình lớn: tắt cho tới khi người chơi bật, nhỏ dần theo khoảng cách.
+world.screenSound.onChange((state) => ui.set({ screenSound: state }));
 /** Vòng tròn trắng dưới chân mọi vật ngồi được (ghế đẩu, thùng, đá thấp). */
 const seatRings = buildSeatRings(app, app.root, CAVE_SEATS);
 const takenSeats = new Set<string>();
@@ -1136,6 +1140,7 @@ mountUI({
   interact,
   seat: toggleSeat,
   toggleShrineAudio: () => shrineAudio.toggle(),
+  toggleScreenSound: () => world.screenSound.toggle(),
   visit: (id) => {
     const landmark = landmarks.find(l => l.id === id); const f=me();
     if (!landmark || !f) return;

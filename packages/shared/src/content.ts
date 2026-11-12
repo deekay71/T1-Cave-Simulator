@@ -11,17 +11,25 @@ import { z } from "zod";
 
 const Id = z.string().regex(/^[a-z0-9][a-z0-9-]{0,39}$/, "id: chữ thường, số, gạch ngang (tối đa 40)");
 
+/** Id (11 ký tự) của một link video YouTube (watch, youtu.be, shorts, embed, live), không phải thì null. */
+export function youtubeId(url: string): string | null {
+  const m = /^https:\/\/(?:www\.|m\.)?(?:youtube(?:-nocookie)?\.com\/(?:watch\?(?:[^#\s]*&)?v=|shorts\/|embed\/|live\/)|youtu\.be\/)([A-Za-z0-9_-]{11})(?:[?&#/][^\s]*)?$/.exec(url.trim());
+  return m ? m[1] : null;
+}
+
 /**
- * Nguồn video: để trống (chưa có tệp), đường dẫn trên chính site (/videos/abc.mp4) hoặc https://.
- * Màn hình 3D vẽ video thành texture nên cần một TỆP video (mp4/webm) cho phép CORS: link trang
- * YouTube / Twitch / Facebook không chiếu được.
+ * Nguồn video: để trống (chưa có tệp), đường dẫn trên chính site (/videos/abc.mp4), https:// tới một
+ * tệp mp4/webm cho phép CORS (vẽ thẳng lên màn hình 3D), hoặc link một video YouTube (phát bằng
+ * trình phát nhúng chính thức, đặt khớp vào ô màn hình; video phải cho phép nhúng).
+ * Twitch / Facebook / TikTok không dùng được.
  */
 export const VideoUrl = z
   .string()
   .trim()
   .max(500)
-  .refine((u) => u === "" || /^\/(?!\/)[^\s]*$/.test(u) || /^https:\/\/[^\s]+$/.test(u), "Đường dẫn phải bắt đầu bằng / hoặc https://")
-  .refine((u) => !/(youtube\.com|youtu\.be|twitch\.tv|facebook\.com|tiktok\.com)/i.test(u), "Link YouTube/Twitch/Facebook/TikTok không chiếu được trên màn hình 3D: cần tệp mp4/webm");
+  .refine((u) => u === "" || youtubeId(u) !== null || /^\/(?!\/)[^\s]*$/.test(u) || /^https:\/\/[^\s]+$/.test(u), "Đường dẫn phải bắt đầu bằng / hoặc https://")
+  .refine((u) => !/(youtube\.com|youtu\.be)/i.test(u) || youtubeId(u) !== null, "Link YouTube phải trỏ tới một video cụ thể (watch?v=…, youtu.be/…, shorts/…)")
+  .refine((u) => !/(twitch\.tv|facebook\.com|fb\.watch|tiktok\.com)/i.test(u), "Link Twitch/Facebook/TikTok không chiếu được: dùng link YouTube hoặc tệp mp4/webm");
 export const VIDEO_CATEGORIES = { coronation: "Đăng quang", highlight: "Highlight", tears: "Khoảnh khắc buồn", other: "Khác" } as const;
 export const ScreenVideo = z
   .object({

@@ -39,6 +39,8 @@ type Snapshot = {
   seat: "seated" | "near" | null;
   /** Audio khi vào điện thờ: không có tệp, đang bật, hoặc người chơi đã tắt. */
   shrineAudio: "none" | "on" | "muted";
+  /** Tiếng clip trên màn hình lớn: không có clip / tắt / bật. */
+  screenSound: "none" | "off" | "on";
   /** Điểm tương tác ở gần (bấm E hoặc chạm nút để mở bảng). */
   prompt: { id: string; name: string } | null;
   /** API yêu cầu mã mời (close test): hiện ô nhập mã trong form vào hang. */
@@ -59,6 +61,7 @@ let state: Snapshot = {
   autoWalk: false,
   seat: null,
   shrineAudio: "none",
+  screenSound: "none",
   prompt: null,
   needInvite: false,
   loginNotice: "",
@@ -221,6 +224,8 @@ export type Actions = {
   seat: () => void;
   /** Bật / tắt audio điện thờ (chỉ mình nghe). */
   toggleShrineAudio: () => void;
+  /** Bật / tắt tiếng clip trên màn hình lớn (chỉ mình nghe). */
+  toggleScreenSound: () => void;
   leave: () => void;
   copyInvite: () => Promise<void>;
   report: (messageId: string, reason: string) => void;
@@ -646,6 +651,7 @@ export function mountUI(actions: Actions) {
               <button onClick={() => ui.set({ panel: "map" })}>⌖ Các sạp trong hang</button>
               <button onClick={() => ui.set({ panel: "rest" })}>Hạng · Nhân dạng</button>
               <button onClick={() => void actions.copyInvite()}>Mời bạn</button>
+              {s.screenSound !== "none" && !isInShrine(s.position) && <button className={s.screenSound === "on" ? "screen-sound on" : "screen-sound"} aria-pressed={s.screenSound === "on"} onClick={() => actions.toggleScreenSound()} title="Tiếng clip trên màn hình lớn, chỉ bạn nghe">{s.screenSound === "on" ? "🔊 Tiếng màn hình" : "🔇 Tiếng màn hình"}</button>}
             </nav>
             {!s.shrineSeat && <div className="movement" role="group" aria-label="Di chuyển">
               {MOVES.map(([k, label]) => (

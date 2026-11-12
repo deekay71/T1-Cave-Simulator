@@ -9,12 +9,18 @@
  *   everyone in the cave sees the same moment. A clip that fails to load is skipped for a while.
  * - right 1/4: the T1 schedule from the match feed (matches/screenSlide.ts, never a score).
  *
+ * A YouTube link in the playlist plays in the official embedded player behind the canvas, seen
+ * through a transparent "hole" in the video window (world/youtubeScreen.ts); a file (mp4/webm) is
+ * drawn as a texture. Sound is off until the player turns it on (BigScreen.sound), and fades with
+ * the distance to the screen.
+ *
  * Both are unlit and fog-free, so they read across the dark cave. The canvas (bands + schedule) is
  * redrawn once a second; the video texture is uploaded only for new video frames, and only while
  * the camera is in the main cave.
  */
 import * as pc from 'playcanvas';
-import { HUB_SCREEN, VIDEO_CATEGORIES, type Placement, type ScreenVideo } from '@te-liet/shared';
+import { HUB_SCREEN, VIDEO_CATEGORIES, youtubeId, type Placement, type ScreenVideo } from '@te-liet/shared';
+import { createYoutubeScreen, type YoutubeScreen } from './youtubeScreen.js';
 import { content } from '../content/api.js';
 import { playlistAt } from './playlist.js';
 import { readMatches, type Feed } from '../matches/client.js';
@@ -52,10 +58,17 @@ export interface BigScreenOptions {
   /** Frozen world time: draw once, no polling, no blink, no video. */
   frozen?: boolean;
 }
+export type ScreenSound = 'none' | 'off' | 'on';
 export interface BigScreen {
   root: pc.Entity;
   /** Resolves when the first picture is on the glass. Never rejects. */
   ready: Promise<void>;
+  /** The clip's sound for this player: "none" while nothing plays. */
+  sound: {
+    readonly state: ScreenSound;
+    toggle(): void;
+    onChange(listener: (state: ScreenSound) => void): void;
+  };
 }
 
 function isFace(v: unknown): v is ScreenFace {
@@ -158,6 +171,8 @@ interface NowPlaying {
   progress: number;
   /** True once the video draws over VIDEO. */
   live: boolean;
+  /** A YouTube clip, shown only from close enough. */
+  remote: boolean;
 }
 /** Left 3/4: the title band, the video window (or a standby card) and the progress band. */
 function paintClip(ctx: CanvasRenderingContext2D, now: NowPlaying) {
@@ -212,7 +227,7 @@ function paintClip(ctx: CanvasRenderingContext2D, now: NowPlaying) {
     ctx.fillText('DEFEAT', VIDEO.w / 2 + 6, cy + 4);
     ctx.fillStyle = '#C9CFDA';
     ctx.fillText('DEFEAT', VIDEO.w / 2, cy);
-    line(ctx, now.clip ? 'Đang tải clip…' : 'Màn hình chờ', VIDEO.w / 2, VIDEO.y + VIDEO.h - 60, 600, 34, DIM, VIDEO.w * 0.8);
+    line(ctx, !now.clip ? 'Màn hình chờ' : now.remote ? 'Lại gần màn hình để xem clip' : 'Đang tải clip…', VIDEO.w / 2, VIDEO.y + VIDEO.h - 60, 600, 34, DIM, VIDEO.w * 0.8);
   }
   // progress band
   const y = VIDEO.y + VIDEO.h;
@@ -310,6 +325,40 @@ export function buildBigScreen(app: pc.AppBase, parent: pc.Entity, opts: BigScre
   };
   watchFrames();
 
+  // YouTube clips: the official player behind the canvas, seen through a transparent hole.
+  let yt: YoutubeScreen | null = null;
+  let ytShown = false;
+  let holeEntity: pc.Entity | null = null;
+  const holeMaterial = new pc.ShaderMaterial({
+    uniqueName: 'tl-screen-hole',
+    vertexGLSL: 'attribute vec3 aPosition; uniform mat4 matrix_model; uniform mat4 matrix_viewProjection; void main(void) { gl_Position = matrix_viewProjection * matrix_model * vec4(aPosition, 1.0); }',
+    fragmentGLSL: 'void main(void) { gl_FragColor = vec4(0.0); }',
+    attributes: { aPosition: pc.SEMANTIC_POSITION },
+  });
+  holeMaterial.update();
+  const youtube = () => {
+    if (!yt) {
+      yt = createYoutubeScreen();
+      yt.onError(() => {
+        if (playing?.url) failed.set(playing.url, Date.now());
+        playing = null;
+      });
+    }
+    return yt;
+  };
+
+  // Sound: off until this player turns it on; fades with the camera's distance to the screen.
+  let soundOn = false;
+  let distance = Infinity;
+  const soundListeners: ((s: ScreenSound) => void)[] = [];
+  let soundState: ScreenSound = 'none';
+  const setSoundState = (next: ScreenSound) => {
+    if (next === soundState) return;
+    soundState = next;
+    soundListeners.forEach((l) => l(next));
+  };
+  const volume = () => (soundOn && near ? Math.max(0.2, Math.min(1, 1.2 - distance / 40)) : 0);
+
   let clips: ScreenVideo[] = content((doc) => { clips = doc.videos; }).videos;
   const failed = new Map<string, number>();
   let playing: ScreenVideo | null = null;
@@ -321,15 +370,18 @@ export function buildBigScreen(app: pc.AppBase, parent: pc.Entity, opts: BigScre
   const playable = () => clips.filter((c) => c.enabled && c.url && !(Date.now() - (failed.get(c.url) ?? -Infinity) < RETRY_MS));
   const nowPlaying = (): NowPlaying => {
     const list = playable();
-    if (!list.length || opts.frozen) return { clip: null, next: null, progress: 0, live: false };
+    if (!list.length || opts.frozen) return { clip: null, next: null, progress: 0, live: false, remote: false };
     const clip = playing && list.includes(playing) ? playing : list[0];
     const i = list.indexOf(clip);
-    const d = video.duration;
+    const remote = youtubeId(clip.url) !== null;
+    const d = remote ? clip.durationSec ?? 0 : video.duration;
+    const t = remote ? yt?.time() ?? 0 : video.currentTime;
     return {
       clip,
       next: list[(i + 1) % list.length],
-      progress: Number.isFinite(d) && d > 0 ? video.currentTime / d : 0,
-      live: sourceSet && video.readyState >= 2 && !!videoEntity?.enabled,
+      progress: Number.isFinite(d) && d > 0 ? t / d : 0,
+      live: remote ? ytShown : sourceSet && video.readyState >= 2 && !!videoEntity?.enabled,
+      remote,
     };
   };
   const draw = (force = false) => {
@@ -350,6 +402,13 @@ export function buildBigScreen(app: pc.AppBase, parent: pc.Entity, opts: BigScre
   /** Start `clip` (from `offset` s when known). */
   const load = (clip: ScreenVideo, offset: number | null) => {
     playing = clip;
+    const id = youtubeId(clip.url);
+    if (id) {
+      if (sourceSet) { video.pause(); video.removeAttribute('src'); video.load(); sourceSet = false; }
+      youtube().play(id, offset ?? 0);
+      return;
+    }
+    yt?.stop();
     sourceSet = true;
     video.src = clip.url;
     const seek = () => {
@@ -369,22 +428,37 @@ export function buildBigScreen(app: pc.AppBase, parent: pc.Entity, opts: BigScre
     if (!list.length || playlistAt(list, Date.now())) return;
     load(list[(Math.max(0, list.indexOf(playing!)) + 1) % list.length], 0);
   });
+  /** Where the clip of `clip` is now (s): the YouTube player or the <video>. */
+  const position = (clip: ScreenVideo) => (youtubeId(clip.url) ? yt?.time() ?? null : video.readyState >= 1 ? video.currentTime : null);
   /** Once a second: follow the playlist clock, pause when nobody near can see it. */
   const steer = () => {
     if (opts.frozen) return;
     const list = playable();
+    setSoundState(list.length && near && !document.hidden ? (soundOn ? 'on' : 'off') : 'none');
     if (!list.length || !near || document.hidden) {
       if (!video.paused) video.pause();
-      if (!list.length && sourceSet) { video.removeAttribute('src'); video.load(); sourceSet = false; playing = null; }
+      if (yt && yt.state !== 'idle') { yt.stop(); ytShown = false; }
+      if (!list.length && sourceSet) { video.removeAttribute('src'); video.load(); sourceSet = false; }
+      if (!list.length) playing = null;
+      else if (yt) playing = null; // back near: start the YouTube clip again at the right second
       return;
     }
+    const loaded = (c: ScreenVideo) => c === playing && (youtubeId(c.url) ? yt !== null && yt.state !== 'idle' && yt.state !== 'error' : sourceSet);
     const at = playlistAt(list, Date.now());
     if (at) {
       const clip = list[at.index];
-      if (clip !== playing || !sourceSet) return load(clip, at.offset);
-      if (video.readyState >= 1 && Math.abs(video.currentTime - at.offset) > 2.5) video.currentTime = at.offset;
-    } else if (!playing || !list.includes(playing) || !sourceSet) return load(list[0], 0);
-    if (video.paused) void video.play().catch(() => undefined);
+      if (!loaded(clip)) return load(clip, at.offset);
+      const t = position(clip);
+      if (t !== null && Math.abs(t - at.offset) > 2.5) {
+        if (youtubeId(clip.url)) yt?.seek(at.offset);
+        else video.currentTime = at.offset;
+      }
+    } else if (!playing || !list.includes(playing) || !loaded(playing)) return load(list[0], 0);
+    if (playing && !youtubeId(playing.url) && video.paused) void video.play().catch(() => undefined);
+    const v = volume();
+    video.muted = v <= 0;
+    video.volume = v;
+    yt?.setVolume(playing && youtubeId(playing.url) ? v : 0);
   };
 
   const root = new pc.Entity('wall-screens');
@@ -415,13 +489,34 @@ export function buildBigScreen(app: pc.AppBase, parent: pc.Entity, opts: BigScre
     if (document.hidden) { clearTimeout(poll); request?.abort(); video.pause(); }
     else void refresh();
   };
-  let camera: pc.GraphNode | null = null;
+  let camera: pc.Entity | null = null;
   const screenAt = new pc.Vec3(HUB_SCREEN.x, 4.7, HUB_SCREEN.z);
+  const corner = new pc.Vec3(), view = new pc.Vec3(), projected = new pc.Vec3();
+  let halfW = 0, halfH = 0;
+  /** The video window's corners on screen (CSS px), or null when any is behind the camera. */
+  const windowCorners = (): [number, number][] | null => {
+    const cam = camera?.camera;
+    if (!cam || !holeEntity) return null;
+    const m = holeEntity.getWorldTransform();
+    const out: [number, number][] = [];
+    for (const [x, y] of [[-halfW, halfH], [halfW, halfH], [halfW, -halfH], [-halfW, -halfH]] as const) {
+      m.transformPoint(corner.set(x, y, 0), corner);
+      cam.viewMatrix.transformPoint(corner, view);
+      if (view.z > -cam.nearClip) return null;
+      cam.worldToScreen(corner, projected);
+      out.push([projected.x, projected.y]);
+    }
+    return out;
+  };
   const onUpdate = () => {
-    camera ??= app.root.findByName('camera');
+    camera ??= app.root.findByName('camera') as pc.Entity | null;
     const eye = camera?.getPosition();
-    near = !eye || eye.distance(screenAt) < WATCH_RANGE;
-    const show = sourceSet && video.readyState >= 2 && near;
+    distance = eye ? eye.distance(screenAt) : 0;
+    near = !eye || distance < WATCH_RANGE;
+    const remote = !!playing && youtubeId(playing.url) !== null;
+    ytShown = remote && near && !!yt ? yt.place(windowCorners()) : (yt?.place(null), false);
+    if (holeEntity && holeEntity.enabled !== ytShown) holeEntity.enabled = ytShown;
+    const show = !remote && sourceSet && video.readyState >= 2 && near;
     if (videoEntity && videoEntity.enabled !== show) videoEntity.enabled = show;
     if (!show || video.paused) return;
     // A new frame (or every frame where requestVideoFrameCallback is missing).
@@ -437,7 +532,8 @@ export function buildBigScreen(app: pc.AppBase, parent: pc.Entity, opts: BigScre
     app.off('update', onUpdate);
     document.removeEventListener('visibilitychange', visibility);
     video.pause(); video.removeAttribute('src'); video.load();
-    material.destroy(); texture.destroy(); videoMaterial.destroy(); videoTexture.destroy();
+    yt?.stop();
+    material.destroy(); texture.destroy(); videoMaterial.destroy(); videoTexture.destroy(); holeMaterial.destroy();
   };
 
   const ready = loadManifests(['furniture'], report)
@@ -459,6 +555,14 @@ export function buildBigScreen(app: pc.AppBase, parent: pc.Entity, opts: BigScre
       videoEntity.enabled = false;
       const dx = (VIDEO.x + VIDEO.w / 2 - W / 2) * k, dy = (H / 2 - (VIDEO.y + VIDEO.h / 2)) * k;
       root.addChild(placeOnGlass(videoEntity, HUB_SCREEN, face, dx, dy, 0.004));
+      // the hole the YouTube player shows through: same window, a hair further out
+      holeEntity = renderEntity('screen-hole', vMesh, holeMaterial);
+      holeEntity.render!.castShadows = false;
+      holeEntity.render!.receiveShadows = false;
+      holeEntity.enabled = false;
+      root.addChild(placeOnGlass(holeEntity, HUB_SCREEN, face, dx, dy, 0.006));
+      halfW = (VIDEO.w * k) / 2;
+      halfH = (VIDEO.h * k) / 2;
       root.on('destroy', () => { dispose(); for (const m of meshes) m.destroy(); });
       // The web font may arrive after the first picture: draw again with it.
       void document.fonts?.ready.then(() => { if (!disposed) draw(true); });
@@ -471,5 +575,24 @@ export function buildBigScreen(app: pc.AppBase, parent: pc.Entity, opts: BigScre
       void refresh();
     })
     .catch((err: unknown) => report(`failed: ${err instanceof Error ? err.message : String(err)}`));
-  return { root, ready };
+  return {
+    root,
+    ready,
+    sound: {
+      get state() {
+        return soundState;
+      },
+      toggle() {
+        soundOn = !soundOn;
+        if (soundState !== 'none') setSoundState(soundOn ? 'on' : 'off');
+        const v = volume();
+        video.muted = v <= 0;
+        video.volume = v;
+        yt?.setVolume(playing && youtubeId(playing.url) ? v : 0);
+      },
+      onChange(listener) {
+        soundListeners.push(listener);
+      },
+    },
+  };
 }

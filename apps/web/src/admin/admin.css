@@ -91,3 +91,5 @@ tr.dim td{opacity:.5}
 .notice.error{border-color:#e2847c66}
 .notice ul{margin:6px 0 0;padding-left:18px;font-size:12px}
 @media(max-width:860px){.shell{grid-template-columns:1fr}aside{position:static;height:auto;flex-direction:row;flex-wrap:wrap;align-items:center;border-right:0;border-bottom:1px solid var(--line);padding:12px 16px}nav{display:flex;flex-wrap:wrap}.foot{margin:0 0 0 auto;display:flex;align-items:center}main{padding:18px 16px 60px}.cards{grid-template-columns:1fr 1fr}.split,.grid2,.grid3,.options{grid-template-columns:1fr}}
+.yt-preview{width:356px;height:200px;border-radius:8px;overflow:hidden;background:#000}
+.yt-preview iframe{display:block;border:0}

@@ -2,9 +2,10 @@
  * Admin hub (/admin.html): the playlist of the big wall screen, the T1 quests, and who is online.
  * Talks to the API's /v1/admin/* with the admin token (kept in sessionStorage for this tab only).
  */
-import { StrictMode, useCallback, useEffect, useMemo, useState } from "react";
+import { StrictMode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { QuestList, VIDEO_CATEGORIES, VideoList, type QuestDef, type QuestQuestion, type ScreenVideo } from "@te-liet/shared";
+import { QuestList, VIDEO_CATEGORIES, VideoList, youtubeId, type QuestDef, type QuestQuestion, type ScreenVideo } from "@te-liet/shared";
+import { loadYouTubeApi } from "../world/youtubeScreen.js";
 import { apiRoot } from "../content/api.js";
 import "./admin.css";
 
@@ -129,10 +130,69 @@ function LiveTab({ token }: { token: string }) {
 
 /* ------------------------------------------------------------------ videos */
 
-function useProbe() {
-  const [state, setState] = useState<Record<string, { ok: boolean; text: string; duration?: number }>>({});
+/** YouTube preview in the editor: the official player (356 x 200, YouTube's minimum is 200 x 200). */
+/** YouTube player errors (onError): 150/101 = the owner blocks embedding, 100 = gone, 2 = bad id, 5 = HTML5. */
+const YT_ERRORS: Record<number, string> = {
+  2: "Id video không hợp lệ.",
+  5: "Trình duyệt không phát được video này.",
+  100: "Video đã bị xóa hoặc để riêng tư.",
+  101: "Chủ video không cho phát nhúng trên trang khác (lỗi 101): video này không chiếu được trong game.",
+  150: "YouTube không cho phát nhúng ở đây (lỗi 150). Nếu đang mở trang quản trị bằng địa chỉ http hoặc IP nội bộ (127.0.0.1, 192.168…), thử lại qua link https của game: nhiều kênh chỉ chặn các địa chỉ đó. Vẫn lỗi qua https thì chủ video đã tắt nhúng.",
+  153: "YouTube từ chối phát nhúng (lỗi 153).",
+};
+function YoutubePreview({ id, onDuration, onResult }: { id: string; onDuration: (s: number) => void; onResult: (ok: boolean, text: string) => void }) {
+  const host = useRef<HTMLDivElement>(null);
+  const done = useRef(onDuration);
+  done.current = onDuration;
+  const result = useRef(onResult);
+  result.current = onResult;
+  useEffect(() => {
+    let cancelled = false;
+    let player: { destroy(): void; getDuration(): number } | null = null;
+    const mount = document.createElement("div");
+    host.current?.replaceChildren(mount);
+    void loadYouTubeApi().then((YT) => {
+      if (cancelled) return;
+      player = new YT.Player(mount, {
+        width: 356, height: 200, videoId: id,
+        playerVars: { rel: 0, playsinline: 1, autoplay: 1, mute: 1 },
+        events: {
+          onError: (e: { data: number }) => result.current(false, YT_ERRORS[e.data] ?? `YouTube báo lỗi ${e.data}.`),
+          onStateChange: (e: { data: number }) => {
+            if (e.data === 1) result.current(true, "Phát nhúng được: clip sẽ chiếu trong game.");
+          },
+          onReady: () => {
+            // the duration arrives with the metadata, shortly after the player is ready
+            let tries = 0;
+            const read = () => {
+              const d = player?.getDuration() ?? 0;
+              if (d > 0) done.current(Math.round(d * 10) / 10);
+              else if (tries++ < 20 && !cancelled) setTimeout(read, 300);
+            };
+            read();
+          },
+        },
+      }) as unknown as typeof player;
+    });
+    return () => { cancelled = true; player?.destroy(); };
+  }, [id]);
+  return <div className="yt-preview" ref={host} />;
+}
+
+function useProbe(token: string) {
+  const [state, setState] = useState<Record<string, { ok: boolean; text: string; youtube?: string }>>({});
   const probe = (id: string, url: string, done: (duration: number) => void) => {
     if (!url) return;
+    const yt = youtubeId(url);
+    if (yt) {
+      setState((s) => ({ ...s, [id]: { ok: true, text: "Đang hỏi YouTube…" } }));
+      call<{ embeddable: boolean; title?: string; author?: string; reason?: string }>(token, "GET", `/v1/admin/youtube?url=${encodeURIComponent(url)}`)
+        .then((r) => setState((s) => ({ ...s, [id]: r.embeddable
+          ? { ok: true, text: `Tìm thấy: ${r.title}${r.author ? ` · ${r.author}` : ""}. Đang phát thử…`, youtube: yt }
+          : { ok: false, text: `Không nhúng được: ${r.reason}` } })))
+        .catch((err) => setState((s) => ({ ...s, [id]: { ok: false, text: err instanceof Error ? err.message : "Không hỏi được YouTube." } })));
+      return;
+    }
     setState((s) => ({ ...s, [id]: { ok: true, text: "Đang tải thử…" } }));
     const v = document.createElement("video");
     v.crossOrigin = "anonymous";
@@ -143,14 +203,15 @@ function useProbe() {
     v.onloadedmetadata = () => {
       clearTimeout(timer);
       const d = Number.isFinite(v.duration) ? Math.round(v.duration * 10) / 10 : 0;
-      setState((s) => ({ ...s, [id]: { ok: true, text: `Tải được · ${v.videoWidth}×${v.videoHeight} · ${fmtDuration(d)}`, duration: d } }));
+      setState((s) => ({ ...s, [id]: { ok: true, text: `Tải được · ${v.videoWidth}×${v.videoHeight} · ${fmtDuration(d)}` } }));
       if (d > 0) done(d);
       v.removeAttribute("src");
     };
     v.onerror = () => fail("Không tải được: sai đường dẫn, định dạng không hỗ trợ, hoặc máy chủ chặn CORS.");
     v.src = url.startsWith("/") ? new URL(url, location.origin).toString() : url;
   };
-  return { state, probe };
+  const set = (id: string, value: { ok: boolean; text: string; youtube?: string }) => setState((s) => ({ ...s, [id]: value }));
+  return { state, probe, set };
 }
 
 function VideosTab({ token }: { token: string }) {
@@ -159,7 +220,7 @@ function VideosTab({ token }: { token: string }) {
   const [notice, setNotice] = useState<{ ok: boolean; text: string; issues?: Issue[] } | null>(null);
   const [busy, setBusy] = useState(false);
   const [open, setOpen] = useState<string | null>(null);
-  const { state: probe, probe: runProbe } = useProbe();
+  const { state: probe, probe: runProbe, set: setProbe } = useProbe(token);
   const load = useCallback(async () => {
     const doc = await call<{ videos: ScreenVideo[] }>(token, "GET", "/v1/admin/content");
     setList(doc.videos);
@@ -197,7 +258,7 @@ function VideosTab({ token }: { token: string }) {
   return (
     <section>
       <header className="section-head"><h2>Video màn hình lớn</h2><span>{playable}/{list.length} clip đang chiếu · {fmtDuration(list.filter((v) => v.enabled && v.url).reduce((n, v) => n + (v.durationSec ?? 0), 0))} một vòng</span></header>
-      <p className="hint">Màn hình chiếu lần lượt các clip đang bật và đã có tệp, lặp lại; mọi người trong hang xem cùng một khoảnh khắc. Cần <b>tệp video</b> (mp4/webm, nên 720p): đặt vào <code>apps/web/public/videos/</code> rồi điền <code>/videos/ten-tep.mp4</code>, hoặc dán link https tới tệp trên máy chủ cho phép CORS. Link trang YouTube/Twitch không chiếu được. Clip phát sóng có bản quyền: chỉ dùng tệp bạn có quyền dùng.</p>
+      <p className="hint">Màn hình chiếu lần lượt các clip đang bật và đã có link, lặp lại; khi mọi clip đều có thời lượng, mọi người trong hang xem cùng một khoảnh khắc. Dán <b>link YouTube</b> (video phải cho phép nhúng; phát bằng trình phát chính thức của YouTube, người chơi phải lại gần màn hình mới thấy), hoặc <b>tệp video</b> mp4/webm: đặt vào <code>apps/web/public/videos/</code> rồi điền <code>/videos/ten-tep.mp4</code>. Twitch / Facebook / TikTok không dùng được. Bấm kiểm tra để đo thời lượng trước khi lưu.</p>
       <ol className="items">
         {list.map((v, i) => {
           const p = probe[v.id];
@@ -206,7 +267,7 @@ function VideosTab({ token }: { token: string }) {
             <li key={v.id} className={`item ${v.enabled ? "" : "off"}`}>
               <div className="row">
                 <span className="order">{i + 1}</span>
-                <button className="title" onClick={() => setOpen(expanded ? null : v.id)}><b>{v.title}</b><small>{VIDEO_CATEGORIES[v.category]}{v.year ? ` · ${v.year}` : ""} · {fmtDuration(v.durationSec)} · {v.url ? <span className="mono">{v.url}</span> : <em>chưa có tệp</em>}</small></button>
+                <button className="title" onClick={() => setOpen(expanded ? null : v.id)}><b>{v.title}</b><small>{VIDEO_CATEGORIES[v.category]}{v.year ? ` · ${v.year}` : ""} · {fmtDuration(v.durationSec)} · {v.url ? <>{youtubeId(v.url) ? "YouTube · " : ""}<span className="mono">{v.url}</span></> : <em>chưa có link</em>}</small></button>
                 <label className="switch" title="Bật / tắt"><input type="checkbox" checked={v.enabled} onChange={(e) => set(v.id, { enabled: e.target.checked })} /><span /></label>
                 <button className="icon" disabled={i === 0} onClick={() => move(i, -1)} aria-label="Lên">↑</button>
                 <button className="icon" disabled={i === list.length - 1} onClick={() => move(i, 1)} aria-label="Xuống">↓</button>
@@ -219,13 +280,14 @@ function VideosTab({ token }: { token: string }) {
                     <label>Năm<input type="number" min={2012} max={2100} value={v.year ?? ""} onChange={(e) => set(v.id, { year: e.target.value ? Number(e.target.value) : null })} /></label>
                     <label>Thời lượng (giây)<input type="number" min={0} step={0.1} value={v.durationSec ?? ""} onChange={(e) => set(v.id, { durationSec: e.target.value ? Number(e.target.value) : null })} /></label>
                   </div>
-                  <label>Tệp video<input value={v.url} placeholder="/videos/ten-tep.mp4 hoặc https://…" onChange={(e) => set(v.id, { url: e.target.value.trim() })} /></label>
+                  <label>Link YouTube hoặc tệp video<input value={v.url} placeholder="https://www.youtube.com/watch?v=… hoặc /videos/ten-tep.mp4" onChange={(e) => set(v.id, { url: e.target.value.trim() })} /></label>
                   <div className="actions">
-                    <button disabled={!v.url} onClick={() => runProbe(v.id, v.url, (d) => set(v.id, { durationSec: d }))}>Tải thử và đo thời lượng</button>
+                    <button disabled={!v.url} onClick={() => runProbe(v.id, v.url, (d) => set(v.id, { durationSec: d }))}>{youtubeId(v.url) ? "Kiểm tra YouTube và đo thời lượng" : "Tải thử và đo thời lượng"}</button>
                     {p && <span className={p.ok ? "ok" : "error"}>{p.text}</span>}
                     <span className="spacer" />
                     <button className="danger" onClick={() => { if (confirm(`Xóa "${v.title}"?`)) setList((l) => l!.filter((x) => x.id !== v.id)); }}>Xóa clip</button>
                   </div>
+                  {p?.youtube && p.youtube === youtubeId(v.url) && <YoutubePreview id={p.youtube} onDuration={(d) => set(v.id, { durationSec: d })} onResult={(ok, text) => setProbe(v.id, { ok, text, youtube: p.youtube })} />}
                 </div>
               )}
             </li>

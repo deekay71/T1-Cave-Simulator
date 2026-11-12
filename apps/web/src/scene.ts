@@ -51,7 +51,7 @@ import { hubViews, type CameraView } from "./world/views.js";
 import { createWaterGlints, type GlintSource } from "./world/water.js";
 import { buildShrine } from "./world/shrine.js";
 import { buildCaveStalls } from "./world/stalls.js";
-import { buildBigScreen, type ScreenDemo } from "./world/bigScreen.js";
+import { buildBigScreen, type BigScreen, type ScreenDemo } from "./world/bigScreen.js";
 
 export type { LandmarkId } from "@te-liet/shared";
 export type { CameraView } from "./world/views.js";
@@ -97,6 +97,8 @@ export interface World {
   setMood(mood: Mood): void;
   /** A player emoted at (x, z): the NPC fans close by answer with a small bounce, one after another. */
   cheerNear(x: number, z: number): void;
+  /** The big screen clip's sound for this player (off until toggled). */
+  readonly screenSound: BigScreen["sound"];
   /** Carry the player's lantern to (x, z) (lit in mood "cave" only). */
   setLantern(x: number, z: number): void;
 }
@@ -453,6 +455,9 @@ export function createWorld(app: pc.AppBase, opts: WorldOptions = {}): World {
         // concept's torches; ACES is then applied by the frame's compose pass.
         frame = new pc.CameraFrame(app, cam);
         frame.rendering.toneMapping = pc.TONEMAP_ACES;
+        // Keep an alpha channel through post-processing (the default HDR format has none): the big
+        // screen's YouTube window is a transparent hole in the canvas.
+        frame.rendering.renderFormats = [pc.PIXELFORMAT_RGBA16F, pc.PIXELFORMAT_RGBA32F];
         frame.rendering.samples = 4;
         frame.bloom.intensity = LOOK.post.bloom;
         frame.bloom.threshold = LOOK.post.bloomThreshold;
@@ -678,6 +683,7 @@ export function createWorld(app: pc.AppBase, opts: WorldOptions = {}): World {
     },
     setMood,
     setLantern,
+    screenSound: bigScreen.sound,
     cheerNear(x: number, z: number) {
       for (const h of npcHops) {
         const d = Math.hypot(h.x - x, h.z - z);

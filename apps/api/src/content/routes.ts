@@ -7,6 +7,7 @@
  * - PUT  /v1/admin/content/quests       { quests: QuestDef[] }
  * - POST /v1/admin/content/reset        { section: "videos" | "quests" }   về mặc định.
  * - GET  /v1/admin/live                 người chơi đang online, thống kê (hỏi cổng quản trị của game).
+ * - GET  /v1/admin/youtube?url=…        video YouTube có cho nhúng không, tên video (hỏi oEmbed của YouTube).
  *
  * /v1/admin/* cần header `Authorization: Bearer <ADMIN_TOKEN>`. Không đặt ADMIN_TOKEN (hoặc ngắn hơn
  * 16 ký tự) thì trang quản trị tắt hẳn (503). So sánh token theo thời gian hằng.
@@ -14,13 +15,14 @@
 import { createHash, timingSafeEqual } from 'node:crypto';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
-import { QuestList, VideoList, publicContent } from '@te-liet/shared';
+import { QuestList, VideoList, publicContent, youtubeId } from '@te-liet/shared';
 import type { ContentStore } from './store.js';
 
 const digest = (s: string) => createHash('sha256').update(s).digest();
 const BODY_LIMIT = 256 * 1024;
 
-export async function registerContentRoutes(app: FastifyInstance, store: ContentStore, opts: { adminToken?: string; gameAdminUrl?: string } = {}) {
+export async function registerContentRoutes(app: FastifyInstance, store: ContentStore, opts: { adminToken?: string; gameAdminUrl?: string; fetch?: typeof fetch } = {}) {
+  const get = opts.fetch ?? fetch;
   const token = opts.adminToken?.trim() ?? '';
   const enabled = token.length >= 16;
   const expected = digest(token);
@@ -63,11 +65,27 @@ export async function registerContentRoutes(app: FastifyInstance, store: Content
     admin.get('/v1/admin/live', async (_req, reply) => {
       if (!opts.gameAdminUrl) return reply.code(503).send({ error: 'Chưa đặt GAME_ADMIN_URL cho API.' });
       try {
-        const res = await fetch(new URL('/live', opts.gameAdminUrl), { signal: AbortSignal.timeout(3000) });
+        const res = await get(new URL('/live', opts.gameAdminUrl), { signal: AbortSignal.timeout(3000) });
         if (!res.ok) return reply.code(502).send({ error: `Server game trả ${res.status}` });
         return await res.json();
       } catch {
         return reply.code(502).send({ error: 'Không hỏi được server game.' });
+      }
+    });
+    // Chỉ gửi id video cho YouTube (oEmbed công khai): 401/403 nghĩa là chủ video tắt nhúng.
+    admin.get('/v1/admin/youtube', async (req, reply) => {
+      const url = z.object({ url: z.string().max(500) }).safeParse(req.query);
+      const id = url.success ? youtubeId(url.data.url) : null;
+      if (!id) return reply.code(400).send({ error: 'Không phải link một video YouTube.' });
+      try {
+        const res = await get(`https://www.youtube.com/oembed?format=json&url=${encodeURIComponent(`https://www.youtube.com/watch?v=${id}`)}`, { signal: AbortSignal.timeout(6000) });
+        if (res.status === 401 || res.status === 403) return { id, embeddable: false, reason: 'Chủ video đã tắt nhúng ở trang khác.' };
+        if (res.status === 404 || res.status === 400) return { id, embeddable: false, reason: 'Không tìm thấy video (bị xóa, để riêng tư hoặc sai link).' };
+        if (!res.ok) return reply.code(502).send({ error: `YouTube trả ${res.status}` });
+        const meta = (await res.json()) as { title?: string; author_name?: string };
+        return { id, embeddable: true, title: meta.title ?? '', author: meta.author_name ?? '' };
+      } catch {
+        return reply.code(502).send({ error: 'Không hỏi được YouTube.' });
       }
     });
   });

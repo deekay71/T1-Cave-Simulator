@@ -86,3 +86,4 @@ Bản local để review gameplay và bố cục, chưa deploy public. Trước 
 - **Điện thờ:** ngồi xuống là cùng cả điện thờ cúi lạy một lần rồi giơ tay cầu nguyện, lặp lại liên tục, theo đồng hồ server (`shrineLoopAt`); bỏ hai nút cử chỉ thủ công.
 - **Màn hình lớn chia 3/4 + 1/4:** bên trái chiếu playlist clip do admin đặt (không tiếng, mọi người xem cùng lúc khi đủ thời lượng), bên phải lịch đấu T1. Không có clip thì hiện màn hình chờ.
 - **Trang quản trị `/admin.html`:** xem `docs/admin.md`.
+- **Link YouTube trên màn hình lớn:** playlist nhận link YouTube; trình phát nhúng chính thức được đặt khớp vào ô video (phía sau khung hình, nhìn qua một ô trong suốt nên người đứng trước vẫn che được), hiện khi ô video trên màn hình ≥ 200 × 200 px. Nút "Tiếng màn hình" bật tiếng cho riêng mình.
