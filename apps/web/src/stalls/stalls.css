@@ -54,3 +54,8 @@
 .nearby-goal button{background:none;border:0;color:#a2988d;font-size:12px;padding:4px;cursor:pointer}
 @media(max-width:800px){.nearby{top:150px;left:20px;width:200px}}
 @media(max-width:540px){.nearby{top:126px;left:14px;width:176px;padding:6px}.nearby li:nth-child(n+3){display:none}}
+
+/* Nút audio điện thờ */
+.shrine-audio{position:fixed;top:172px;left:36px;background:#19161bd9;border:1px solid #b4987133;border-radius:10px;padding:8px 12px;font-size:12px;color:#eee3d2;pointer-events:auto}
+@media(max-width:800px){.shrine-audio{top:150px;left:20px}}
+@media(max-width:540px){.shrine-audio{top:126px;left:14px;font-size:11px}}

@@ -10,3 +10,6 @@ reports/
 *.log
 .DS_Store
 .local-host/
+# Audio do người host tự cung cấp (bình luận có bản quyền): không đưa lên repo.
+apps/web/public/audio/*
+!apps/web/public/audio/README.md

@@ -36,6 +36,7 @@ import { CAVE_STALLS, CAVE_STALL_RADIUS } from "../../../packages/shared/src/sta
 import { findPath } from "../../../packages/shared/src/nav.js";
 import { CAVE_SEATS, CAVE_SEAT_REACH, caveSeat, type CaveSeat, type CaveSeatRequest } from "../../../packages/shared/src/seats.js";
 import { buildMarkers, buildSeatRings } from "./world/markers.js";
+import { createShrineAudio } from "./shrineAudio.js";
 import { STALL_CAMERA_BLOCKERS } from "./world/stalls.js";
 import { requestedRoom, roomInviteUrl } from "./roomInvite.js";
 import {
@@ -111,6 +112,9 @@ const follow = createFollowCamera(camera, {
 });
 /** Đuốc sát camera: ngọn lửa thụt xuống thay vì che kín khung hình. */
 const flames = createNearFlames();
+/** Audio khi vào điện thờ, chỉ người chơi này nghe (tệp do người host cung cấp, xem shrineAudio.ts). */
+const shrineAudio = createShrineAudio(import.meta.env.VITE_SHRINE_AUDIO_URL || "/audio/shrine-entry.mp3");
+shrineAudio.onChange((state) => ui.set({ shrineAudio: state }));
 /** Vòng tròn trắng dưới chân mọi vật ngồi được (ghế đẩu, thùng, đá thấp). */
 const seatRings = buildSeatRings(app, app.root, CAVE_SEATS);
 const takenSeats = new Set<string>();
@@ -764,6 +768,7 @@ app.on("update", (dt: number) => {
   const s = session;
   if (!s) {
     world.setMood("day");
+    shrineAudio.leave();
     if (!devView && !login.active) drift(dt);
     return;
   }
@@ -873,6 +878,9 @@ app.on("update", (dt: number) => {
   const inShrine = isInShrine(self ?? mine);
   // Trong game hang tối: chỉ lửa, đuốc, màn hình và chiếc đèn lồng theo người chơi là sáng.
   world.setMood(inShrine ? "shrine" : "cave");
+  // Vào điện thờ: phát đoạn audio riêng cho người chơi này (nếu máy chủ web có tệp); ra thì tắt dần.
+  if (inShrine) shrineAudio.enter();
+  else shrineAudio.leave();
   world.setLantern(mine.x, mine.z);
   // Điện thờ: hình trụ quanh tâm đảo; hang: hợp các phòng (hang lớn, hầm, hang nhỏ) của CAVE_BOUNDS.
   if (inShrine) follow.setBoundsCenter(SHRINE_CENTER.x, SHRINE_CENTER.z, 14);
@@ -1124,6 +1132,7 @@ mountUI({
   emote: sendEmote,
   interact,
   seat: toggleSeat,
+  toggleShrineAudio: () => shrineAudio.toggle(),
   visit: (id) => {
     const landmark = landmarks.find(l => l.id === id); const f=me();
     if (!landmark || !f) return;
@@ -1241,6 +1250,8 @@ function snapshot() {
       panel: ui.get().panel,
       prompt: ui.get().prompt?.id ?? null,
       destination: ui.get().destination,
+      shrineAudio: ui.get().shrineAudio,
+      shrineAudioPlaying: shrineAudio.playing,
       autoWalk: ui.get().autoWalk,
       count: ui.get().count,
       messages: ui

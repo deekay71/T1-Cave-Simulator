@@ -36,6 +36,8 @@ type Snapshot = {
   autoWalk: boolean;
   /** Chỗ ngồi trong hang: đang ngồi, có ghế trống trong tầm với, hoặc không. */
   seat: "seated" | "near" | null;
+  /** Audio khi vào điện thờ: không có tệp, đang bật, hoặc người chơi đã tắt. */
+  shrineAudio: "none" | "on" | "muted";
   /** Điểm tương tác ở gần (bấm E hoặc chạm nút để mở bảng). */
   prompt: { id: string; name: string } | null;
   /** API yêu cầu mã mời (close test): hiện ô nhập mã trong form vào hang. */
@@ -55,6 +57,7 @@ let state: Snapshot = {
   destination: null,
   autoWalk: false,
   seat: null,
+  shrineAudio: "none",
   prompt: null,
   needInvite: false,
   loginNotice: "",
@@ -209,6 +212,8 @@ export type Actions = {
   visit: (id: string) => void;
   /** Ngồi xuống ghế gần nhất / đứng dậy. */
   seat: () => void;
+  /** Bật / tắt audio điện thờ (chỉ mình nghe). */
+  toggleShrineAudio: () => void;
   leave: () => void;
   copyInvite: () => Promise<void>;
   report: (messageId: string, reason: string) => void;
@@ -597,6 +602,7 @@ export function mountUI(actions: Actions) {
         {s.connected && (
           <>
             <ResidentHUD />
+            {isInShrine(s.position) && s.shrineAudio !== "none" && <button className="shrine-audio" onClick={() => actions.toggleShrineAudio()} aria-pressed={s.shrineAudio === "on"} title="Chỉ bạn nghe thấy">{s.shrineAudio === "on" ? "🔊 Bình luận pha Zed · Tắt" : "🔇 Bình luận pha Zed · Bật"}</button>}
             {!s.panel && !isInShrine(s.position) && <NearbyBox position={s.position} destination={destination && target ? { id: destination.id, name: destination.name, x: target.x, z: target.z } : null} autoWalk={s.autoWalk} visit={actions.visit} />}
             <Chat messages={s.messages} send={actions.chat} report={actions.report} mute={actions.mute} />
             {s.prompt && !s.panel && (
