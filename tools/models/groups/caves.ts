@@ -654,10 +654,11 @@ interface ShellSpec {
    * whose angle lies in [from, to], in the lowest `rows` rows, is moved onto one plane. The plane
    * faces the shell's axis at `theta`, stands `r0` m from the axis at the floor and leans inward
    * `slope` m per metre of height; the first and last column are also slid sideways to `half` m
-   * either side of its centre line, so the face is a clean rectangle 2 * half wide. Applied after
-   * the field is built and without drawing random numbers: the rest of the wall is unchanged.
+   * either side of its centre line, so the face is a clean rectangle 2 * half wide. `top` lifts the
+   * highest of those rows to at least that height, so the face is flat that high. Applied after the
+   * field is built and without drawing random numbers: the rest of the wall is unchanged.
    */
-  panel?: { theta: number; from: number; to: number; half: number; r0: number; slope: number; rows: number };
+  panel?: { theta: number; from: number; to: number; half: number; r0: number; slope: number; rows: number; top?: number };
   floorR: number;
   /** The floor is flat (0.006..0.035) wherever a triangle reaches inside this radius. */
   flatR: number;
@@ -799,7 +800,7 @@ function buildWallField(S: ShellSpec): WallField {
     }
   // The flat rock face: project its columns onto the plane.
   if (S.panel) {
-    const { theta, from, to, half, r0, slope, rows } = S.panel;
+    const { theta, from, to, half, r0, slope, rows, top: faceTop } = S.panel;
     const n = dirOf(theta);
     const t: Vec3 = [-n[2], 0, n[0]];
     const inside = cols.flatMap((c, j) => (c.theta >= from - 1e-6 && c.theta <= to + 1e-6 ? [j] : []));
@@ -808,6 +809,7 @@ function buildWallField(S: ShellSpec): WallField {
       const edge = q === 0 || q === inside.length - 1;
       for (let i = 0; i < rows; i++) {
         const v = V[j][i];
+        if (i === rows - 1 && faceTop !== undefined && v[1] < faceTop) v[1] = faceTop;
         const rc = r0 - slope * v[1];
         // an edge column goes to the panel's side line; the others keep their own bearing
         const lat = edge ? Math.sign(dot(v, t)) * half : (dot(v, t) * rc) / dot(v, n);
@@ -1432,15 +1434,16 @@ const MAIN_OPENINGS: Opening[] = [
   ),
 ];
 /**
- * The screen wall: a flat face between the exit and the mouth to Hang ký ức (theta 105.5..132.1,
- * i.e. bearings 195.5..222.1 in the layout's convention), 10.6 m wide, from the floor to the third
- * row (~9.6 m or more). It spans the wall columns 105.48, 109.55, 114.74, 120 (module boundary),
- * 125.53 and 132.08. The big wall screen (furniture group, tl_furn_wall_screen_v01) lies on it:
- * packages/shared/src/layout.ts HUB_SCREEN derives its pose from these numbers (manifest
- * tl_cave_main_floor meta.screenWall). At the camera ceiling (9.15 m) the face is still 21.35 m
- * from the axis, 0.6 m outside the camera volume.
+ * The screen wall: a flat face between the exit and the mouth to Hang ký ức (theta 98.7..138.1,
+ * i.e. bearings 188.7..228.1 in the layout's convention), 15.6 m wide, from the floor to 12.2 m
+ * (the third row of its columns is lifted to `top`). It spans the wall columns 98.69, 105.48,
+ * 109.55, 114.74, 120 (module boundary), 125.53, 132.08 and 138.1: every plain column between the
+ * exit's jamb and the mouth's jamb. The big wall screen (furniture group, tl_furn_wall_screen_v01)
+ * lies on it: packages/shared/src/layout.ts HUB_SCREEN derives its pose from these numbers
+ * (manifest tl_cave_main_floor meta.screenWall). At the camera ceiling (9.15 m) the face is still
+ * 21.35 m from the axis, 0.6 m outside the camera volume.
  */
-const SCREEN_WALL = { theta: (105.48 + 132.08) / 2, from: 105.4, to: 132.2, half: 5.3, r0: 23.0, slope: 0.18, rows: 4 };
+const SCREEN_WALL = { theta: (98.69 + 138.1) / 2, from: 98.6, to: 138.2, half: 7.8, r0: 23.0, slope: 0.18, rows: 4, top: 12.2 };
 /** Torch spots along the main wall that are not beside a mouth (deg). */
 const MAIN_WALL_TORCHES = [0, 180, 251, 289];
 const mouthTorch = (o: Opening, side: 1 | -1, back: number): Vec3 => mouthPoint(o, side * (o.halfW + 1.5), 0, -back);
@@ -1495,8 +1498,8 @@ MAIN.keep = [
     return out;
   }),
   // The foot of the screen wall stays bare: ledges and rubble there are pushed back into the rock
-  // or left out (the screen's bottom edge hangs 2 m above the floor).
-  ...[-4.5, -3, -1.5, 0, 1.5, 3, 4.5].map((lat): Disc => {
+  // or left out (the screen's bottom edge hangs 4.2 m above the floor).
+  ...[-6, -4.5, -3, -1.5, 0, 1.5, 3, 4.5, 6].map((lat): Disc => {
     const n = dirOf(SCREEN_WALL.theta);
     const r = SCREEN_WALL.r0 - 1.0;
     return { x: n[0] * r - n[2] * lat, z: n[2] * r + n[0] * lat, r: 1.3 };

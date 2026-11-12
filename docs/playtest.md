@@ -93,3 +93,9 @@ Bản local để review gameplay và bố cục, chưa deploy public. Trước 
 - **Màn đăng nhập có ba cách vào:** Google (nút chính thức, cần `GOOGLE_CLIENT_ID` cho API), Tài khoản (đăng nhập / tạo nhanh bằng tên + mật khẩu) và Chơi thử như cũ. Đăng nhập xong vào hang luôn; tải lại trang vẫn còn đăng nhập 30 ngày. Mã mời chỉ cần khi tạo tài khoản mới. Chi tiết và cách bật Google: `docs/accounts.md`.
 - **Trang quản trị đăng nhập bằng tài khoản quản trị** (`npm run admin:account -- admin`, mật khẩu ghi vào tệp, không in ra màn hình). Thêm tab **Tài khoản**: danh sách người đã đăng ký, cách đăng nhập, lần đăng nhập cuối, đổi mật khẩu.
 - Bản chơi thử trên máy cá nhân lưu tài khoản ở `ACCOUNTS_FILE` (vd. `.local-host/accounts.json`); bản có Postgres chạy thêm `db/006_accounts.sql`.
+
+## Cập nhật 2026-11-12 (màn hình cao, Google)
+
+- **Màn hình lớn** to và cao hẳn: 12,8 × 7,2 m (trước 9,6 × 5,4 m), mép dưới 4,2 m (trước 2 m), treo trên đầu mọi người kể cả khi nhảy. Vách đá phẳng sau màn hình nới ra 15,6 m, phẳng tới 12,2 m (`tools/models/groups/caves.ts SCREEN_WALL`).
+- **Camera ngước lên được 25°** (trước 5°): dưới -5° camera đứng yên chỗ cũ, chỉ hướng nhìn ngước lên, nên đứng gần vẫn xem trọn màn hình mà camera không chui xuống sàn.
+- **Đăng nhập Google đã bật** cho bản chơi thử (project `te-liet-cave`, chế độ Testing: chỉ tài khoản trong Test users đăng nhập được). Xem `docs/accounts.md`.

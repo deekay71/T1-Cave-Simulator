@@ -10,7 +10,9 @@
  *   const { moveX, moveZ } = cam.toWorldAxes(d - a, w - s); // camera-relative WASD -> MoveInput
  *
  * - Yaw θ (deg) looks along (sin θ, 0, cos θ); it only changes when the user drags (no
- *   auto-rotate). Pitch in [-5, 60] deg, positive = looking down. Boom 2.5-8 m (smoothed zoom).
+ *   auto-rotate). Pitch in [-25, 60] deg, positive = looking down. Boom 2.5-8 m (smoothed zoom).
+ *   Below -5 deg the boom stays where it is at -5 and only the view tilts up (look up at the big
+ *   screen high on the wall without the camera diving to the floor behind the avatar).
  * - The pivot (target + 1.3 m) follows with a critically damped spring: no jitter from 20 Hz
  *   snapshots, a small steady lag (~0.4 m at 4 m/s).
  * - Over the shoulder: the pivot sits 0.45 m to the camera's right (less on a short boom, see
@@ -92,7 +94,9 @@ const DEFAULTS: FollowCameraOptions = {
   shoulder: 0.45,
   bounds: CAVE_BOUNDS,
 };
-const MIN_PITCH = -5;
+const MIN_PITCH = -25;
+/** The boom never swings lower than this; a lower pitch only aims the view up. */
+const BOOM_MIN_PITCH = -5;
 const MAX_PITCH = 60;
 const MIN_DIST = 2.5;
 const MAX_DIST = 8;
@@ -262,7 +266,7 @@ class OrbitFollowCamera implements FollowCamera {
     }
     const f = smooth(this.focusT);
     const pitch = clamp(this._pitch + FOCUS_PITCH * f, MIN_PITCH, MAX_PITCH);
-    const d = lookDir(this._yaw, pitch, this.dir);
+    const d = lookDir(this._yaw, Math.max(pitch, BOOM_MIN_PITCH), this.dir);
 
     // over the shoulder: shift the pivot toward the camera's right (scaled down on a short boom)
     const free = containBoom(p, d, this.zoom, this.walls);

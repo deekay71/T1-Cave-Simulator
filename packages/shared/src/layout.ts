@@ -1721,13 +1721,13 @@ export const HUB_CAVE_GATES: Readonly<Record<SideCaveId, Placement>> = Object.fr
  * Mặt đá phẳng của vách sau-trái hang lớn, giữa cửa điện thờ và miệng hầm sang Hang ký ức (model
  * vách: tools/models/groups/caves.ts SCREEN_WALL; manifest tl_cave_main_floor meta.screenWall): một
  * mặt phẳng quay về lửa trại ở hướng `bearing`, cách tâm `r0` m ở nền, nghiêng vào lòng hang `slope`
- * m mỗi mét cao (10,2°), rộng 10,6 m, phẳng từ nền lên ~9,6 m. scripts/stalls.test.ts so với manifest.
+ * m mỗi mét cao (10,2°), rộng 15,6 m, phẳng từ nền lên 12,2 m. scripts/stalls.test.ts so với manifest.
  */
-export const SCREEN_WALL = { bearing: 208.78, r0: 23, slope: 0.18, halfWidth: 5.3 } as const;
+export const SCREEN_WALL = { bearing: 208.395, r0: 23, slope: 0.18, halfWidth: 7.8 } as const;
 /** Mép dưới vỏ màn hình lớn cách nền chừng này (m): manifest tl_furn_wall_screen meta.mount.lift. */
-const SCREEN_LIFT = 2;
+const SCREEN_LIFT = 4.2;
 /**
- * Màn hình lớn của hang lớn (9,6 x 5,4 m, mép dưới cao 2 m) bắt thẳng lên mặt đá phẳng SCREEN_WALL,
+ * Màn hình lớn của hang lớn (12,8 x 7,2 m, mép dưới cao 4,2 m: cao hẳn trên đầu mọi người) bắt thẳng lên mặt đá phẳng SCREEN_WALL,
  * quay mặt về lửa trại; từ chỗ xuất hiện thấy nó bên trái cửa điện thờ. Không có khung hay chân: lưng
  * màn hình nằm trên mặt đá (chìm 2 cm), nghiêng theo mặt đá. Gốc model là điểm trên nền dưới mép dưới
  * lưng màn hình, ở r ≈ 22,7 m: ngoài vùng đi được và vùng camera. Hai collider ở hai đầu màn hình chỉ
@@ -1738,8 +1738,8 @@ export const HUB_SCREEN: Placement = {
   ...wall(M.wallScreen, SCREEN_WALL.bearing, SCREEN_WALL.r0 - SCREEN_WALL.slope * SCREEN_LIFT + 0.02),
   yaw: Math.round((SCREEN_WALL.bearing - 180) * 100) / 100,
   colliders: [
-    { dx: -4.9, dz: 0, r: 0.3 },
-    { dx: 4.9, dz: 0, r: 0.3 },
+    { dx: -6.5, dz: 0, r: 0.3 },
+    { dx: 6.5, dz: 0, r: 0.3 },
   ],
 };
 

@@ -1884,13 +1884,14 @@ function wallScreen(o: WallScreenSpec): Model {
 }
 
 /**
- * The main cave's screen: 9.6 x 5.4 m on the flat rock face cut into the back-left wall
- * (tools/models/groups/caves.ts SCREEN_WALL: the face leans 0.18 m per metre = 10.204 deg).
+ * The main cave's screen: 12.8 x 7.2 m on the flat rock face cut into the back-left wall
+ * (tools/models/groups/caves.ts SCREEN_WALL: 15.6 m wide, flat to 12.2 m, leaning 0.18 m per
+ * metre = 10.204 deg).
  */
 const WALL_SCREEN: WallScreenSpec = {
   name: "tl_furn_wall_screen_v01",
-  w: 9.6,
-  lift: 2.0,
+  w: 12.8,
+  lift: 4.2,
   tilt: 10.204,
   bezel: 0.14,
   depth: 0.4,
@@ -1898,11 +1899,11 @@ const WALL_SCREEN: WallScreenSpec = {
   rim: 0.42,
   speakers: true,
   battery: [-2.6, 0, 1.4],
-  light: { intensity: 1.3, range: 12, out: 2.6 },
-  budget: 1400,
+  light: { intensity: 1.4, range: 15, out: 3.2 },
+  budget: 1800,
   notes:
-    "Big wall screen bolted onto the flat rock face of the main cave's back-left wall: 9.6 x 5.4 m picture (16:9) in a dark " +
-    "housing 0.4 m deep, leaning 10.2 deg forward with the rock face, bottom edge 2 m above the floor. A rim of wall-coloured " +
+    "Big wall screen bolted onto the flat rock face of the main cave's back-left wall: 12.8 x 7.2 m picture (16:9) in a dark " +
+    "housing 0.4 m deep, leaning 10.2 deg forward with the rock face, bottom edge 4.2 m above the floor (well over everyone's heads). A rim of wall-coloured " +
     "rock around it (ledge under it), iron corner brackets, two chains into the rock, two speakers, a cable down to a battery " +
     "box on the floor. No frame or legs. The glass is a dark matte quad; meta.screen gives the rectangle (centre, size, " +
     "normal, up) the runtime lays its live picture on, 6 mm in front; meta.mount explains the pivot.",

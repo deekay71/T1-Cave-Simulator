@@ -323,9 +323,10 @@ test("quét mọi chỗ đứng được × yaw × pitch × zoom: camera luôn t
   let shortest = Infinity;
   for (const s of spots)
     for (let yaw = -180; yaw < 180; yaw += 30)
-      for (const pitch of [-5, 18, 40, 60])
+      for (const pitch of [-25, -5, 18, 40, 60])
         for (const zoom of [2.5, 5.5, 8]) {
-          lookDir(yaw, pitch, d);
+          // camera.ts: dưới -5° chỉ ngước hướng nhìn lên, cần vẫn ở chỗ của -5°
+          lookDir(yaw, Math.max(pitch, -5), d);
           // lệch vai 0,45 m sang phải camera như camera.ts
           const a = yaw * DEG;
           const free = containBoom({ x: s.x, y: 1.3, z: s.z }, d, zoom);

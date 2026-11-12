@@ -75,17 +75,17 @@
         "radius": 25.2,
         "flatRadius": 21,
         "wallRadius": {
-          "mean": 23.4361,
+          "mean": 23.4825,
           "min": 22.7649
         },
         "screenWall": {
-          "theta": 118.78,
-          "bearing": 208.78,
-          "halfWidth": 5.3,
+          "theta": 118.395,
+          "bearing": 208.395,
+          "halfWidth": 7.8,
           "r0": 23,
           "slope": 0.18,
           "tilt": 10.204,
-          "flatTo": 9.6102,
+          "flatTo": 12.2,
           "note": "flat rock face for the big wall screen: a plane facing the origin at `theta` (bearing = theta + 90 in the layout's convention: 0 = +Z, 90 = +X), r0 m from the axis at the floor, leaning inward `slope` m per metre (tilt deg), 2 * halfWidth m wide, flat from the floor to flatTo m"
         },
         "heightNote": "y in [0.006, 0.035] for r < 21 and in the opening strips; ~0.25 m at r = 24, ~0.5 m at r = 25.2",
@@ -788,7 +788,7 @@
       "overBudget": false,
       "bounds": {
         "min": [
-          -11.5026,
+          -11.5045,
           0,
           -30.1318
         ],
@@ -799,7 +799,7 @@
         ]
       },
       "size": [
-        23.5026,
+        23.5046,
         15.0482,
         13.0037
       ],
@@ -868,7 +868,7 @@
           "depth": 6.4
         }
       },
-      "bytes": 67456
+      "bytes": 67524
     },
     {
       "name": "tl_cave_main_wall_02_v01",
@@ -884,7 +884,7 @@
         "min": [
           -24.7234,
           -0.15,
-          -21.9537
+          -21.9686
         ],
         "max": [
           -9.8889,
@@ -895,7 +895,7 @@
       "size": [
         14.8345,
         15.259,
-        22.2344
+        22.2492
       ],
       "nodes": [
         "tl_cave_main_wall_02_v01"

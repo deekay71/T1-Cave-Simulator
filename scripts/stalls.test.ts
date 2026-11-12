@@ -229,7 +229,7 @@ test('the big screen is bolted to the back-left wall, out of reach, in view from
   assert.ok(normal[0] === 0 && normal[2] > 0.97 && normal[1] < -0.05 && normal[1] > -0.25);
   // Wall-mounted: the housing starts well above the floor and the model declares no posts.
   const mount = (asset.meta as { mount?: { lift: number } }).mount;
-  assert.ok(mount && mount.lift >= 2 && asset.meta.postColliders === undefined);
+  assert.ok(mount && mount.lift >= 4 && asset.meta.postColliders === undefined);
   // It lies on the flat rock face the cave model provides: same bearing, lean and distance, and the
   // housing (picture + bezel) fits inside the face, below the height where the face stops being flat.
   const face = (stallManifest('caves').get('caves/tl_cave_main_floor_v01')!.meta as unknown as { screenWall: { bearing: number; r0: number; slope: number; halfWidth: number; tilt: number; flatTo: number } }).screenWall;
@@ -239,8 +239,11 @@ test('the big screen is bolted to the back-left wall, out of reach, in view from
   const back = Math.hypot(HUB_SCREEN.x, HUB_SCREEN.z) - (face.r0 - face.slope * mount.lift);
   assert.ok(back >= 0 && back < 0.05, `housing back ${back} m behind the rock face`);
   assert.ok(size[0] / 2 + 0.14 < face.halfWidth - 0.2 && center[1] + size[1] / 2 + 0.6 < face.flatTo);
-  assert.ok(center[1] - size[1] / 2 >= 1.95, 'bottom edge above head height and the low wall rocks');
-  assert.ok(size[0] >= 9.5, 'the big screen stays big');
+  assert.ok(center[1] - size[1] / 2 >= 4.1, 'bottom edge high over everyone\'s heads, even mid-jump');
+  assert.ok(size[0] >= 12.5, 'the big screen stays big');
+  // the speakers beside it stay on the flat face too
+  const housingHalf = (asset.meta as unknown as { mount: { housing: number[] } }).mount.housing[0] / 2;
+  assert.ok(housingHalf + 0.95 < face.halfWidth, 'speakers on the flat face');
   // Exactly one, in the main cave shell but outside the walk and camera areas.
   assert.equal(HUB_PLACEMENTS.filter(p => p.asset === HUB_SCREEN.asset).length, 1);
   const r = Math.hypot(HUB_SCREEN.x, HUB_SCREEN.z);
@@ -258,6 +261,6 @@ test('the big screen is bolted to the back-left wall, out of reach, in view from
   for (const l of HUB_LANDMARKS) if (l.id !== 'screen') assert.ok(Math.hypot(l.x - HUB_SCREEN.x, l.z - HUB_SCREEN.z) > 8, l.id);
   for (const cave of HUB_CAVES) {
     const d = Math.hypot(cave.x, cave.z);
-    assert.ok(Math.hypot((cave.x / d) * 23.4 - HUB_SCREEN.x, (cave.z / d) * 23.4 - HUB_SCREEN.z) > 4.94 + 2.5 + 0.8, cave.id);
+    assert.ok(Math.hypot((cave.x / d) * 23.4 - HUB_SCREEN.x, (cave.z / d) * 23.4 - HUB_SCREEN.z) > face.halfWidth + 2.5 + 0.8, cave.id);
   }
 });

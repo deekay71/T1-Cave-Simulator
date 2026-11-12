@@ -38,7 +38,7 @@ interface ScreenFace {
   up: V3;
 }
 /** Same numbers as the generator (tools/models/groups/furniture.ts WALL_SCREEN), used without a manifest. */
-const FALLBACK_FACE: ScreenFace = { center: [0, 4.7224, 0.9066], size: [9.6, 5.4], normal: [0, -0.1772, 0.9842], up: [0, 0.9842, 0.1772] };
+const FALLBACK_FACE: ScreenFace = { center: [0, 7.8082, 1.0661], size: [12.8, 7.2], normal: [0, -0.1772, 0.9842], up: [0, 0.9842, 0.1772] };
 const POLL_MS = 60_000;
 /** Canvas over the whole glass. The left 3/4 (LEFT px) holds the clip, the rest the schedule. */
 const W = 1280, H = 720, LEFT = 960;

@@ -19,7 +19,9 @@ Trong game, người có tài khoản được giới hạn chat của thành vi
 Cần một **OAuth client ID** loại Web application (không cần client secret, không có trang callback):
 
 1. Vào [Google Cloud Console](https://console.cloud.google.com/), tạo hoặc chọn một project.
-2. **APIs & Services → OAuth consent screen** (Google Auth Platform → Branding): tên app, email hỗ trợ. Audience: External. Khi app còn ở chế độ Testing thì chỉ những email được thêm vào "Test users" mới đăng nhập được; bấm **Publish app** để ai cũng đăng nhập được (chỉ xin scope cơ bản `openid email profile` nên không cần Google duyệt).
+2. **Google Auth Platform → Get started**: tên app, email hỗ trợ, Audience **External**, email liên hệ, đồng ý User Data Policy.
+   - App mới ở chế độ **Testing**: chỉ các tài khoản trong **Audience → Test users** (tối đa 100) đăng nhập được; người khác thấy "Access blocked". Hợp với close test: thêm email Google của từng người chơi thử.
+   - Muốn ai cũng đăng nhập được thì **Publish app**. Google đòi trước ở trang Branding: trang chủ và link chính sách quyền riêng tư nằm trên một tên miền đã khai báo ở Authorized domains. Link tunnel nhanh đổi mỗi lần chạy nên chỉ nên publish khi đã có tên miền cố định. Chỉ xin scope cơ bản (`openid email profile`) nên không cần Google duyệt; đừng tải logo lên (tải logo là phải chờ duyệt).
 3. **Credentials → Create credentials → OAuth client ID → Web application**.
 4. **Authorized JavaScript origins**: thêm đúng từng origin người chơi mở game, không có dấu `/` cuối:
    - `https://<tên-miền-của-game>`
@@ -30,6 +32,8 @@ Cần một **OAuth client ID** loại Web application (không cần client secr
 5. Copy **Client ID** (dạng `123…-abc….apps.googleusercontent.com`) vào biến `GOOGLE_CLIENT_ID` của **API** rồi khởi động lại API. Client ID là thông tin công khai (trình duyệt nào cũng thấy), không phải bí mật.
 
 Không đặt `GOOGLE_CLIENT_ID` thì nút Google hiện "Chưa bật".
+
+Bản chơi thử trên máy này: project Google Cloud `te-liet-cave`, OAuth client "Te Liet web" (origins: link tunnel hiện tại, `http://localhost:5190`, `http://localhost:8088`), đang ở chế độ Testing. Client ID lưu ở `.local-host/google-client-id` và được truyền cho API qua `GOOGLE_CLIENT_ID`. Không cần và không lưu client secret.
 
 **Tunnel nhanh của Cloudflare đổi link mỗi lần khởi động lại.** Mỗi lần đổi phải thêm link mới vào Authorized JavaScript origins (có hiệu lực sau vài phút). Muốn cố định thì dùng tên miền riêng hoặc named tunnel.
 
