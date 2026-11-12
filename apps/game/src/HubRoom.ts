@@ -2,7 +2,7 @@ import { Room, type Client } from '@colyseus/core';
 import type { Deferred } from '@colyseus/core';
 import { schema, t, type SchemaType } from '@colyseus/schema';
 import {
-  AXIS_MAX, Chat, CLOSE_SIGNED_IN_ELSEWHERE, Emote, LIMITS, MoveInput,
+  AXIS_MAX, CaveSeating, CaveSeatRequest, Chat, CLOSE_SIGNED_IN_ELSEWHERE, Emote, LIMITS, MoveInput,
   PATCH_MS, ROOM_CAPACITY, spawnPoint, TICK_RATE,
 } from '@te-liet/shared';
 import type { TicketIdentity } from '@te-liet/auth';
@@ -10,7 +10,7 @@ import { verifyTicket } from './auth.js';
 import { RateLimiter } from './rateLimit.js';
 import { AltarActivity, type AltarUpdate } from './altar.js';
 import { ShrineActivity, type ShrineUpdate } from './shrine.js';
-import { applyShrineAwareInput } from '../../../packages/shared/src/shrine.js';
+import { applyShrineAwareInput, isInShrine } from '../../../packages/shared/src/shrine.js';
 import { log, metrics } from './telemetry.js';
 import {SeatLease,banned,moderate,rateLimit} from '@te-liet/security';
 import {randomUUID} from 'node:crypto';
@@ -27,6 +27,9 @@ export const Player = schema({
   shrineSeat: t.string().default(''),
   shrineGesture: t.string().default(''),
   shrineGestureAt: t.float64().default(0),
+  /** Chỗ ngồi trong hang (packages/shared seats.ts): id ghế và hướng mặt (độ). */
+  seat: t.string().default(''),
+  seatYaw: t.int16().default(0),
 });
 export type Player = SchemaType<typeof Player>;
 export const HubState = schema({ players: t.map(Player) });
@@ -47,6 +50,7 @@ export class HubRoom extends Room<{ state: HubState; input: MoveInput }> {
   private limiter = new RateLimiter();
   private altar = new AltarActivity();
   private shrine = new ShrineActivity();
+  private seating = new CaveSeating();
   private altarBroadcastAt = 0;
   private leases=new Map<string,SeatLease>();
   private history:{id:string;accountId:string;name:string;text:string;at:number}[]=[];
@@ -101,6 +105,17 @@ export class HubRoom extends Room<{ state: HubState; input: MoveInput }> {
       const emote = Emote.safeParse(raw);
       if (emote.success) this.broadcast('emote', { id: c.sessionId, emote: emote.data });
     });
+    // Ngồi lên ghế đẩu, thùng, đá thấp trong hang; đứng dậy trả về chỗ cũ.
+    this.onMessage('seat', (c, raw) => {
+      if (!this.leases.get(c.sessionId)?.active || !this.limiter.allow(`${c.sessionId}:seat`, LIMITS.emote)) return;
+      const player = this.state.players.get(c.sessionId);
+      const request = CaveSeatRequest.safeParse(raw);
+      if (!player || !player.connected || !request.success || isInShrine(player)) return;
+      const error = request.data.action === 'sit'
+        ? this.seating.sit(c.sessionId, player, request.data.seatId)
+        : this.seating.stand(c.sessionId, player);
+      if (error === 'occupied-seat') c.send('notice', 'Chỗ này có người ngồi rồi.');
+    });
     this.onMessage('altar', (c, raw) => {
       const now = Date.now();
       const result = this.altar.request(c.sessionId, raw, now, (id) => this.altarActor(id));
@@ -117,6 +132,9 @@ export class HubRoom extends Room<{ state: HubState; input: MoveInput }> {
     });
     this.onMessage('shrine', (c, raw) => {
       const now = Date.now();
+      // Đang ngồi trong hang mà vào điện thờ: đứng dậy trước, kẻo mang ghế hang sang đảo.
+      const seated = this.state.players.get(c.sessionId);
+      if (seated?.seat) this.seating.stand(c.sessionId, seated);
       const result = this.shrine.request(c.sessionId, raw, now, (id) => this.shrineActor(id));
       if (result.changed && raw?.action === 'enter') this.removeFromAltar(c.sessionId);
       this.publishShrine(result, now);
@@ -281,6 +299,7 @@ export class HubRoom extends Room<{ state: HubState; input: MoveInput }> {
   async onLeave(c: Client) {
     this.removeFromShrine(c.sessionId, true);
     this.removeFromAltar(c.sessionId, true);
+    this.seating.forget(c.sessionId);
     const hadPlayer=this.state.players.delete(c.sessionId);
     const lease=this.leases.get(c.sessionId);this.leases.delete(c.sessionId);
     await lease?.release().catch(()=>{});

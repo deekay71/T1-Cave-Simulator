@@ -17,3 +17,40 @@
 .quest-side button{font-size:11px;padding:6px 10px;white-space:nowrap}
 @media(max-width:540px){.quest{grid-template-columns:24px 1fr}.quest-side{grid-column:2;justify-items:start}}
 .screen-panel{max-width:760px}
+
+/* Quest về T1 */
+.quest-prompt{font-size:18px;line-height:1.4;margin:6px 0 14px}
+.quest-options{display:grid;gap:8px;margin-bottom:16px}
+.quest-options button{display:flex;gap:12px;align-items:center;text-align:left;padding:12px 14px;border-radius:10px;font-size:14px}
+.quest-options button span{display:grid;place-items:center;flex:none;width:26px;height:26px;border-radius:50%;border:1px solid #ffffff33;font-size:12px;font-weight:800;color:var(--stall-accent,#b3b7e0)}
+.quest-result{display:grid;gap:4px;padding:14px 16px;border-radius:12px;background:#ffffff0a;border:1px solid #ffffff1f;margin-bottom:14px}
+.quest-result.passed{border-color:var(--stall-accent,#b3b7e0)}
+.quest-review{list-style:none;margin:0 0 16px;padding:0;display:grid;gap:8px}
+.quest-review li{display:grid;gap:2px;padding:10px 14px;border-radius:10px;background:#ffffff08;border-left:3px solid #8fbf8f;font-size:13px}
+.quest-review li.wrong{border-left-color:#d2706b}
+.quest-review small{font-size:11px;color:#a2988d}
+.link-button{background:none;border:0;padding:0;color:var(--stall-accent,#b3b7e0);text-decoration:underline;font-size:inherit;cursor:pointer}
+/* Hang ký ức: sáu chức vô địch */
+.memory-feature>img{max-height:340px;object-fit:cover;background:#111}
+.memory-final{font-size:15px;font-weight:700;margin:2px 0 6px}
+.memory-facts{font-size:12px;line-height:1.7;color:#cfc4b5;margin:0 0 8px}
+.memory-feature small a{color:inherit}
+.memory-thumbnails.six{grid-template-columns:repeat(6,1fr)}
+.memory-thumbnails img{width:100%;aspect-ratio:4/3;object-fit:cover;display:block;border-radius:4px}
+@media(max-width:540px){.memory-thumbnails.six{grid-template-columns:repeat(3,1fr)}}
+
+/* Box "Gần đây" trên giao diện chính */
+.nearby{position:fixed;top:172px;left:36px;width:232px;background:#19161bd9;border:1px solid #b4987133;border-radius:12px;padding:8px;font-size:12px;pointer-events:auto;backdrop-filter:blur(6px)}
+.nearby header{display:flex;justify-content:space-between;align-items:center;padding:2px 6px 6px;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#a2988d}
+.nearby header button{background:none;border:0;padding:0;font-size:10px;letter-spacing:.04em;color:#d9c39b;text-transform:none;cursor:pointer}
+.nearby ul{list-style:none;margin:0;padding:0;display:grid;gap:2px}
+.nearby li button{display:grid;grid-template-columns:8px 1fr auto;gap:9px;align-items:center;width:100%;background:none;border:0;border-radius:8px;padding:6px;text-align:left;color:#eee3d2;font-size:12px;cursor:pointer}
+.nearby li button:hover,.nearby li button:focus-visible{background:#ffffff12}
+.nearby i{width:8px;height:8px;border-radius:50%;display:block}
+.nearby li span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nearby small{color:#a2988d;font-size:11px;font-variant-numeric:tabular-nums}
+.nearby-goal{display:grid;grid-template-columns:8px 1fr auto;gap:9px;align-items:center;padding:7px 6px 8px;margin-bottom:6px;border-bottom:1px solid #ffffff14}
+.nearby-goal b{display:block;color:#eac58e;font-size:12px}
+.nearby-goal button{background:none;border:0;color:#a2988d;font-size:12px;padding:4px;cursor:pointer}
+@media(max-width:800px){.nearby{top:150px;left:20px;width:200px}}
+@media(max-width:540px){.nearby{top:126px;left:14px;width:176px;padding:6px}.nearby li:nth-child(n+3){display:none}}

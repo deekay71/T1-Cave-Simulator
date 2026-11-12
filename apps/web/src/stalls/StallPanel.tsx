@@ -1,7 +1,8 @@
-import { useEffect, useState, useSyncExternalStore, type ChangeEvent } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import { RANKS, dailyReward, type CosmeticItem, type ProgressionState } from '@te-liet/shared';
 import { CAVE_STALLS, type CaveStallId } from '../../../../packages/shared/src/stalls.js';
 import { resident } from './client.js';
+import { QUESTS, TITLES, gradeQuest, loadDone, saveDone, type Quest } from './quests.js';
 import './stalls.css';
 
 export function useResident(){return useSyncExternalStore(resident.subscribe,resident.get);}
@@ -30,7 +31,7 @@ export function NpcPortrait({name,accent}:{name:string;accent:string}){
     <path d="m101 367 12-7 7 8-10 9m93-58 10-7 9 12-12 9" fill="#b79877" opacity=".7"/>
   </svg>;
 }
-const talks:Record<string,string>={checkin:'Về hang rồi à? Điểm danh một cái, rồi ngồi cạnh lửa nhé.',shop:'Đồ có hơi sờn, nhưng tinh thần cổ vũ thì còn nguyên.',quiz:'Năm câu thôi. Mình cùng nhớ lại những mùa giải đáng nhớ nhé!',quest:'Việc hôm nay ghim cả trên bảng rồi. Xong việc nào, gạch việc đó.',memory:'Có những khoảnh khắc đáng để cả hang cùng giữ lại.'};
+const talks:Record<string,string>={checkin:'Về hang rồi à? Điểm danh một cái, rồi ngồi cạnh lửa nhé.',shop:'Đồ có hơi sờn, nhưng tinh thần cổ vũ thì còn nguyên.',quiz:'Năm câu thôi. Mình cùng nhớ lại những mùa giải đáng nhớ nhé!',quest:'Quest về T1 ghim cả trên bảng rồi. Đúng ba câu là gạch được một dòng.',memory:'Sáu lần nâng cúp. Lần nào cả hang cũng nhớ.'};
 const icons:Record<string,string>={'cave-ragged-shorts':'🩳','cave-tshirt':'👕','cave-tank-top':'🎽','cave-jersey':'🔴','cave-glasses':'👓','cave-keyboard':'⌨','fan-cap-red':'🧢','fan-hoodie-white':'🧥','fan-headband':'🎗'};
 function StatusStrip(){const s=useResident();return s.mode==='preview'?<p className="preview-strip">BẢN THỬ TRONG TAB · Xu, XP và đồ sẽ mất khi tải lại. Không lưu tài khoản, không đồng bộ với người khác.</p>:s.mode==='disabled'?<p className="preview-strip">Tiến trình bền vững chưa mở. Hiện chỉ xem trước nội dung.</p>:s.mode==='error'?<p role="alert">{s.error} <button onClick={()=>void resident.load(true)}>Thử tải lại</button></p>:null;}
 function Experience({state}:{state:ProgressionState}){const {xp,rank,nextRank}=state.experience;return <div className="experience-strip"><div><b>LV.{rank.level} · {rank.title}</b><span>{xp} / {nextRank?.minXp??xp} XP</span></div><progress max={nextRank?nextRank.minXp-rank.minXp:1} value={nextRank?xp-rank.minXp:1}/><small>{nextRank?`Còn ${nextRank.minXp-xp} XP để thành ${nextRank.title}`:'Đã chạm hạng cao nhất trong hang.'}</small></div>;}
@@ -41,10 +42,10 @@ export function StallPanel({id,onClose,onVisit}:{id:CaveStallId;onClose:()=>void
     <aside className="npc-stage"><div className="npc-kicker">CƯ DÂN TRONG HANG</div><NpcPortrait name={meta.npc} accent={meta.accent}/><div className="npc-caption"><small>{meta.role}</small><h2>{meta.npc}</h2><p>“{talks[id]}”</p></div><small className="fan-art-note">NPC fan-art cách điệu · Không phải hình ảnh chính thức</small></aside>
     <div className="stall-content"><p className="eyebrow">TÊ LIỆT / SẠP CƯ DÂN</p><h2 className="stall-title">{meta.name}</h2>
       <StatusStrip/>
-      {id==='memory'?<Gallery/>:!data.state?<p role="status">Đang tải sạp…</p>:<>
+      {id==='memory'?<Gallery/>:id==='quest'?<Quests onVisit={onVisit}/>:!data.state?<p role="status">Đang tải sạp…</p>:<>
         <div className="wallet-row"><span>Xu Hang <b>{data.state.currency.balance}</b></span><small>Điểm trong game · Không có giá trị tiền mặt</small></div>
         <Experience state={data.state}/>
-        {id==='checkin'?<CheckIn state={data.state}/>:id==='shop'?<Shop state={data.state} onClose={onClose}/>:id==='quest'?<Quests state={data.state} onVisit={onVisit}/>:<Quiz state={data.state}/>}</>}
+        {id==='checkin'?<CheckIn state={data.state}/>:id==='shop'?<Shop state={data.state} onClose={onClose}/>:<Quiz state={data.state}/>}</>}
     </div>
   </div>;
 }
@@ -56,25 +57,32 @@ function CheckIn({state}:{state:ProgressionState}){
     {state.daily.claimed?'✓ Đã điểm danh hôm nay':m.busy?'Đang ghi nhận…':reward?`Điểm danh · +${reward} xu +20 XP`:'Điểm danh hôm nay'}</button><p role="status" className="action-notice">{m.notice}</p><p className="rule-note">Lịch thưởng đề xuất: 15 ngày điểm danh đầu nhận xu + XP mỗi ngày. Sau đó nhận ở ngày 18, 21, 24… theo tổng số ngày đã điểm danh, không mất tiến độ khi bỏ lỡ. Ngày mới lúc 07:00 Việt Nam (00:00 UTC).</p></>;
 }
 /**
- * Bảng quest của Doran: việc trong ngày và việc một lần, đọc thẳng từ tiến trình đã có (điểm danh,
- * đố vui, tủ đồ, hạng). Quest chưa có thưởng riêng: xu và XP nhận ngay ở sạp làm việc đó.
+ * Bảng quest của Doran: các quest về T1 (stalls/quests.ts). Mỗi quest ba câu, đúng cả ba là xong.
+ * Tiến độ lưu ở trình duyệt; không cộng xu hay XP.
  */
-interface Quest{id:string;title:string;detail:string;reward:string;done:number;total:number;go:string;where:string}
-export function questList(state:ProgressionState):{daily:Quest[];once:Quest[]}{
-  const used=state.quiz.attemptsUsed,limit=state.quiz.attemptLimit,reward=dailyReward(state.daily.totalCheckins+(state.daily.claimed?0:1));
-  return {daily:[
-    {id:'checkin',title:'Điểm danh với Oner',detail:'Ghé sạp ĐIỂM DANH cạnh chỗ xuất hiện.',reward:state.daily.claimed||reward?'25 xu + 20 XP theo lịch thưởng':'Ghi nhận có mặt',done:state.daily.claimed?1:0,total:1,go:'checkin',where:'Sạp Điểm danh'},
-    {id:'quiz-1',title:'Làm một lượt Đố vui',detail:'Năm câu hỏi của Keria ở Hang đố vui.',reward:'10 XP mỗi câu đúng',done:Math.min(used,1),total:1,go:'quiz',where:'Hang đố vui'},
-    {id:'quiz-all',title:`Dùng hết ${limit} lượt Đố vui`,detail:'Lượt được làm mới lúc 07:00 Việt Nam.',reward:`Tối đa ${limit*50} XP mỗi ngày`,done:Math.min(used,limit),total:limit,go:'quiz',where:'Hang đố vui'},
-  ],once:[
-    {id:'wardrobe',title:'Có món đồ đầu tiên',detail:'Đổi xu lấy một món ở Quầy trang phục của Peyz.',reward:'Diện mạo mới',done:state.inventory.length?1:0,total:1,go:'shop',where:'Hang chợ'},
-    {id:'rank-2',title:`Lên hạng ${RANKS[1].title}`,detail:`Tích đủ ${RANKS[1].minXp} XP từ điểm danh và đố vui.`,reward:'Dáng nhân vật mới',done:Math.min(state.experience.xp,RANKS[1].minXp),total:RANKS[1].minXp,go:'checkin',where:'Sạp Điểm danh'},
-  ]};
-}
-function Quests({state,onVisit}:{state:ProgressionState;onVisit?:(id:string)=>void}){
-  const {daily,once}=questList(state);const left=daily.filter(q=>q.done<q.total).length;
-  const row=(q:Quest)=>{const done=q.done>=q.total;return <li key={q.id} className={done?'quest done':'quest'}><span className="quest-mark" aria-hidden="true">{done?'✓':'·'}</span><div><b>{q.title}</b><small>{q.detail}</small><small className="quest-reward">{q.reward}</small></div><div className="quest-side"><span>{q.done}/{q.total}</span>{!done&&onVisit&&<button onClick={()=>onVisit(q.go)}>Chỉ đường → {q.where}</button>}</div></li>;};
-  return <><div className="section-heading"><h3>Việc hôm nay</h3><span>{left?`Còn ${left}/${daily.length} việc`:'Xong hết việc hôm nay'}</span></div><ul className="quest-list">{daily.map(row)}</ul><div className="section-heading"><h3>Việc một lần</h3><span>Không hết hạn</span></div><ul className="quest-list">{once.map(row)}</ul><p className="rule-note">Bảng quest đọc tiến trình sẵn có của bạn. Quest chưa có thưởng riêng: xu và XP được cộng ngay ở sạp bạn làm việc đó. Việc trong ngày làm mới lúc 07:00 Việt Nam (00:00 UTC).</p></>;
+function Quests({onVisit}:{onVisit?:(id:string)=>void}){
+  const [done,setDone]=useState<string[]>(()=>loadDone());
+  const [open,setOpen]=useState<Quest|null>(null);
+  const [answers,setAnswers]=useState<number[]>([]);
+  const start=(q:Quest)=>{setOpen(q);setAnswers([]);};
+  if(open){
+    const step=answers.length,finished=step>=open.questions.length,correct=gradeQuest(open,answers);
+    if(finished){
+      const passed=correct===open.questions.length;
+      return <div className="quest-run"><div className="section-heading"><h3>{open.title}</h3><span>{correct}/{open.questions.length} câu đúng</span></div>
+        <div className={passed?'quest-result passed':'quest-result'} role="status"><strong>{passed?'Xong quest!':'Chưa qua quest này'}</strong><span>{passed?'Doran gạch một dòng trên bảng.':'Phải đúng cả ba câu. Làm lại là được.'}</span></div>
+        <ol className="quest-review">{open.questions.map((q,i)=><li key={i} className={answers[i]===q.answer?'right':'wrong'}><b>{q.prompt}</b><span>{answers[i]===q.answer?'✓':'✗'} {q.options[q.answer]}</span><small>{q.note}</small></li>)}</ol>
+        <div className="quiz-navigation">{!passed&&<button className="primary-action" onClick={()=>start(open)}>Làm lại quest</button>}<button onClick={()=>setOpen(null)}>← Về bảng quest</button></div></div>;
+    }
+    const q=open.questions[step];
+    return <div className="quest-run"><div className="section-heading"><h3>{open.title}</h3><span>Câu {step+1}/{open.questions.length}</span></div>
+      <h3 className="quest-prompt">{q.prompt}</h3>
+      <div className="quest-options">{q.options.map((option,i)=><button key={i} onClick={()=>{const next=[...answers,i];setAnswers(next);if(next.length===open.questions.length&&gradeQuest(open,next)===open.questions.length&&!done.includes(open.id)){const all=[...done,open.id];setDone(all);saveDone(all);}}}><span>{String.fromCharCode(65+i)}</span>{option}</button>)}</div>
+      <button onClick={()=>setOpen(null)}>← Về bảng quest</button></div>;
+  }
+  return <><div className="section-heading"><h3>Quest về T1</h3><span>Đã xong {done.length}/{QUESTS.length}</span></div>
+    <ul className="quest-list">{QUESTS.map(q=>{const ok=done.includes(q.id);return <li key={q.id} className={ok?'quest done':'quest'}><span className="quest-mark" aria-hidden="true">{ok?'✓':'?'}</span><div><b>{q.title}</b><small>{q.blurb}</small></div><div className="quest-side"><button onClick={()=>start(q)}>{ok?'Làm lại':'Nhận quest'}</button></div></li>;})}</ul>
+    <p className="rule-note">Mỗi quest gồm ba câu hỏi về T1, đúng cả ba là xong. Tiến độ lưu trên trình duyệt này, chưa cộng xu hay XP. Muốn kiếm XP thì sang Đố vui của Keria.{onVisit&&<> <button className="link-button" onClick={()=>onVisit('quiz')}>Chỉ đường → Hang đố vui</button></>}</p></>;
 }
 function Shop({state,onClose}:{state:ProgressionState;onClose:()=>void}){
   const m=useMutation();const[filter,setFilter]=useState('all');const can=resident.get().mode==='preview'||(state.enabled&&state.authenticated);
@@ -90,6 +98,11 @@ function Quiz({state}:{state:ProgressionState}){
   return <div className="quiz-session"><div className="section-heading"><b>Câu {index+1}/5</b><span>Đã chọn {answered}/5</span></div><div className="question-dots">{attempt.questions.map((_,i)=><button key={i} aria-current={i===index?'step':undefined} className={answers[i]>=0?'answered':''} onClick={()=>setIndex(i)} aria-label={`Câu ${i+1}`}>{i+1}</button>)}</div><h3>{q.prompt}</h3><fieldset className="quiz-options"><legend className="sr-only">Chọn đáp án câu {index+1}</legend>{q.options.map((option,i)=><label key={i} className={answers[index]===i?'selected':''}><input type="radio" name={`question-${q.id}`} checked={answers[index]===i} onChange={()=>setAnswers(old=>old.map((v,j)=>j===index?i:v))}/><span>{String.fromCharCode(65+i)}</span>{option}</label>)}</fieldset><div className="quiz-navigation"><button disabled={index===0} onClick={()=>setIndex(i=>i-1)}>← Câu trước</button>{index<4?<button onClick={()=>setIndex(i=>i+1)}>Câu tiếp →</button>:<button className="primary-action" disabled={m.busy||answered!==5} onClick={()=>void m.run('quiz/submit',{attemptId:attempt.id,answers},r=>{setResult({correct:Number(r.correct),xp:Number(r.xpEarned)});return 'Đã chấm bài.';})}>Nộp bài</button>}</div><p role="status" className="action-notice">{m.notice||'Đóng sạp không mất lượt đang làm; đáp án chưa nộp cần chọn lại khi mở.'}</p></div>;
 }
 export function RankPanel({onClose}:{onClose:()=>void}){const s=useResident();return <div className="rank-panel"><p className="eyebrow">HỒ SƠ CƯ DÂN</p><h2>Càng gắn bó, càng có chỗ nằm.</h2><StatusStrip/>{s.state&&<Experience state={s.state}/>}<div className="rank-road">{RANKS.map((r,i)=><article key={r.level}><span>{['🚶','🫧','🩼','🦽','🛏'][i]}</span><div><small>HẠNG {r.level} · {r.minXp} XP</small><h3>{r.title}</h3><p>{['Người mới về hang','Kéo theo bình oxy','Chống đôi nạng gỗ','Ngồi xe lăn','Nằm trên giường'][i]}</p></div><button onClick={()=>{resident.visual(r.level);onClose();}}>Xem dáng</button></article>)}</div><p className="rule-note">Xem dáng chỉ là thử ngoại hình trên máy bạn, không cộng XP hay mở khóa hạng. Sau khi thử, chọn “Bỏ xem trước” để quay về nhân dạng hiện tại.</p><button onClick={()=>{resident.visual(null);onClose();}}>Bỏ xem trước</button></div>;}
-const memories=[{year:'2013',title:'Khởi đầu một huyền thoại',subtitle:'The first star',tone:'#b5403c'},{year:'2016',title:'Ba ngôi sao trên ngực áo',subtitle:'A dynasty remembered',tone:'#ba9760'},{year:'2023',title:'Lời hẹn sau bảy mùa',subtitle:'The crown comes home',tone:'#7c89ab'},{year:'2024',title:'Chúng ta lại làm được',subtitle:'Together, once more',tone:'#b84457'}];
-function MemoryPoster({year,tone,title}:{year:string;tone:string;title:string}){return <svg viewBox="0 0 520 320" role="img" aria-label={`Poster minh họa ${title} ${year}`}><rect width="520" height="320" fill="#161922"/><path d="M0 320 145 0h135L130 320M310 320 440 0h80v320" fill={tone} opacity=".3"/><circle cx="400" cy="70" r="105" fill={tone} opacity=".15"/><path d="M220 83h80l-12 66-28 25-28-25Z" fill={tone}/><path d="M257 173h7v35h29v11h-66v-11h30Z" fill="#dec7a1"/><path d="M220 99h-24l5 39 30 10m69-49h24l-5 39-30 10" fill="none" stroke="#dec7a1" strokeWidth="6"/><text x="35" y="275" fontSize="65" fontWeight="900" fill="#f2e6d5" fontFamily="system-ui">{year}</text><text x="38" y="299" fontSize="11" letterSpacing="3" fill="#c7b6a2" fontFamily="system-ui">TÊ LIỆT · KÝ ỨC HUY HOÀNG</text></svg>;}
-function Gallery(){const[selected,setSelected]=useState(0),[local,setLocal]=useState<{url:string;name:string}|null>(null),[error,setError]=useState('');const memory=memories[selected];useEffect(()=>()=>{if(local)URL.revokeObjectURL(local.url);},[local]);function choose(e:ChangeEvent<HTMLInputElement>){const file=e.target.files?.[0];if(!file)return;if(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>5*1024*1024){setError('Chọn JPEG, PNG hoặc WebP tối đa 5 MB.');return;}setError('');setLocal({url:URL.createObjectURL(file),name:file.name});}return <><div className="memory-feature">{local?<img src={local.url} alt="Ảnh bạn chọn xem riêng trên máy" onError={()=>{setError('Không đọc được ảnh này.');setLocal(null);}}/>:<MemoryPoster {...memory}/>}<div><span>{local?'BẢN NHÁP CỦA BẠN':memory.year}</span><h3>{local?local.name:memory.title}</h3><small>{local?'Chỉ xem trên máy này · Chưa gửi · Không trừ xu':'Minh họa gốc: Dự án Tê Liệt · Không phải ảnh chụp sự kiện'}</small></div></div><div className="memory-thumbnails">{memories.map((m,i)=><button key={m.year} aria-pressed={!local&&selected===i} onClick={()=>{setLocal(null);setSelected(i);}}><MemoryPoster {...m}/><span>{m.year}</span></button>)}</div><div className="contribution-card"><h3>Mang ký ức của bạn đến đây</h3><p>Ý tưởng: ảnh được duyệt sẽ hiện tên người đóng góp; dự kiến tốn 25 Xu Hang khi đăng thành công. Phần chia sẻ chưa mở và hiện không trừ xu.</p><label className="local-image-picker">Chọn ảnh xem thử trên máy<input type="file" accept="image/jpeg,image/png,image/webp" onChange={choose}/></label><small>JPEG / PNG / WebP · Tối đa 5 MB. Tệp chỉ được đọc trong tab, không tải lên máy chủ.</small>{local&&<button onClick={()=>setLocal(null)}>Bỏ ảnh đang thử</button>}<p role="status">{error}</p></div></>;}
+function Gallery(){
+  const [selected,setSelected]=useState(TITLES.length-1);const t=TITLES[selected];
+  return <><div className="section-heading"><h3>Sáu lần vô địch thế giới</h3><span>2013 · 2015 · 2016 · 2023 · 2024 · 2025</span></div>
+    <div className="memory-feature"><img key={t.year} src={t.photo.src} alt={t.photo.shows} loading="lazy"/><div><span>CKTG {t.year} · {t.date}</span><h3>{t.name}</h3><p className="memory-final">{t.final}</p><p className="memory-facts">{t.place}<br/>{t.roster}<br/>{t.note}</p>
+      <small>Ảnh: {t.photo.shows}. © {t.photo.author}, <a href={t.photo.licenseUrl} target="_blank" rel="noreferrer">{t.photo.license}</a>, <a href={t.photo.source} target="_blank" rel="noreferrer">Wikimedia Commons</a>; chỉ thu nhỏ.</small></div></div>
+    <div className="memory-thumbnails six">{TITLES.map((m,i)=><button key={m.year} aria-pressed={selected===i} onClick={()=>setSelected(i)}><img src={m.photo.src} alt="" loading="lazy"/><span>{m.year}</span></button>)}</div>
+    <p className="rule-note">Ảnh thật có giấy phép tự do từ Wikimedia Commons, ghi công từng ảnh. Năm 2016 và 2025 chưa có ảnh nâng cúp nào dùng được, nên là ảnh sự kiện của đúng giải đó. Góp ảnh của fan chưa mở.</p></>;
+}

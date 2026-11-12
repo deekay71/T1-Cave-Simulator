@@ -23,7 +23,7 @@ export const CAVE_STALLS: readonly CaveStall[] = [
   { id: 'checkin', name: 'ĐIỂM DANH', npc: 'Oner', role: 'Chào mừng về hang', x: 4, z: 8, yaw: -153, accent: '#DA4A48' },
   { id: 'shop', name: 'QUẦY TRANG PHỤC', npc: 'Peyz', role: 'Đồ nghề fan cứng', x: 38.635, z: 17.571, yaw: -82.0333, accent: '#8DAFC5' },
   { id: 'quiz', name: 'ĐỐ VUI T1', npc: 'Keria', role: 'Thử trí nhớ của bạn', x: -38.233, z: 22.104, yaw: 120.0333, accent: '#D9B75E' },
-  { id: 'quest', name: 'BẢNG QUEST', npc: 'Doran', role: 'Việc hôm nay của cư dân', x: 38.233, z: -22.104, yaw: -59.9667, accent: '#B3B7E0' },
+  { id: 'quest', name: 'BẢNG QUEST', npc: 'Doran', role: 'Quest về T1', x: 38.233, z: -22.104, yaw: -59.9667, accent: '#B3B7E0' },
   { id: 'memory', name: 'KÝ ỨC HUY HOÀNG', npc: 'Người giữ ký ức', role: 'Những mùa giải đáng nhớ', x: -39.131, z: -17.502, yaw: 97.9667, accent: '#CBA36B' },
 ];
 export function stallApproach(stall: CaveStall) {

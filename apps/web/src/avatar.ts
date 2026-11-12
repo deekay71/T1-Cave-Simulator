@@ -79,7 +79,7 @@ export function variantFor(key: string): string {
   return AVATAR_VARIANTS[pickIndex(key, AVATAR_VARIANTS.length)];
 }
 
-export type AvatarEmote = "wave" | "laugh" | "cheer";
+export type AvatarEmote = "wave" | "laugh" | "cheer" | "jump";
 export type ShrineGesture = "pray" | "bow";
 
 export interface Avatar {
@@ -97,6 +97,11 @@ export interface Avatar {
   readonly headTop: pc.Vec3;
   destroy(): void;
 }
+
+/** The "jump" emote: lift-off (s) after the emote starts, air time (s) and height (m) of the first hop. */
+const JUMP_START = 0.08;
+const JUMP_TIME = 0.52;
+const JUMP_HEIGHT = 0.5;
 
 /* ------------------------------------------------------------------ manifest data */
 
@@ -513,7 +518,7 @@ class FanAvatar implements Avatar {
   }
 
   emote(name: AvatarEmote): void {
-    if (this.dead || this.seated || (name !== "wave" && name !== "laugh" && name !== "cheer")) return;
+    if (this.dead || this.seated || (name !== "wave" && name !== "laugh" && name !== "cheer" && name !== "jump")) return;
     const [cur, prev] = this.emotes;
     if (cur.name && envelope(cur.t) > 0.02) {
       // let the interrupted emote fade out under the new one
@@ -1060,6 +1065,7 @@ class FanAvatar implements Avatar {
   }
 
   private emoteLayer(dt: number) {
+    let hop = 0;
     // the interrupted emote (slot 1) first, fading out under the current one (slot 0)
     for (let i = 1; i >= 0; i--) {
       const slot = this.emotes[i];
@@ -1071,7 +1077,19 @@ class FanAvatar implements Avatar {
         continue;
       }
       const w = envelope(slot.t) * slot.fade;
-      if (w > 0) this.applyEmote(slot.name, slot.t, w);
+      if (slot.name === "jump") {
+        // two hops (0.5 m, then 0.3 m) with the arms half-way into the cheer
+        const u = (slot.t - JUMP_START) / JUMP_TIME;
+        if (u > 0 && u < 1) hop = Math.max(hop, JUMP_HEIGHT * 4 * u * (1 - u) * slot.fade);
+        const v = (slot.t - JUMP_START - JUMP_TIME) / (JUMP_TIME * 0.8);
+        if (v > 0 && v < 1) hop = Math.max(hop, JUMP_HEIGHT * 0.6 * 4 * v * (1 - v) * slot.fade);
+        if (w > 0) this.applyEmote("cheer", slot.t, w * 0.55);
+      } else if (w > 0) this.applyEmote(slot.name, slot.t, w);
+    }
+    // The caller places the root on the floor every frame before update(): lift it for the hop.
+    if (hop > 0) {
+      const p = this.entity.getLocalPosition();
+      this.entity.setLocalPosition(p.x, p.y + hop, p.z);
     }
   }
 

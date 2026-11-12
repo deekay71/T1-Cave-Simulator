@@ -29,10 +29,13 @@ import {
   LIMITS,
   MoveInput,
 } from "@te-liet/shared";
-import { SHRINE_CENTER, SHRINE_SEATS, SHRINE_RADIUS, applyShrineAwareInput, isInShrine } from "../../../packages/shared/src/shrine.js";
+import { SHRINE_CENTER, SHRINE_SEATS, SHRINE_SEAT_HEIGHT, SHRINE_RADIUS, applyShrineAwareInput, isInShrine } from "../../../packages/shared/src/shrine.js";
 import "./style.css";
 import { resident } from "./stalls/client.js";
-import { CAVE_STALL_RADIUS } from "../../../packages/shared/src/stalls.js";
+import { CAVE_STALLS, CAVE_STALL_RADIUS } from "../../../packages/shared/src/stalls.js";
+import { findPath } from "../../../packages/shared/src/nav.js";
+import { CAVE_SEATS, CAVE_SEAT_REACH, caveSeat, type CaveSeat, type CaveSeatRequest } from "../../../packages/shared/src/seats.js";
+import { buildMarkers } from "./world/markers.js";
 import { STALL_CAMERA_BLOCKERS } from "./world/stalls.js";
 import { requestedRoom, roomInviteUrl } from "./roomInvite.js";
 import {
@@ -108,6 +111,13 @@ const follow = createFollowCamera(camera, {
 });
 /** Đuốc sát camera: ngọn lửa thụt xuống thay vì che kín khung hình. */
 const flames = createNearFlames();
+/** Vòng sáng + mũi tên nhấp nhô ở mọi điểm tương tác (màu theo sạp). */
+const MARKER_COLORS: Record<string, string> = { altar: "#F2C76B", screen: "#8FB8F2", rest: "#D8C7B0" };
+const markers = buildMarkers(
+  app,
+  app.root,
+  landmarks.map((l) => ({ id: l.id, x: l.x, z: l.z, color: CAVE_STALLS.find((s) => s.id === l.id)?.accent ?? MARKER_COLORS[l.id] ?? "#E8DCCB" })),
+);
 const tags = createNameTags(document.querySelector<HTMLElement>("#tags")!);
 const log = ui.log;
 const mutedSenders = new Set<string>();
@@ -248,11 +258,15 @@ const EMOTE_CODES: Record<string, AvatarEmote> = {
   Numpad2: "laugh",
   Digit3: "cheer",
   Numpad3: "cheer",
+  Digit4: "jump",
+  Numpad4: "jump",
+  Space: "jump",
 };
 const EMOTE_KEYS: Record<string, AvatarEmote> = {
   "1": "wave",
   "2": "laugh",
   "3": "cheer",
+  "4": "jump",
 };
 function moveKey(e: KeyboardEvent): string | undefined {
   const k = e.key.toLowerCase();
@@ -288,6 +302,10 @@ window.addEventListener("keydown", (e) => {
     }
     return;
   }
+  if (e.code === "KeyF" || e.key.toLowerCase() === "f") {
+    if (!e.repeat) toggleSeat();
+    return;
+  }
   if (e.code === "KeyE" || e.key.toLowerCase() === "e") {
     if (!e.repeat) interact();
     return;
@@ -316,11 +334,127 @@ const held = (...names: string[]) => names.some((n) => keys.has(n));
 const STILL = { moveX: 0, moveZ: 0 } as const;
 /** Trục input theo hướng camera (int8, đúng giá trị gửi lên và dùng để dự đoán). */
 function axes(s: Session): { moveX: number; moveZ: number } {
-  if (ui.get().panel || s.dropped || playersOf(s.room)?.get(s.room.sessionId)?.shrineSeat) return STILL;
+  const self = playersOf(s.room)?.get(s.room.sessionId);
+  if (ui.get().panel || s.dropped || self?.shrineSeat) {
+    stopAuto(false);
+    return STILL;
+  }
   const right =
     Number(held("d", "arrowright")) - Number(held("a", "arrowleft"));
   const forward = Number(held("w", "arrowup")) - Number(held("s", "arrowdown"));
-  return right || forward ? follow.toWorldAxes(right, forward) : STILL;
+  if (self?.seat) {
+    // Đang ngồi: bấm phím di chuyển là đứng dậy (server trả về chỗ đứng cũ), chưa đi ngay.
+    stopAuto(false);
+    if (right || forward) sendSeat({ action: "stand" });
+    return STILL;
+  }
+  if (right || forward) {
+    stopAuto(false); // tự tay điều khiển: thôi tự đi, vẫn giữ chỉ dẫn
+    return follow.toWorldAxes(right, forward);
+  }
+  return autoAxes() ?? STILL;
+}
+
+/* ------------------------------------------------------------------ ngồi */
+
+let lastSeatAt = -Infinity;
+function sendSeat(request: CaveSeatRequest) {
+  const s = session,
+    now = performance.now();
+  if (!s || s.dropped || now - lastSeatAt < 550) return; // server cho 2 lần/giây
+  lastSeatAt = now;
+  s.room.send("seat", request);
+}
+/** Ghế trống gần nhất trong tầm với (không tính ghế có người chơi khác ngồi). */
+function nearestFreeSeat(x: number, z: number): CaveSeat | null {
+  const players = session ? playersOf(session.room) : undefined;
+  const taken = new Set<string>();
+  players?.forEach((p) => { if (p.seat) taken.add(p.seat); });
+  let best: CaveSeat | null = null,
+    bestD = CAVE_SEAT_REACH - 0.1;
+  for (const seat of CAVE_SEATS) {
+    if (taken.has(seat.id)) continue;
+    const d = Math.hypot(seat.x - x, seat.z - z);
+    if (d < bestD) { best = seat; bestD = d; }
+  }
+  return best;
+}
+/** F (hoặc nút trên màn hình): ngồi xuống ghế gần nhất, đang ngồi thì đứng dậy. */
+function toggleSeat() {
+  const s = session,
+    f = me();
+  if (!s || !f || ui.get().panel) return;
+  if (playersOf(s.room)?.get(s.room.sessionId)?.seat) return sendSeat({ action: "stand" });
+  const seat = nearestFreeSeat(f.x, f.z);
+  if (seat) { stopAuto(false); sendSeat({ action: "sit", seatId: seat.id }); }
+}
+
+/* ------------------------------------------------------------------ tự đi tới đích */
+
+/**
+ * "Chỉ đường": nhân vật tự đi tới điểm tương tác đã chọn theo đường tìm được trên đồ thị điểm mốc
+ * (packages/shared/src/nav.ts), bằng chính input di chuyển thường (server vẫn quyết định vị trí).
+ * Bấm phím di chuyển, mở bảng hoặc bỏ chỉ dẫn là dừng. Kẹt 1 giây thì tìm đường lại, quá 3 lần thì thôi.
+ */
+interface AutoWalk {
+  id: string;
+  goal: { x: number; z: number };
+  path: { x: number; z: number }[];
+  next: number;
+  /** Mốc đo tiến độ: vị trí và thời điểm (ms). */
+  mark: { x: number; z: number; at: number };
+  repaths: number;
+}
+let auto: AutoWalk | null = null;
+const AUTO_ARRIVE = 0.45;
+const AUTO_PASS = 0.9;
+function stopAuto(clearGuide: boolean) {
+  if (!auto) return;
+  auto = null;
+  ui.set(clearGuide ? { autoWalk: false, destination: null } : { autoWalk: false });
+}
+function startAuto(id: string): boolean {
+  const f = me(),
+    goal = landmarks.find((l) => l.id === id);
+  if (!f || !goal || f.x > 80) return false; // đảo điện thờ: không có đường bộ về hang
+  const path = findPath({ x: f.x, z: f.z }, goal);
+  if (!path) return false;
+  auto = { id, goal, path, next: 0, mark: { x: f.x, z: f.z, at: performance.now() }, repaths: 0 };
+  ui.set({ autoWalk: true });
+  return true;
+}
+function autoAxes(): { moveX: number; moveZ: number } | null {
+  const a = auto,
+    f = me();
+  if (!a || !f) return null;
+  if (ui.get().destination !== a.id) {
+    stopAuto(false);
+    return null;
+  }
+  if (Math.hypot(a.goal.x - f.x, a.goal.z - f.z) < AUTO_ARRIVE) {
+    stopAuto(true);
+    return null;
+  }
+  while (a.next < a.path.length - 1 && Math.hypot(a.path[a.next].x - f.x, a.path[a.next].z - f.z) < AUTO_PASS) a.next++;
+  const now = performance.now();
+  if (now - a.mark.at > 1000) {
+    if (Math.hypot(f.x - a.mark.x, f.z - a.mark.z) < 0.3) {
+      const path = a.repaths < 3 ? findPath({ x: f.x, z: f.z }, a.goal) : null;
+      if (!path) {
+        stopAuto(false);
+        return null;
+      }
+      a.path = path;
+      a.next = 0;
+      a.repaths++;
+    }
+    a.mark = { x: f.x, z: f.z, at: now };
+  }
+  const t = a.path[a.next];
+  const dx = t.x - f.x,
+    dz = t.z - f.z,
+    d = Math.sqrt(dx * dx + dz * dz) || 1;
+  return { moveX: Math.round((dx / d) * 127), moveZ: Math.round((dz / d) * 127) };
 }
 
 /* ------------------------------------------------------------------ người chơi */
@@ -335,6 +469,8 @@ interface PlayerState {
   z: number;
   connected: boolean;
   shrineSeat: string; shrineGesture: string; shrineGestureAt: number;
+  /** Chỗ ngồi trong hang (packages/shared seats.ts) và hướng mặt (độ). */
+  seat: string; seatYaw: number;
 }
 interface HubState {
   players: {
@@ -519,6 +655,7 @@ function moveFan(
   z: number,
   dt: number,
   intent: { moveX: number; moveZ: number } | null,
+  y = 0,
 ) {
   const dx = x - f.x,
     dz = z - f.z;
@@ -541,7 +678,7 @@ function moveFan(
   );
   const a = f.avatar;
   if (!a) return;
-  a.entity.setPosition(x, 0, z);
+  a.entity.setPosition(x, y, z);
   a.entity.setEulerAngles(0, (f.yaw * 180) / Math.PI, 0);
   a.update(dt, f.speed);
 }
@@ -580,6 +717,7 @@ const EMOTE_LINES: Record<AvatarEmote, (who: string) => string> = {
   wave: (who) => `✋ ${who} vẫy tay chào cả hang`,
   laugh: (who) => `😆 ${who} cười trừ cho qua`,
   cheer: (who) => `🙌 ${who} hô to: mùa sau làm lại!`,
+  jump: (who) => `⤴ ${who} nhảy cẫng lên`,
 };
 /** Một người emote liên tục chỉ ghi một dòng chat mỗi ngần này (ms); avatar vẫn diễn mọi lần. */
 const EMOTE_LOG_GAP = 8000;
@@ -622,6 +760,7 @@ app.on("update", (dt: number) => {
   devTick();
   const s = session;
   if (!s) {
+    world.setMood("day");
     if (!devView && !login.active) drift(dt);
     return;
   }
@@ -637,13 +776,13 @@ app.on("update", (dt: number) => {
       fields: ["x", "z"],
       smoothMs: 65,
       snap: 2,
-      step: (ctx, st, cmd) => { if (!self.shrineSeat) applyShrineAwareInput(st, cmd, ctx.dt); },
+      step: (ctx, st, cmd) => { if (!self.shrineSeat && !self.seat) applyShrineAwareInput(st, cmd, ctx.dt); },
     });
     s.reconciled = true;
   }
 
   if (self && s.controller) {
-    const pose = `${isInShrine(self) ? "shrine" : "cave"}:${self.shrineSeat || ""}`;
+    const pose = `${isInShrine(self) ? "shrine" : "cave"}:${self.shrineSeat || self.seat || ""}`;
     if (s.shrinePose !== undefined && s.shrinePose !== pose) {
       s.controller.reset(); keys.clear();
       if (s.shrinePose.split(":")[0] !== pose.split(":")[0]) {
@@ -657,6 +796,12 @@ app.on("update", (dt: number) => {
   // thay vì 20 input/giây. Trục gửi đi chính là trục reconciler dùng để dự đoán.
   const a = axes(s);
   const moving = a.moveX !== 0 || a.moveZ !== 0;
+  // Đang tự đi: camera xoay dần ra sau lưng theo hướng đi (tối đa 150 độ/giây), như khi tự cầm lái.
+  if (auto && moving) {
+    const want = Math.atan2(a.moveX, a.moveZ) / DEG;
+    const turn = ((want - follow.yaw + 540) % 360) - 180;
+    follow.yaw += Math.max(-150 * dt, Math.min(150 * dt, turn));
+  }
   const steps = predict.tick(performance.now());
   for (let i = 0; i < steps; i++) {
     s.idleSteps = moving ? 0 : s.idleSteps + 1;
@@ -672,8 +817,9 @@ app.on("update", (dt: number) => {
   players.forEach((p, id) => {
     seen.add(id);
     const px: number = predict.value(p, "x"), pz: number = predict.value(p, "z");
-    const x = p.shrineSeat ? p.x : px;
-    const z = p.shrineSeat ? p.z : pz;
+    const sitting = p.seat ? caveSeat(p.seat) : undefined;
+    const x = p.shrineSeat || sitting ? p.x : px;
+    const z = p.shrineSeat || sitting ? p.z : pz;
     let f = fans.get(id);
     if (!f) {
       const face = Math.atan2(-x, -z); // xuất hiện: nhìn về lửa trại
@@ -702,8 +848,11 @@ app.on("update", (dt: number) => {
     spawnAvatar(id, f);
     const shrineSeat = SHRINE_SEATS.find(seat => seat.id === p.shrineSeat);
     if (shrineSeat) f.yaw = f.wantYaw = shrineSeat.yaw * DEG;
-    f.avatar?.setShrinePose(!!shrineSeat, p.shrineGesture === "pray" || p.shrineGesture === "bow" ? p.shrineGesture : null, Math.max(0,(Date.now()+shrineClockOffset-p.shrineGestureAt)/1000));
-    moveFan(f, x, z, dt, f.self && !shrineSeat ? a : null);
+    else if (sitting) f.yaw = f.wantYaw = p.seatYaw * DEG;
+    f.avatar?.setShrinePose(!!shrineSeat || !!sitting, p.shrineGesture === "pray" || p.shrineGesture === "bow" ? p.shrineGesture : null, Math.max(0,(Date.now()+shrineClockOffset-p.shrineGestureAt)/1000));
+    // Ghế trong hang cao thấp khác nhau: dáng ngồi dựng cho mặt ghế SHRINE_SEAT_HEIGHT, nâng/hạ gốc cho khớp.
+    moveFan(f, x, z, dt, f.self && !shrineSeat && !sitting ? a : null, sitting ? sitting.h - SHRINE_SEAT_HEIGHT : 0);
+    if (sitting && f.avatar) f.avatar.entity.setEulerAngles(0, p.seatYaw, 0);
     if (shrineSeat && f.avatar) { f.yaw = f.wantYaw = shrineSeat.yaw * DEG; f.avatar.entity.setEulerAngles(0,shrineSeat.yaw,0); }
     // Separate spaces share a server room, but residents do not float across the void visually.
     if (f.avatar) f.avatar.entity.enabled = !f.hidden && isInShrine(p) === isInShrine(self ?? p);
@@ -719,6 +868,9 @@ app.on("update", (dt: number) => {
   follow.focus = !!near && stillFor >= FOCUS_AFTER;
   setFov(fitFov(FOLLOW_FOV, aspect()));
   const inShrine = isInShrine(self ?? mine);
+  // Trong game hang tối: chỉ lửa, đuốc, màn hình và chiếc đèn lồng theo người chơi là sáng.
+  world.setMood(inShrine ? "shrine" : "cave");
+  world.setLantern(mine.x, mine.z);
   // Điện thờ: hình trụ quanh tâm đảo; hang: hợp các phòng (hang lớn, hầm, hang nhỏ) của CAVE_BOUNDS.
   if (inShrine) follow.setBoundsCenter(SHRINE_CENTER.x, SHRINE_CENTER.z, 14);
   else follow.useRooms();
@@ -726,8 +878,11 @@ app.on("update", (dt: number) => {
   if (performance.now() - shrineUiAt > 120 || ui.get().shrineSeat !== (self?.shrineSeat || "")) {
     shrineUiAt = performance.now();
     const nearest = inShrine && !self?.shrineSeat ? SHRINE_SEATS.filter(seat => !ui.get().shrine?.seats.find(s=>s.id===seat.id)?.occupant && Math.hypot(seat.x-mine.x,seat.z-mine.z)<=2).sort((a,b)=>Math.hypot(a.x-mine.x,a.z-mine.z)-Math.hypot(b.x-mine.x,b.z-mine.z))[0] : null;
-    ui.set({ position:{x:mine.x,z:mine.z}, shrineSeat:self?.shrineSeat || "", nearbyShrineSeat: nearest ? {id:nearest.id,label:nearest.label} : null });
+    const seated = !!self?.seat;
+    ui.set({ position:{x:mine.x,z:mine.z}, shrineSeat:self?.shrineSeat || "", nearbyShrineSeat: nearest ? {id:nearest.id,label:nearest.label} : null,
+      seat: seated ? "seated" : !inShrine && nearestFreeSeat(mine.x, mine.z) ? "near" : null });
   }
+  markers.update(dt, inShrine ? null : mine, ui.get().destination);
   flames.update(camera); // sau hiệu ứng lửa của world (handler update của world chạy trước)
   // Camera bị ép sát đầu (lưng sát vách, sát đồ cao): avatar mình mờ dần rồi ẩn hẳn.
   setSelfOpacity(mine, smoothstep(SELF_FADE_TO, SELF_FADE_FROM, follow.boom));
@@ -745,7 +900,11 @@ app.on("update", (dt: number) => {
           ? touch
             ? `Chạm nút sáng để xem ${near.name}`
             : `Nhấn E để xem ${near.name}`
-          : CONTROLS_HELP;
+          : ui.get().seat === "seated"
+            ? touch ? "Chạm Đứng dậy hoặc đi để rời chỗ" : "Nhấn F hoặc phím di chuyển để đứng dậy"
+            : ui.get().seat === "near"
+              ? touch ? "Chạm Ngồi để ngồi xuống đây" : "Nhấn F để ngồi xuống đây"
+              : CONTROLS_HELP;
   if (ui.get().status !== status) ui.set({ status });
 });
 
@@ -881,7 +1040,9 @@ async function join(name: string, invite = "") {
     room.onMessage("emote", (m: { id: string; emote: unknown }) => {
       const e = Emote.safeParse(m?.emote);
       if (!e.success) return;
-      fans.get(m.id)?.avatar?.emote(e.data);
+      const actor = fans.get(m.id);
+      actor?.avatar?.emote(e.data);
+      if (actor && actor.x < 80) world.cheerNear(actor.x, actor.z); // fan NPC gần đó nhún đáp lại
       // dòng chat: tối đa một dòng mỗi EMOTE_LOG_GAP cho mỗi người (avatar vẫn diễn mọi lần)
       const now = performance.now();
       if (now - (emoteLogged.get(m.id) ?? -Infinity) < EMOTE_LOG_GAP) return;
@@ -956,13 +1117,14 @@ mountUI({
   chat: sendChat,
   emote: sendEmote,
   interact,
+  seat: toggleSeat,
   visit: (id) => {
     const landmark = landmarks.find(l => l.id === id); const f=me();
     if (!landmark || !f) return;
     const radius=id==='altar'||id==='rest'||id==='screen'?3:CAVE_STALL_RADIUS;
     keys.clear();
-    if (Math.hypot(f.x-landmark.x,f.z-landmark.z)<=radius) ui.set({panel:id,destination:null});
-    else ui.set({panel:null,destination:id});
+    if (Math.hypot(f.x-landmark.x,f.z-landmark.z)<=radius) { stopAuto(false); ui.set({panel:id,destination:null}); }
+    else { ui.set({panel:null,destination:id}); startAuto(id); }
   },
   leave: () => {
     keys.clear();
@@ -1072,6 +1234,8 @@ function snapshot() {
       status: ui.get().status,
       panel: ui.get().panel,
       prompt: ui.get().prompt?.id ?? null,
+      destination: ui.get().destination,
+      autoWalk: ui.get().autoWalk,
       count: ui.get().count,
       messages: ui
         .get()

@@ -70,6 +70,7 @@ export const landmarks: readonly {
   z: number;
 }[] = HUB_LANDMARKS;
 
+export type Mood = "day" | "cave" | "shrine";
 /** "high": post-processing (HDR, MSAA, bloom, vignette) + PCF5 shadows; "low": neither. */
 export type Quality = "high" | "low";
 
@@ -86,6 +87,18 @@ export interface World {
   readonly quality: Quality;
   /** Switch the render quality (a settings menu, or tests); stops the automatic monitor. */
   setQuality(quality: Quality): void;
+  /**
+   * Lighting mood. "day" (default): the bright look of the previews and the login scene. "cave" (the
+   * game): the hall-wide fill, bounce and wall lights drop to a fraction, the haze turns black and
+   * closes in (sight ends ~27 m from the camera) and the player carries a flickering lantern; fires,
+   * torches, lanterns and the wall screen stay as they are and become the landmarks. "shrine": the
+   * island's own lights, gentler darkness, no lantern.
+   */
+  setMood(mood: Mood): void;
+  /** A player emoted at (x, z): the NPC fans close by answer with a small bounce, one after another. */
+  cheerNear(x: number, z: number): void;
+  /** Carry the player's lantern to (x, z) (lit in mood "cave" only). */
+  setLantern(x: number, z: number): void;
 }
 
 export interface WorldOptions {
@@ -103,6 +116,8 @@ export interface WorldOptions {
   quality?: Quality | "auto";
   /** Freeze flicker and idles at this time in seconds (deterministic screenshots). */
   time?: number;
+  /** Lighting mood to start in (World.setMood changes it). Default "day". */
+  mood?: Mood;
   /** Canned picture on the big wall screen instead of the match feed (dev preview, screenshots). */
   screen?: ScreenDemo;
 }
@@ -149,6 +164,22 @@ const LOOK = {
     euler: [52, -24, 0] as const,
   },
   post: { bloom: 0.07, bloomThreshold: 0.55, vignette: 0.32 },
+  /**
+   * Dark-cave mode (WorldOptions.dark): factors on the ambient / directional fill / hall-wide
+   * omnis, the black haze, a stronger vignette, and the lantern the player carries.
+   */
+  dark: {
+    ambient: 0.3,
+    fill: 0.18,
+    hall: 0.22,
+    side: 0.4,
+    focal: 0.85,
+    fog: { color: "#050302", start: 8, end: 27 },
+    vignette: 0.5,
+    lantern: { y: 2.1, color: "#FFC98F", intensity: 1.25, range: 10.5, flicker: 0.16, hz: 2.3 },
+    /** In the shrine (its own lights): gentler darkness, no lantern. */
+    shrine: { ambient: 0.75, fog: { start: 14, end: 60 } },
+  },
   /** Unshadowed warm bounce over the hall (the fire lighting the cave as a whole). */
   bounce: {
     at: [0, 5.5, -1] as const,
@@ -503,16 +534,24 @@ export function createWorld(app: pc.AppBase, opts: WorldOptions = {}): World {
     });
     e.setPosition(at[0], at[1], at[2]);
     root.addChild(e);
+    return e.light!;
   };
-  omni(
+  /** Hall-wide lights with their bright intensity and their factor in mood "cave". */
+  const hall: { light: pc.LightComponent; base: number; k: number }[] = [
+    { light: fill.light!, base: LOOK.fill.intensity, k: LOOK.dark.fill },
+  ];
+  const dim = (light: pc.LightComponent, k: number) => {
+    hall.push({ light, base: light.intensity, k });
+  };
+  dim(omni(
     "cave-bounce",
     LOOK.bounce.at,
     LOOK.bounce.color,
     LOOK.bounce.intensity,
     LOOK.bounce.range,
-  );
+  ), LOOK.dark.hall);
   for (const w of LOOK.walls)
-    omni("cave-wall-bounce", w.at, LOOK.wallColor, w.intensity, w.range);
+    dim(omni("cave-wall-bounce", w.at, LOOK.wallColor, w.intensity, w.range), LOOK.dark.hall);
   omni(
     "sign-light",
     LOOK.sign.at,
@@ -522,10 +561,37 @@ export function createWorld(app: pc.AppBase, opts: WorldOptions = {}): World {
   );
   for (const c of HUB_CAVES) {
     const { fill: f, focal } = LOOK.side;
-    omni(`cave-fill-${c.id}`, [c.x, f.y, c.z], LOOK.wallColor, f.intensity, f.range);
+    dim(omni(`cave-fill-${c.id}`, [c.x, f.y, c.z], LOOK.wallColor, f.intensity, f.range), LOOK.dark.side);
     const at = frameToCave({ x: c.x, z: c.z, yaw: c.nicheYaw }, 0, focal.z);
-    omni(`cave-focal-${c.id}`, [at.x, focal.y, at.z], focal.color, focal.intensity, focal.range);
+    dim(omni(`cave-focal-${c.id}`, [at.x, focal.y, at.z], focal.color, focal.intensity, focal.range), LOOK.dark.focal);
   }
+  // The player's lantern: lit in mood "cave" once setLantern() has placed it.
+  const L = LOOK.dark.lantern;
+  const lantern = omni("player-lantern", [0, L.y, 0], L.color, 0, L.range);
+  let mood: Mood = "day",
+    lanternPlaced = false;
+  const setLantern = (x: number, z: number) => {
+    lantern.entity.setPosition(x, L.y, z);
+    lanternPlaced = true;
+  };
+  const setMood = (next: Mood) => {
+    if (next === mood) return;
+    mood = next;
+    const D = LOOK.dark;
+    for (const h of hall) h.light.intensity = h.base * (mood === "cave" ? h.k : 1);
+    const amb = mood === "cave" ? D.ambient : mood === "shrine" ? D.shrine.ambient : 1;
+    app.scene.ambientLight = new pc.Color(...LOOK.ambient.map((c) => c * amb));
+    const f = mood === "cave" ? D.fog : mood === "shrine" ? { color: D.fog.color, ...D.shrine.fog } : LOOK.fog;
+    fog.color = new pc.Color().fromString(f.color);
+    fog.start = f.start;
+    fog.end = f.end;
+    cam.fog = fog;
+    if (frame) {
+      frame.vignette.intensity = mood === "day" ? LOOK.post.vignette : D.vignette;
+      frame.update();
+    }
+  };
+  if (opts.mood) setMood(opts.mood);
 
   const animators: ((t: number) => void)[] = [];
   // Auto quality: average frame time over SLOW_WINDOW s windows once the cave stands.
@@ -536,6 +602,10 @@ export function createWorld(app: pc.AppBase, opts: WorldOptions = {}): World {
   app.on("update", (dt: number) => {
     if (!frozen) time += dt;
     for (const a of animators) a(time);
+    lantern.intensity =
+      mood === "cave" && lanternPlaced
+        ? L.intensity * (1 + L.flicker * (0.6 * wobble(time, L.hz, 11.3) + 0.4 * wobble(time, L.hz * 2.7, 4.1)))
+        : 0;
     if (!monitor || !armed || document.hidden || dt > 0.25) return;
     acc += dt;
     frames++;
@@ -576,8 +646,31 @@ export function createWorld(app: pc.AppBase, opts: WorldOptions = {}): World {
       quality = q;
       applyQuality(q);
     },
+    setMood,
+    setLantern,
+    cheerNear(x: number, z: number) {
+      for (const h of npcHops) {
+        const d = Math.hypot(h.x - x, h.z - z);
+        if (d < NPC_HOP_REACH && h.at < 0 && h.want === null) h.want = 0.3 + d * 0.09;
+      }
+    },
   };
 }
+
+/** NPC fans that can answer an emote: a bounce `want` seconds from now (set by World.cheerNear). */
+interface NpcHop {
+  e: pc.Entity;
+  x: number;
+  z: number;
+  baseY: number;
+  want: number | null;
+  at: number;
+}
+const npcHops: NpcHop[] = [];
+const NPC_HOP_TIME = 0.42;
+const NPC_HOP_HEIGHT = 0.14;
+/** Fans within this distance (m) of an emoting player answer it. */
+const NPC_HOP_REACH = 3.4;
 
 interface Built {
   /** The ceilings of the five caves, the tunnel roofs and any stalactites placed under them. */
@@ -734,6 +827,23 @@ function setUpNpc(
     report(`${p.asset}: pose joints not found: ${missing.join(", ")}`);
   const breather = new Breather(e, pose, seed);
   animators.push((t) => breather.update(t));
+  // A fan who is not lying down answers a nearby player's emote with a small bounce (World.cheerNear).
+  if (!npc.pose.startsWith("lie")) {
+    const hop: NpcHop = { e, x: p.x, z: p.z, baseY: 0, want: null, at: -1 };
+    npcHops.push(hop);
+    animators.push((t) => {
+      if (hop.want !== null) {
+        if (hop.at < 0) hop.baseY = e.getLocalPosition().y;
+        hop.at = t + hop.want;
+        hop.want = null;
+      }
+      if (hop.at < 0 || t < hop.at) return;
+      const u = (t - hop.at) / NPC_HOP_TIME;
+      const at = e.getLocalPosition();
+      e.setLocalPosition(at.x, hop.baseY + (u < 1 ? NPC_HOP_HEIGHT * 4 * u * (1 - u) : 0), at.z);
+      if (u >= 1) hop.at = -1;
+    });
+  }
   const hold = npc.hold;
   if (!hold || !holdRes) return;
   const joint = e.findByName(hold.node);

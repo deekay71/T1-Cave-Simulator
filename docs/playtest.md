@@ -70,3 +70,12 @@ Bản local để review gameplay và bố cục, chưa deploy public. Trước 
 - Link mời: `https://<host>/?invite=<mã>`. Mã được nhớ trong trình duyệt; mã sai thì bị xóa để nhập lại.
 - `GUEST_RATE_LIMIT` (mặc định 20 request/phút/IP) nên đặt 120 cho close test vì nhiều người có thể chung một mạng.
 - Deploy máy public: `docs/deploy-free.md` và `compose.public.yaml`.
+
+## Cập nhật 2026-11-12 (chiều)
+
+- **Hang tối.** Trong game (`World.setMood("cave")`) đèn nền của hang giảm còn 18–40 %, sương đổi sang đen và khép lại (tầm nhìn hết ở ~27 m tính từ camera); người chơi mang một đèn lồng lập lòe (tầm 10,5 m). Lửa trại, đuốc, đèn bão, màn hình lớn và mũi tên chỉ điểm vẫn sáng nên thành mốc định hướng. Màn hình đăng nhập và các trang xem trước giữ kiểu sáng cũ (`mood` mặc định `day`); điện thờ dùng `shrine`.
+- **Chỉ đường = tự đi.** Bấm một điểm trong "Các sạp trong hang", box "Gần đây" hoặc nút "Chỉ đường": nhân vật tự đi theo đường tìm trên đồ thị điểm mốc (`packages/shared/src/nav.ts`, dùng chung với bot), camera xoay theo hướng đi. Bấm phím di chuyển, mở bảng hoặc ✕ là dừng. Mỗi điểm tương tác có vòng sáng trên nền và mũi tên nhấp nhô (`apps/web/src/world/markers.ts`); điểm đang được chỉ đường to và sáng hơn.
+- **Box "Gần đây"** dưới thẻ cư dân: đích hiện tại, ba điểm gần nhất kèm khoảng cách, tiến độ quest T1.
+- **Ngồi và nhảy.** F ngồi xuống ghế đẩu / thùng / đá thấp gần nhất (68 chỗ, `packages/shared/src/seats.ts`; server giữ chỗ, một ghế một người), F hoặc phím di chuyển để đứng dậy về chỗ cũ. Phím 4 hoặc Space: nhảy (emote `jump`, mọi người đều thấy). Fan NPC trong 3,4 m nhún đáp lại mỗi emote.
+- **Hang Quest** giờ là 7 quest về T1, mỗi quest ba câu, đúng cả ba là xong (`apps/web/src/stalls/quests.ts`); tiến độ lưu ở trình duyệt, chưa cộng xu/XP.
+- **Hang ký ức** hiện đủ sáu chức vô địch thế giới (2013, 2015, 2016, 2023, 2024, 2025) với ảnh thật từ Wikimedia Commons, ghi công từng ảnh (`apps/web/public/memories/CREDITS.md`). Năm 2016 và 2025 chưa có ảnh nâng cúp mang giấy phép tự do nên dùng ảnh sự kiện của đúng giải.

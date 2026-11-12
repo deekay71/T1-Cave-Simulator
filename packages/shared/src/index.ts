@@ -11,6 +11,8 @@ import { clampToRooms, inRooms, type Room } from "./rooms.js";
 
 export * from "./layout.js";
 export * from "./rooms.js";
+export * from "./nav.js";
+export * from "./seats.js";
 
 /** Số ghế tối đa của một room hub. */
 export const ROOM_CAPACITY = 60;
@@ -304,7 +306,7 @@ export function spawnPoint(
 }
 
 export const Chat = z.string().trim().min(1).max(240);
-export const Emote = z.enum(["wave", "laugh", "cheer"]);
+export const Emote = z.enum(["wave", "laugh", "cheer", "jump"]);
 
 /** Giới hạn tần suất: tối đa `capacity` lần trong mỗi `perMs` (token bucket). */
 export interface Limit {

@@ -17,7 +17,11 @@ import { createTicketIssuer, loadPrivateJwk } from "@te-liet/auth";
 import {
   AXIS_MAX,
   CLOSE_SIGNED_IN_ELSEWHERE,
+  findPath,
   frameToCave,
+  NAV_EDGES,
+  NAV_NODES,
+  navClearOf,
   HUB_CAVES,
   HUB_LANDMARKS,
   HUB_LAYOUT,
@@ -227,104 +231,11 @@ const wrapPi = (a: number) => {
   return w - Math.PI;
 };
 
-/* ------------------------------------------------------------------ đường đi */
+/* ------------------------------------------------------------------ đường đi (packages/shared/src/nav.ts) */
 
-const { obstacles } = HUB_LAYOUT;
-/**
- * Điểm đứng được: nằm trong vùng đi được (hợp các phòng) cách biên ≥ `inset` m và cách mọi vật cản
- * thêm `margin` m (collider đã gồm thân người).
- */
-const clearOf = (x: number, z: number, margin: number, inset = 0.5) =>
-  inRooms(x, z, HUB_ROOMS, -inset) &&
-  obstacles.every((o) => Math.hypot(x - o.x, z - o.z) >= o.r + margin);
-/** Đi thẳng từ a tới b không cắt vật cản nào và không rời vùng đi được. */
-function clearPath(a: P, b: P): boolean {
-  const len = Math.hypot(b.x - a.x, b.z - a.z);
-  const n = Math.max(1, Math.ceil(len / 0.25));
-  for (let i = 1; i <= n; i++) {
-    const t = i / n;
-    if (!clearOf(a.x + (b.x - a.x) * t, a.z + (b.z - a.z) * t, 0.12, 0.15))
-      return false;
-  }
-  return true;
-}
-
-/**
- * Điểm mốc: vòng quanh lửa trại (r 6,5 m), dọc sáu lối đi (HUB_WALKWAYS: chỗ xuất hiện, cửa điện thờ,
- * bốn miệng hầm), tim mỗi đường hầm, và trong mỗi hang nhỏ (tâm + vòng r 3,6 m). Điểm bị vật cản
- * chiếm thì bỏ. Cạnh: hai điểm cách nhau ≤ 13 m và nhìn thấy nhau (clearPath).
- */
-const NODES: P[] = [];
-{
-  const add = (p: P) => {
-    if (clearOf(p.x, p.z, 0.3, 0.4)) NODES.push(p);
-  };
-  for (let a = 0; a < 360; a += 20)
-    add({ x: 6.5 * Math.sin((a * Math.PI) / 180), z: 6.5 * Math.cos((a * Math.PI) / 180) });
-  for (const w of HUB_WALKWAYS) {
-    const d = Math.hypot(w.to.x, w.to.z);
-    for (const t of [9.5, 13, 16.5]) if (t < d) add({ x: (w.to.x / d) * t, z: (w.to.z / d) * t });
-  }
-  for (const c of HUB_CAVES) {
-    const d = Math.hypot(c.x, c.z);
-    for (const t of [19.5, 22, 24.5, 27, 29.5, d - 5]) add(onAxis(c, t));
-    add({ x: c.x, z: c.z });
-    for (let a = 0; a < 360; a += 45)
-      add({ x: c.x + 3.6 * Math.sin((a * Math.PI) / 180), z: c.z + 3.6 * Math.cos((a * Math.PI) / 180) });
-  }
-}
-const EDGES: number[][] = NODES.map(() => []);
-for (let i = 0; i < NODES.length; i++)
-  for (let j = i + 1; j < NODES.length; j++)
-    if (
-      Math.hypot(NODES[i].x - NODES[j].x, NODES[i].z - NODES[j].z) <= 13 &&
-      clearPath(NODES[i], NODES[j])
-    ) {
-      EDGES[i].push(j);
-      EDGES[j].push(i);
-    }
-
-/**
- * Đường đi từ `from` tới `to`: thẳng nếu thông, không thì đường ngắn nhất qua các điểm mốc (Dijkstra
- * trên đồ thị nhỏ, `from` và `to` nối với mọi điểm mốc chúng nhìn thấy). null nếu không có đường.
- */
-function findPath(from: P, to: P): P[] | null {
-  const dist = (a: P, b: P) => Math.hypot(a.x - b.x, a.z - b.z);
-  if (dist(from, to) <= 13 && clearPath(from, to)) return [to];
-  const n = NODES.length;
-  const cost = new Array<number>(n + 1).fill(Infinity);
-  const prev = new Array<number>(n + 1).fill(-1);
-  const done = new Array<boolean>(n + 1).fill(false);
-  const goalLinks = new Set<number>();
-  for (let i = 0; i < n; i++) {
-    if (dist(from, NODES[i]) <= 13 && clearPath(from, NODES[i])) cost[i] = dist(from, NODES[i]);
-    if (dist(to, NODES[i]) <= 13 && clearPath(NODES[i], to)) goalLinks.add(i);
-  }
-  for (;;) {
-    let u = -1;
-    for (let i = 0; i <= n; i++) if (!done[i] && (u < 0 || cost[i] < cost[u])) u = i;
-    if (u < 0 || cost[u] === Infinity) return null;
-    if (u === n) break;
-    done[u] = true;
-    for (const v of EDGES[u]) {
-      const c = cost[u] + dist(NODES[u], NODES[v]);
-      if (c < cost[v]) {
-        cost[v] = c;
-        prev[v] = u;
-      }
-    }
-    if (goalLinks.has(u)) {
-      const c = cost[u] + dist(NODES[u], to);
-      if (c < cost[n]) {
-        cost[n] = c;
-        prev[n] = u;
-      }
-    }
-  }
-  const path: P[] = [to];
-  for (let u = prev[n]; u >= 0; u = prev[u]) path.unshift(NODES[u]);
-  return path;
-}
+const NODES = NAV_NODES,
+  EDGES = NAV_EDGES,
+  clearOf = navClearOf;
 
 interface Target extends P {
   look: P | null;

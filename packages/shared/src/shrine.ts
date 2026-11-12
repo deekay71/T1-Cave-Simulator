@@ -81,8 +81,8 @@ export function constrainShrine(x: number, z: number): Position {
 }
 
 /** Shared server movement and client prediction. A reserved seat suppresses all movement. */
-export function applyShrineAwareInput(p: Position & { shrineSeat?: string }, cmd: Axes, dt: number): void {
-  if (p.shrineSeat) return;
+export function applyShrineAwareInput(p: Position & { shrineSeat?: string; seat?: string }, cmd: Axes, dt: number): void {
+  if (p.shrineSeat || p.seat) return;
   if (!isInShrine(p)) return applyInput(p, cmd, dt);
   const local = { x: p.x - SHRINE_CENTER.x, z: p.z - SHRINE_CENTER.z };
   applyInput(local, cmd, dt, SHRINE_LAYOUT);

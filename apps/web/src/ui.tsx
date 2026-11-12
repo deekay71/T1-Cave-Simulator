@@ -8,7 +8,8 @@ import {
   type MouseEvent,
 } from "react";
 import { createRoot } from "react-dom/client";
-import { ROOM_CAPACITY, SCREEN_SPOT } from "@te-liet/shared";
+import { HUB_LANDMARKS, ROOM_CAPACITY, SCREEN_SPOT } from "@te-liet/shared";
+import { QUESTS, loadDone } from "./stalls/quests.js";
 import { StallPanel, RankPanel, ResidentHUD } from "./stalls/StallPanel.js";
 import { CAVE_STALLS, CAVE_STALL_RADIUS, stallApproach, type CaveStallId } from "../../../packages/shared/src/stalls.js";
 import { SHRINE_PORTAL, isInShrine } from "../../../packages/shared/src/shrine.js";
@@ -31,6 +32,10 @@ type Snapshot = {
   messages: ChatLine[];
   panel: string | null;
   destination: string | null;
+  /** Nhân vật đang tự đi tới `destination`. */
+  autoWalk: boolean;
+  /** Chỗ ngồi trong hang: đang ngồi, có ghế trống trong tầm với, hoặc không. */
+  seat: "seated" | "near" | null;
   /** Điểm tương tác ở gần (bấm E hoặc chạm nút để mở bảng). */
   prompt: { id: string; name: string } | null;
   /** API yêu cầu mã mời (close test): hiện ô nhập mã trong form vào hang. */
@@ -48,6 +53,8 @@ let state: Snapshot = {
   messages: [],
   panel: null,
   destination: null,
+  autoWalk: false,
+  seat: null,
   prompt: null,
   needInvite: false,
   loginNotice: "",
@@ -125,8 +132,47 @@ export const ui = {
     requestAnimationFrame(flushLines);
   },
 };
-export type EmoteName = "wave" | "laugh" | "cheer";
+export type EmoteName = "wave" | "laugh" | "cheer" | "jump";
 /** Ba cảm xúc server nhận (Emote trong @te-liet/shared), theo thứ tự phím 1/2/3. */
+/** Màu chấm của từng điểm trong box "Gần đây" (trùng màu mũi tên trong cảnh). */
+const SPOT_COLORS: Record<string, string> = { altar: "#F2C76B", screen: "#8FB8F2", rest: "#D8C7B0" };
+const spotColor = (id: string) => CAVE_STALLS.find((stall) => stall.id === id)?.accent ?? SPOT_COLORS[id] ?? "#E8DCCB";
+/**
+ * Box gọn dưới thẻ cư dân: đích đang chỉ đường (nếu có), ba điểm tương tác gần nhất kèm khoảng cách
+ * (bấm là nhân vật tự đi tới), và tiến độ quest T1.
+ */
+function NearbyBox({ position, destination, autoWalk, visit }: {
+  position: { x: number; z: number };
+  destination: { id: string; name: string; x: number; z: number } | null;
+  autoWalk: boolean;
+  visit: (id: string) => void;
+}) {
+  const [quests, setQuests] = useState(() => loadDone().length);
+  useEffect(() => { setQuests(loadDone().length); }, [destination?.id]);
+  const far = (p: { x: number; z: number }) => Math.ceil(Math.hypot(position.x - p.x, position.z - p.z));
+  const near = HUB_LANDMARKS.filter((l) => l.id !== destination?.id)
+    .map((l) => ({ ...l, d: far(l) }))
+    .sort((a, b) => a.d - b.d)
+    .slice(0, 3);
+  return (
+    <aside className="nearby" aria-label="Điểm gần đây và quest">
+      {destination && (
+        <div className="nearby-goal">
+          <i style={{ background: spotColor(destination.id) }} />
+          <div><b>{destination.name}</b><small>{far(destination)} m · {autoWalk ? "đang tự đi" : "theo mũi tên"}</small></div>
+          <button onClick={() => ui.set({ destination: null })} aria-label="Bỏ chỉ dẫn">✕</button>
+        </div>
+      )}
+      <header><span>Gần đây</span><button onClick={() => visit("quest")} title="Tới Hang Quest">Quest T1 {quests}/{QUESTS.length}</button></header>
+      <ul>
+        {near.map((l) => (
+          <li key={l.id}><button onClick={() => visit(l.id)} title="Tự đi tới đây"><i style={{ background: spotColor(l.id) }} /><span>{l.name}</span><small>{l.d} m</small></button></li>
+        ))}
+      </ul>
+    </aside>
+  );
+}
+
 export const EMOTES: readonly {
   id: EmoteName;
   key: string;
@@ -136,6 +182,7 @@ export const EMOTES: readonly {
   { id: "wave", key: "1", icon: "✋", label: "Chào" },
   { id: "laugh", key: "2", icon: "😆", label: "Cười trừ" },
   { id: "cheer", key: "3", icon: "🙌", label: "Cổ vũ" },
+  { id: "jump", key: "4", icon: "⤴", label: "Nhảy" },
 ];
 /** Màn hình cảm ứng (ngón tay là con trỏ chính): không có phím E / 1 / 2 / 3. */
 export const touch =
@@ -160,6 +207,8 @@ export type Actions = {
   /** Mở bảng của điểm tương tác đang ở gần (như phím E). */
   interact: () => void;
   visit: (id: string) => void;
+  /** Ngồi xuống ghế gần nhất / đứng dậy. */
+  seat: () => void;
   leave: () => void;
   copyInvite: () => Promise<void>;
   report: (messageId: string, reason: string) => void;
@@ -548,7 +597,7 @@ export function mountUI(actions: Actions) {
         {s.connected && (
           <>
             <ResidentHUD />
-            {destination && target && !s.panel && <div className="destination-hint"><b>↗ {destination.name}</b><span>Còn {Math.ceil(Math.hypot(s.position.x-target.x,s.position.z-target.z))} m · Đến vòng sáng rồi bấm E</span><button onClick={()=>ui.set({destination:null})}>Bỏ chỉ dẫn</button></div>}
+            {!s.panel && !isInShrine(s.position) && <NearbyBox position={s.position} destination={destination && target ? { id: destination.id, name: destination.name, x: target.x, z: target.z } : null} autoWalk={s.autoWalk} visit={actions.visit} />}
             <Chat messages={s.messages} send={actions.chat} report={actions.report} mute={actions.mute} />
             {s.prompt && !s.panel && (
               <button
@@ -578,6 +627,7 @@ export function mountUI(actions: Actions) {
                   {!touch && <kbd>{e.key}</kbd>} {e.icon} {e.label}
                 </button>
               ))}
+              {s.seat && <button className="seat-toggle" onClick={() => actions.seat()} title={touch ? undefined : "Phím F"}>{!touch && <kbd>F</kbd>} 🪑 {s.seat === "seated" ? "Đứng dậy" : "Ngồi"}</button>}
             </div>}
             <nav className="shortcuts" aria-label="Tiện ích trong hang">
               <button onClick={() => ui.set({ panel: "map" })}>⌖ Các sạp trong hang</button>
