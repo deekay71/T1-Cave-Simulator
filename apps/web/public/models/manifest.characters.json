@@ -6650,6 +6650,3026 @@
         }
       },
       "bytes": 128616
+    },
+    {
+      "name": "tl_char_host_oner_v01",
+      "file": "characters/tl_char_host_oner_v01.glb",
+      "url": "/models/characters/tl_char_host_oner_v01.glb",
+      "triangles": 1746,
+      "trianglesByMaterial": {
+        "tl_matte": 1746
+      },
+      "budget": 2500,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -0.3741,
+          0,
+          -0.181
+        ],
+        "max": [
+          0.3741,
+          1.8392,
+          0.1934
+        ]
+      },
+      "size": [
+        0.7482,
+        1.8392,
+        0.3744
+      ],
+      "nodes": [
+        "tl_char_host_oner_v01",
+        "hips",
+        "spine",
+        "neck",
+        "head",
+        "arm_upper_l",
+        "arm_lower_l",
+        "arm_upper_r",
+        "arm_lower_r",
+        "leg_upper_l",
+        "leg_lower_l",
+        "leg_upper_r",
+        "leg_lower_r"
+      ],
+      "emissive": [],
+      "materials": [
+        "tl_matte"
+      ],
+      "notes": "Stall host NPC (oner), never a player outfit. Check-in host: tall, long face, centre-parted curtain fringe showing a strip of forehead, round thick dark glasses; team kit. Same joints as the fan rig; proportions by node scale (hips 1.04, spine x 1, head [0.95,1.07,0.98]). Poses: host_stand, host_counter, host_greet, host_present, host_hold, host_keeper (standing; hips.at already carries the height scale).",
+      "anchors": {
+        "hand_l": [
+          0.3203,
+          0.797,
+          0.0042
+        ],
+        "hand_r": [
+          -0.3203,
+          0.797,
+          0.0042
+        ],
+        "eyes": [
+          0,
+          1.5962,
+          0.1528
+        ],
+        "head_top": [
+          0,
+          1.8392,
+          0
+        ],
+        "name_tag": [
+          0,
+          2.0592,
+          0
+        ],
+        "seat_contact": [
+          0,
+          0.45,
+          -0.05
+        ]
+      },
+      "lights": [],
+      "poses": {
+        "host_stand": {
+          "hips": {
+            "at": [
+              0,
+              0.9776,
+              0
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            3,
+            0,
+            0
+          ],
+          "neck": [
+            0,
+            0,
+            0
+          ],
+          "head": [
+            -2,
+            0,
+            0
+          ],
+          "arm_upper_l": [
+            5,
+            0,
+            2
+          ],
+          "arm_lower_l": [
+            -14,
+            0,
+            0
+          ],
+          "arm_upper_r": [
+            5,
+            0,
+            -2
+          ],
+          "arm_lower_r": [
+            -14,
+            0,
+            0
+          ],
+          "leg_upper_l": [
+            0,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            0,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            0,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            0,
+            0,
+            0
+          ]
+        },
+        "host_counter": {
+          "hips": {
+            "at": [
+              0,
+              0.9776,
+              -0.02
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            9,
+            0,
+            0
+          ],
+          "neck": [
+            -3,
+            0,
+            0
+          ],
+          "head": [
+            -5,
+            0,
+            0
+          ],
+          "arm_upper_l": [
+            -9,
+            0,
+            7
+          ],
+          "arm_lower_l": [
+            -57,
+            0,
+            0
+          ],
+          "arm_upper_r": [
+            -9,
+            0,
+            -7
+          ],
+          "arm_lower_r": [
+            -57,
+            0,
+            0
+          ],
+          "leg_upper_l": [
+            0,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            0,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            0,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            0,
+            0,
+            0
+          ]
+        },
+        "host_greet": {
+          "hips": {
+            "at": [
+              0,
+              0.9776,
+              -0.02
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            6,
+            0,
+            -2
+          ],
+          "neck": [
+            -2,
+            0,
+            0
+          ],
+          "head": [
+            -4,
+            0,
+            3
+          ],
+          "arm_upper_l": [
+            -12,
+            0,
+            7
+          ],
+          "arm_lower_l": [
+            -57,
+            0,
+            0
+          ],
+          "arm_upper_r": [
+            -28,
+            0,
+            -24
+          ],
+          "arm_lower_r": [
+            -118,
+            0,
+            0
+          ],
+          "leg_upper_l": [
+            0,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            0,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            0,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            0,
+            0,
+            0
+          ]
+        },
+        "host_present": {
+          "hips": {
+            "at": [
+              0,
+              0.9776,
+              0
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            2,
+            0,
+            -3
+          ],
+          "neck": [
+            0,
+            0,
+            0
+          ],
+          "head": [
+            -3,
+            0,
+            0
+          ],
+          "arm_upper_l": [
+            -12,
+            0,
+            58
+          ],
+          "arm_lower_l": [
+            -14,
+            0,
+            8
+          ],
+          "arm_upper_r": [
+            5,
+            0,
+            -3
+          ],
+          "arm_lower_r": [
+            -16,
+            0,
+            0
+          ],
+          "leg_upper_l": [
+            0,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            0,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            0,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            0,
+            0,
+            0
+          ]
+        },
+        "host_hold": {
+          "hips": {
+            "at": [
+              0,
+              0.9776,
+              0
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            3,
+            0,
+            0
+          ],
+          "neck": [
+            0,
+            0,
+            0
+          ],
+          "head": [
+            2,
+            0,
+            0
+          ],
+          "arm_upper_l": [
+            5,
+            0,
+            2
+          ],
+          "arm_lower_l": [
+            -14,
+            0,
+            0
+          ],
+          "arm_upper_r": [
+            -18,
+            0,
+            22
+          ],
+          "arm_lower_r": [
+            -78,
+            0,
+            0
+          ],
+          "leg_upper_l": [
+            0,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            0,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            0,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            0,
+            0,
+            0
+          ]
+        },
+        "host_keeper": {
+          "hips": {
+            "at": [
+              0,
+              0.9736,
+              -0.02
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            10,
+            0,
+            0
+          ],
+          "neck": [
+            4,
+            0,
+            0
+          ],
+          "head": [
+            -6,
+            0,
+            0
+          ],
+          "arm_upper_l": [
+            -14,
+            0,
+            10
+          ],
+          "arm_lower_l": [
+            -10,
+            0,
+            0
+          ],
+          "arm_upper_r": [
+            8,
+            0,
+            -3
+          ],
+          "arm_lower_r": [
+            -20,
+            0,
+            0
+          ],
+          "leg_upper_l": [
+            -4,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            4,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            -4,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            4,
+            0,
+            0
+          ]
+        }
+      },
+      "collider": {
+        "type": "capsule",
+        "center": [
+          0,
+          0.875,
+          0
+        ],
+        "radius": 0.3,
+        "height": 1.75
+      },
+      "meta": {
+        "kind": "host",
+        "variant": "oner",
+        "rig": {
+          "version": 1,
+          "facing": "+Z",
+          "left": "+X",
+          "units": "m",
+          "nominalHeight": 1.75,
+          "skullTop": 1.7798,
+          "boundsHeight": 1.8392,
+          "restRotations": "all zero (rest pose = standing, arms down; the 4 deg arm splay is baked into the mesh)",
+          "eulerOrder": "PlayCanvas setLocalEulerAngles (R = Rz*Ry*Rx)",
+          "jointWorldRest": {
+            "hips": [
+              0,
+              0.9776,
+              0
+            ],
+            "spine": [
+              0,
+              1.0504,
+              0
+            ],
+            "neck": [
+              0,
+              1.3988,
+              -0.0052
+            ],
+            "head": [
+              0,
+              1.4404,
+              -0.0052
+            ],
+            "arm_upper_l": [
+              0.2808,
+              1.3624,
+              0
+            ],
+            "arm_lower_l": [
+              0.3011,
+              1.0719,
+              0
+            ],
+            "arm_upper_r": [
+              -0.2808,
+              1.3624,
+              0
+            ],
+            "arm_lower_r": [
+              -0.3011,
+              1.0719,
+              0
+            ],
+            "leg_upper_l": [
+              0.104,
+              0.8736,
+              0
+            ],
+            "leg_lower_l": [
+              0.104,
+              0.5408,
+              0
+            ],
+            "leg_upper_r": [
+              -0.104,
+              0.8736,
+              0
+            ],
+            "leg_lower_r": [
+              -0.104,
+              0.5408,
+              0
+            ]
+          },
+          "lengths": {
+            "upperArm": 0.28,
+            "forearm": 0.21,
+            "hand": 0.115,
+            "thigh": 0.32,
+            "shinToSole": 0.52
+          },
+          "armTiltBakedDeg": 4,
+          "conventions": "limbs hang along -Y; X<0 swings an arm/thigh forward, X>0 back; leg_lower X>0 bends the knee (foot back); arm_lower X<0 bends the elbow (hand forward/up); arm_upper_r Z<0 / arm_upper_l Z>0 raise the arm sideways; spine/head X>0 lean/nod forward"
+        },
+        "sit": {
+          "seatHeight": 0.45,
+          "rootAt": "floor under the seat centre, facing away from the backrest",
+          "hipsAt": [
+            0,
+            0.645,
+            -0.05
+          ],
+          "otherSeatHeights": "raise/lower the root by (seatY - 0.45); for seats lower than ~0.4 bend the knees more"
+        }
+      },
+      "bytes": 144252
+    },
+    {
+      "name": "tl_char_host_peyz_v01",
+      "file": "characters/tl_char_host_peyz_v01.glb",
+      "url": "/models/characters/tl_char_host_peyz_v01.glb",
+      "triangles": 1540,
+      "trianglesByMaterial": {
+        "tl_matte": 1540
+      },
+      "budget": 2500,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -0.3885,
+          0,
+          -0.1672
+        ],
+        "max": [
+          0.3885,
+          1.7403,
+          0.2038
+        ]
+      },
+      "size": [
+        0.777,
+        1.7403,
+        0.371
+      ],
+      "nodes": [
+        "tl_char_host_peyz_v01",
+        "hips",
+        "spine",
+        "neck",
+        "head",
+        "arm_upper_l",
+        "arm_lower_l",
+        "arm_upper_r",
+        "arm_lower_r",
+        "leg_upper_l",
+        "leg_lower_l",
+        "leg_upper_r",
+        "leg_lower_r"
+      ],
+      "emissive": [],
+      "materials": [
+        "tl_matte"
+      ],
+      "notes": "Stall host NPC (peyz), never a player outfit. Apparel host: broad shoulders, fuller square face, short textured hair with a side-swept comma fringe, no glasses; team kit. Same joints as the fan rig; proportions by node scale (hips 1, spine x 1.08, head [1.07,0.97,1.03]). Poses: host_stand, host_counter, host_greet, host_present, host_hold, host_keeper (standing; hips.at already carries the height scale).",
+      "anchors": {
+        "hand_l": [
+          0.3327,
+          0.7663,
+          0.004
+        ],
+        "hand_r": [
+          -0.3327,
+          0.7663,
+          0.004
+        ],
+        "eyes": [
+          0,
+          1.5208,
+          0.1547
+        ],
+        "head_top": [
+          0,
+          1.7403,
+          0
+        ],
+        "name_tag": [
+          0,
+          1.9603,
+          0
+        ],
+        "seat_contact": [
+          0,
+          0.45,
+          -0.05
+        ]
+      },
+      "lights": [],
+      "poses": {
+        "host_stand": {
+          "hips": {
+            "at": [
+              0,
+              0.94,
+              0
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            3,
+            0,
+            0
+          ],
+          "neck": [
+            0,
+            0,
+            0
+          ],
+          "head": [
+            -2,
+            0,
+            0
+          ],
+          "arm_upper_l": [
+            5,
+            0,
+            2
+          ],
+          "arm_lower_l": [
+            -14,
+            0,
+            0
+          ],
+          "arm_upper_r": [
+            5,
+            0,
+            -2
+          ],
+          "arm_lower_r": [
+            -14,
+            0,
+            0
+          ],
+          "leg_upper_l": [
+            0,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            0,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            0,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            0,
+            0,
+            0
+          ]
+        },
+        "host_counter": {
+          "hips": {
+            "at": [
+              0,
+              0.94,
+              -0.02
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            9,
+            0,
+            0
+          ],
+          "neck": [
+            -3,
+            0,
+            0
+          ],
+          "head": [
+            -5,
+            0,
+            0
+          ],
+          "arm_upper_l": [
+            -9,
+            0,
+            7
+          ],
+          "arm_lower_l": [
+            -57,
+            0,
+            0
+          ],
+          "arm_upper_r": [
+            -9,
+            0,
+            -7
+          ],
+          "arm_lower_r": [
+            -57,
+            0,
+            0
+          ],
+          "leg_upper_l": [
+            0,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            0,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            0,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            0,
+            0,
+            0
+          ]
+        },
+        "host_greet": {
+          "hips": {
+            "at": [
+              0,
+              0.94,
+              -0.02
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            6,
+            0,
+            -2
+          ],
+          "neck": [
+            -2,
+            0,
+            0
+          ],
+          "head": [
+            -4,
+            0,
+            3
+          ],
+          "arm_upper_l": [
+            -12,
+            0,
+            7
+          ],
+          "arm_lower_l": [
+            -57,
+            0,
+            0
+          ],
+          "arm_upper_r": [
+            -28,
+            0,
+            -24
+          ],
+          "arm_lower_r": [
+            -118,
+            0,
+            0
+          ],
+          "leg_upper_l": [
+            0,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            0,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            0,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            0,
+            0,
+            0
+          ]
+        },
+        "host_present": {
+          "hips": {
+            "at": [
+              0,
+              0.94,
+              0
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            2,
+            0,
+            -3
+          ],
+          "neck": [
+            0,
+            0,
+            0
+          ],
+          "head": [
+            -3,
+            0,
+            0
+          ],
+          "arm_upper_l": [
+            -12,
+            0,
+            58
+          ],
+          "arm_lower_l": [
+            -14,
+            0,
+            8
+          ],
+          "arm_upper_r": [
+            5,
+            0,
+            -3
+          ],
+          "arm_lower_r": [
+            -16,
+            0,
+            0
+          ],
+          "leg_upper_l": [
+            0,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            0,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            0,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            0,
+            0,
+            0
+          ]
+        },
+        "host_hold": {
+          "hips": {
+            "at": [
+              0,
+              0.94,
+              0
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            3,
+            0,
+            0
+          ],
+          "neck": [
+            0,
+            0,
+            0
+          ],
+          "head": [
+            2,
+            0,
+            0
+          ],
+          "arm_upper_l": [
+            5,
+            0,
+            2
+          ],
+          "arm_lower_l": [
+            -14,
+            0,
+            0
+          ],
+          "arm_upper_r": [
+            -18,
+            0,
+            22
+          ],
+          "arm_lower_r": [
+            -78,
+            0,
+            0
+          ],
+          "leg_upper_l": [
+            0,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            0,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            0,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            0,
+            0,
+            0
+          ]
+        },
+        "host_keeper": {
+          "hips": {
+            "at": [
+              0,
+              0.936,
+              -0.02
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            10,
+            0,
+            0
+          ],
+          "neck": [
+            4,
+            0,
+            0
+          ],
+          "head": [
+            -6,
+            0,
+            0
+          ],
+          "arm_upper_l": [
+            -14,
+            0,
+            10
+          ],
+          "arm_lower_l": [
+            -10,
+            0,
+            0
+          ],
+          "arm_upper_r": [
+            8,
+            0,
+            -3
+          ],
+          "arm_lower_r": [
+            -20,
+            0,
+            0
+          ],
+          "leg_upper_l": [
+            -4,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            4,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            -4,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            4,
+            0,
+            0
+          ]
+        }
+      },
+      "collider": {
+        "type": "capsule",
+        "center": [
+          0,
+          0.875,
+          0
+        ],
+        "radius": 0.3,
+        "height": 1.75
+      },
+      "meta": {
+        "kind": "host",
+        "variant": "peyz",
+        "rig": {
+          "version": 1,
+          "facing": "+Z",
+          "left": "+X",
+          "units": "m",
+          "nominalHeight": 1.75,
+          "skullTop": 1.6809,
+          "boundsHeight": 1.7403,
+          "restRotations": "all zero (rest pose = standing, arms down; the 4 deg arm splay is baked into the mesh)",
+          "eulerOrder": "PlayCanvas setLocalEulerAngles (R = Rz*Ry*Rx)",
+          "jointWorldRest": {
+            "hips": [
+              0,
+              0.94,
+              0
+            ],
+            "spine": [
+              0,
+              1.01,
+              0
+            ],
+            "neck": [
+              0,
+              1.345,
+              -0.005
+            ],
+            "head": [
+              0,
+              1.385,
+              -0.005
+            ],
+            "arm_upper_l": [
+              0.2916,
+              1.31,
+              0
+            ],
+            "arm_lower_l": [
+              0.3127,
+              1.0307,
+              0
+            ],
+            "arm_upper_r": [
+              -0.2916,
+              1.31,
+              0
+            ],
+            "arm_lower_r": [
+              -0.3127,
+              1.0307,
+              0
+            ],
+            "leg_upper_l": [
+              0.1,
+              0.84,
+              0
+            ],
+            "leg_lower_l": [
+              0.1,
+              0.52,
+              0
+            ],
+            "leg_upper_r": [
+              -0.1,
+              0.84,
+              0
+            ],
+            "leg_lower_r": [
+              -0.1,
+              0.52,
+              0
+            ]
+          },
+          "lengths": {
+            "upperArm": 0.28,
+            "forearm": 0.21,
+            "hand": 0.115,
+            "thigh": 0.32,
+            "shinToSole": 0.52
+          },
+          "armTiltBakedDeg": 4,
+          "conventions": "limbs hang along -Y; X<0 swings an arm/thigh forward, X>0 back; leg_lower X>0 bends the knee (foot back); arm_lower X<0 bends the elbow (hand forward/up); arm_upper_r Z<0 / arm_upper_l Z>0 raise the arm sideways; spine/head X>0 lean/nod forward"
+        },
+        "sit": {
+          "seatHeight": 0.45,
+          "rootAt": "floor under the seat centre, facing away from the backrest",
+          "hipsAt": [
+            0,
+            0.645,
+            -0.05
+          ],
+          "otherSeatHeights": "raise/lower the root by (seatY - 0.45); for seats lower than ~0.4 bend the knees more"
+        }
+      },
+      "bytes": 129396
+    },
+    {
+      "name": "tl_char_host_keria_v01",
+      "file": "characters/tl_char_host_keria_v01.glb",
+      "url": "/models/characters/tl_char_host_keria_v01.glb",
+      "triangles": 1614,
+      "trianglesByMaterial": {
+        "tl_matte": 1614
+      },
+      "budget": 2500,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -0.3332,
+          0,
+          -0.2107
+        ],
+        "max": [
+          0.3332,
+          1.7052,
+          0.2245
+        ]
+      },
+      "size": [
+        0.6665,
+        1.7052,
+        0.4352
+      ],
+      "nodes": [
+        "tl_char_host_keria_v01",
+        "hips",
+        "spine",
+        "neck",
+        "head",
+        "arm_upper_l",
+        "arm_lower_l",
+        "arm_upper_r",
+        "arm_lower_r",
+        "leg_upper_l",
+        "leg_lower_l",
+        "leg_upper_r",
+        "leg_lower_r"
+      ],
+      "emissive": [],
+      "materials": [
+        "tl_matte"
+      ],
+      "notes": "Stall host NPC (keria), never a player outfit. Quiz host: slightly shorter, small round face, the biggest fluffy mushroom hair with a thick full fringe down to the brows, no glasses; team kit. Same joints as the fan rig; proportions by node scale (hips 0.955, spine x 0.97, head [0.98,0.94,0.98]). Poses: host_stand, host_counter, host_greet, host_present, host_hold, host_keeper (standing; hips.at already carries the height scale).",
+      "anchors": {
+        "hand_l": [
+          0.2853,
+          0.7318,
+          0.0038
+        ],
+        "hand_r": [
+          -0.2853,
+          0.7318,
+          0.0038
+        ],
+        "eyes": [
+          0,
+          1.4484,
+          0.1403
+        ],
+        "head_top": [
+          0,
+          1.7052,
+          0
+        ],
+        "name_tag": [
+          0,
+          1.9252,
+          0
+        ],
+        "seat_contact": [
+          0,
+          0.45,
+          -0.05
+        ]
+      },
+      "lights": [],
+      "poses": {
+        "host_stand": {
+          "hips": {
+            "at": [
+              0,
+              0.8977,
+              0
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            3,
+            0,
+            0
+          ],
+          "neck": [
+            0,
+            0,
+            0
+          ],
+          "head": [
+            -2,
+            0,
+            0
+          ],
+          "arm_upper_l": [
+            5,
+            0,
+            2
+          ],
+          "arm_lower_l": [
+            -14,
+            0,
+            0
+          ],
+          "arm_upper_r": [
+            5,
+            0,
+            -2
+          ],
+          "arm_lower_r": [
+            -14,
+            0,
+            0
+          ],
+          "leg_upper_l": [
+            0,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            0,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            0,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            0,
+            0,
+            0
+          ]
+        },
+        "host_counter": {
+          "hips": {
+            "at": [
+              0,
+              0.8977,
+              -0.02
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            9,
+            0,
+            0
+          ],
+          "neck": [
+            -3,
+            0,
+            0
+          ],
+          "head": [
+            -5,
+            0,
+            0
+          ],
+          "arm_upper_l": [
+            -9,
+            0,
+            7
+          ],
+          "arm_lower_l": [
+            -57,
+            0,
+            0
+          ],
+          "arm_upper_r": [
+            -9,
+            0,
+            -7
+          ],
+          "arm_lower_r": [
+            -57,
+            0,
+            0
+          ],
+          "leg_upper_l": [
+            0,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            0,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            0,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            0,
+            0,
+            0
+          ]
+        },
+        "host_greet": {
+          "hips": {
+            "at": [
+              0,
+              0.8977,
+              -0.02
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            6,
+            0,
+            -2
+          ],
+          "neck": [
+            -2,
+            0,
+            0
+          ],
+          "head": [
+            -4,
+            0,
+            3
+          ],
+          "arm_upper_l": [
+            -12,
+            0,
+            7
+          ],
+          "arm_lower_l": [
+            -57,
+            0,
+            0
+          ],
+          "arm_upper_r": [
+            -28,
+            0,
+            -24
+          ],
+          "arm_lower_r": [
+            -118,
+            0,
+            0
+          ],
+          "leg_upper_l": [
+            0,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            0,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            0,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            0,
+            0,
+            0
+          ]
+        },
+        "host_present": {
+          "hips": {
+            "at": [
+              0,
+              0.8977,
+              0
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            2,
+            0,
+            -3
+          ],
+          "neck": [
+            0,
+            0,
+            0
+          ],
+          "head": [
+            -3,
+            0,
+            0
+          ],
+          "arm_upper_l": [
+            -12,
+            0,
+            58
+          ],
+          "arm_lower_l": [
+            -14,
+            0,
+            8
+          ],
+          "arm_upper_r": [
+            5,
+            0,
+            -3
+          ],
+          "arm_lower_r": [
+            -16,
+            0,
+            0
+          ],
+          "leg_upper_l": [
+            0,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            0,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            0,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            0,
+            0,
+            0
+          ]
+        },
+        "host_hold": {
+          "hips": {
+            "at": [
+              0,
+              0.8977,
+              0
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            3,
+            0,
+            0
+          ],
+          "neck": [
+            0,
+            0,
+            0
+          ],
+          "head": [
+            2,
+            0,
+            0
+          ],
+          "arm_upper_l": [
+            5,
+            0,
+            2
+          ],
+          "arm_lower_l": [
+            -14,
+            0,
+            0
+          ],
+          "arm_upper_r": [
+            -18,
+            0,
+            22
+          ],
+          "arm_lower_r": [
+            -78,
+            0,
+            0
+          ],
+          "leg_upper_l": [
+            0,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            0,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            0,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            0,
+            0,
+            0
+          ]
+        },
+        "host_keeper": {
+          "hips": {
+            "at": [
+              0,
+              0.8937,
+              -0.02
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            10,
+            0,
+            0
+          ],
+          "neck": [
+            4,
+            0,
+            0
+          ],
+          "head": [
+            -6,
+            0,
+            0
+          ],
+          "arm_upper_l": [
+            -14,
+            0,
+            10
+          ],
+          "arm_lower_l": [
+            -10,
+            0,
+            0
+          ],
+          "arm_upper_r": [
+            8,
+            0,
+            -3
+          ],
+          "arm_lower_r": [
+            -20,
+            0,
+            0
+          ],
+          "leg_upper_l": [
+            -4,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            4,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            -4,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            4,
+            0,
+            0
+          ]
+        }
+      },
+      "collider": {
+        "type": "capsule",
+        "center": [
+          0,
+          0.875,
+          0
+        ],
+        "radius": 0.3,
+        "height": 1.75
+      },
+      "meta": {
+        "kind": "host",
+        "variant": "keria",
+        "rig": {
+          "version": 1,
+          "facing": "+Z",
+          "left": "+X",
+          "units": "m",
+          "nominalHeight": 1.75,
+          "skullTop": 1.5965,
+          "boundsHeight": 1.7052,
+          "restRotations": "all zero (rest pose = standing, arms down; the 4 deg arm splay is baked into the mesh)",
+          "eulerOrder": "PlayCanvas setLocalEulerAngles (R = Rz*Ry*Rx)",
+          "jointWorldRest": {
+            "hips": [
+              0,
+              0.8977,
+              0
+            ],
+            "spine": [
+              0,
+              0.9646,
+              0
+            ],
+            "neck": [
+              0,
+              1.2845,
+              -0.0048
+            ],
+            "head": [
+              0,
+              1.3227,
+              -0.0048
+            ],
+            "arm_upper_l": [
+              0.2501,
+              1.2511,
+              0
+            ],
+            "arm_lower_l": [
+              0.2682,
+              0.9843,
+              0
+            ],
+            "arm_upper_r": [
+              -0.2501,
+              1.2511,
+              0
+            ],
+            "arm_lower_r": [
+              -0.2682,
+              0.9843,
+              0
+            ],
+            "leg_upper_l": [
+              0.0955,
+              0.8022,
+              0
+            ],
+            "leg_lower_l": [
+              0.0955,
+              0.4966,
+              0
+            ],
+            "leg_upper_r": [
+              -0.0955,
+              0.8022,
+              0
+            ],
+            "leg_lower_r": [
+              -0.0955,
+              0.4966,
+              0
+            ]
+          },
+          "lengths": {
+            "upperArm": 0.28,
+            "forearm": 0.21,
+            "hand": 0.115,
+            "thigh": 0.32,
+            "shinToSole": 0.52
+          },
+          "armTiltBakedDeg": 4,
+          "conventions": "limbs hang along -Y; X<0 swings an arm/thigh forward, X>0 back; leg_lower X>0 bends the knee (foot back); arm_lower X<0 bends the elbow (hand forward/up); arm_upper_r Z<0 / arm_upper_l Z>0 raise the arm sideways; spine/head X>0 lean/nod forward"
+        },
+        "sit": {
+          "seatHeight": 0.45,
+          "rootAt": "floor under the seat centre, facing away from the backrest",
+          "hipsAt": [
+            0,
+            0.645,
+            -0.05
+          ],
+          "otherSeatHeights": "raise/lower the root by (seatY - 0.45); for seats lower than ~0.4 bend the knees more"
+        }
+      },
+      "bytes": 137508
+    },
+    {
+      "name": "tl_char_host_doran_v01",
+      "file": "characters/tl_char_host_doran_v01.glb",
+      "url": "/models/characters/tl_char_host_doran_v01.glb",
+      "triangles": 1676,
+      "trianglesByMaterial": {
+        "tl_matte": 1676
+      },
+      "budget": 2500,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -0.3488,
+          0,
+          -0.167
+        ],
+        "max": [
+          0.3488,
+          1.7811,
+          0.1879
+        ]
+      },
+      "size": [
+        0.6976,
+        1.7811,
+        0.3548
+      ],
+      "nodes": [
+        "tl_char_host_doran_v01",
+        "hips",
+        "spine",
+        "neck",
+        "head",
+        "arm_upper_l",
+        "arm_lower_l",
+        "arm_upper_r",
+        "arm_lower_r",
+        "leg_upper_l",
+        "leg_lower_l",
+        "leg_upper_r",
+        "leg_lower_r"
+      ],
+      "emissive": [],
+      "materials": [
+        "tl_matte"
+      ],
+      "notes": "Stall host NPC (doran), never a player outfit. Match-feed host: slim long face, neat straight full fringe, thin round metal-wire glasses; team kit. Same joints as the fan rig; proportions by node scale (hips 1.01, spine x 0.96, head [0.92,1.06,0.96]). Poses: host_stand, host_counter, host_greet, host_present, host_hold, host_keeper (standing; hips.at already carries the height scale).",
+      "anchors": {
+        "hand_l": [
+          0.2987,
+          0.774,
+          0.004
+        ],
+        "hand_r": [
+          -0.2987,
+          0.774,
+          0.004
+        ],
+        "eyes": [
+          0,
+          1.5487,
+          0.1452
+        ],
+        "head_top": [
+          0,
+          1.7811,
+          0
+        ],
+        "name_tag": [
+          0,
+          2.0011,
+          0
+        ],
+        "seat_contact": [
+          0,
+          0.45,
+          -0.05
+        ]
+      },
+      "lights": [],
+      "poses": {
+        "host_stand": {
+          "hips": {
+            "at": [
+              0,
+              0.9494,
+              0
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            3,
+            0,
+            0
+          ],
+          "neck": [
+            0,
+            0,
+            0
+          ],
+          "head": [
+            -2,
+            0,
+            0
+          ],
+          "arm_upper_l": [
+            5,
+            0,
+            2
+          ],
+          "arm_lower_l": [
+            -14,
+            0,
+            0
+          ],
+          "arm_upper_r": [
+            5,
+            0,
+            -2
+          ],
+          "arm_lower_r": [
+            -14,
+            0,
+            0
+          ],
+          "leg_upper_l": [
+            0,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            0,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            0,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            0,
+            0,
+            0
+          ]
+        },
+        "host_counter": {
+          "hips": {
+            "at": [
+              0,
+              0.9494,
+              -0.02
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            9,
+            0,
+            0
+          ],
+          "neck": [
+            -3,
+            0,
+            0
+          ],
+          "head": [
+            -5,
+            0,
+            0
+          ],
+          "arm_upper_l": [
+            -9,
+            0,
+            7
+          ],
+          "arm_lower_l": [
+            -57,
+            0,
+            0
+          ],
+          "arm_upper_r": [
+            -9,
+            0,
+            -7
+          ],
+          "arm_lower_r": [
+            -57,
+            0,
+            0
+          ],
+          "leg_upper_l": [
+            0,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            0,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            0,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            0,
+            0,
+            0
+          ]
+        },
+        "host_greet": {
+          "hips": {
+            "at": [
+              0,
+              0.9494,
+              -0.02
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            6,
+            0,
+            -2
+          ],
+          "neck": [
+            -2,
+            0,
+            0
+          ],
+          "head": [
+            -4,
+            0,
+            3
+          ],
+          "arm_upper_l": [
+            -12,
+            0,
+            7
+          ],
+          "arm_lower_l": [
+            -57,
+            0,
+            0
+          ],
+          "arm_upper_r": [
+            -28,
+            0,
+            -24
+          ],
+          "arm_lower_r": [
+            -118,
+            0,
+            0
+          ],
+          "leg_upper_l": [
+            0,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            0,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            0,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            0,
+            0,
+            0
+          ]
+        },
+        "host_present": {
+          "hips": {
+            "at": [
+              0,
+              0.9494,
+              0
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            2,
+            0,
+            -3
+          ],
+          "neck": [
+            0,
+            0,
+            0
+          ],
+          "head": [
+            -3,
+            0,
+            0
+          ],
+          "arm_upper_l": [
+            -12,
+            0,
+            58
+          ],
+          "arm_lower_l": [
+            -14,
+            0,
+            8
+          ],
+          "arm_upper_r": [
+            5,
+            0,
+            -3
+          ],
+          "arm_lower_r": [
+            -16,
+            0,
+            0
+          ],
+          "leg_upper_l": [
+            0,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            0,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            0,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            0,
+            0,
+            0
+          ]
+        },
+        "host_hold": {
+          "hips": {
+            "at": [
+              0,
+              0.9494,
+              0
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            3,
+            0,
+            0
+          ],
+          "neck": [
+            0,
+            0,
+            0
+          ],
+          "head": [
+            2,
+            0,
+            0
+          ],
+          "arm_upper_l": [
+            5,
+            0,
+            2
+          ],
+          "arm_lower_l": [
+            -14,
+            0,
+            0
+          ],
+          "arm_upper_r": [
+            -18,
+            0,
+            22
+          ],
+          "arm_lower_r": [
+            -78,
+            0,
+            0
+          ],
+          "leg_upper_l": [
+            0,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            0,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            0,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            0,
+            0,
+            0
+          ]
+        },
+        "host_keeper": {
+          "hips": {
+            "at": [
+              0,
+              0.9454,
+              -0.02
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            10,
+            0,
+            0
+          ],
+          "neck": [
+            4,
+            0,
+            0
+          ],
+          "head": [
+            -6,
+            0,
+            0
+          ],
+          "arm_upper_l": [
+            -14,
+            0,
+            10
+          ],
+          "arm_lower_l": [
+            -10,
+            0,
+            0
+          ],
+          "arm_upper_r": [
+            8,
+            0,
+            -3
+          ],
+          "arm_lower_r": [
+            -20,
+            0,
+            0
+          ],
+          "leg_upper_l": [
+            -4,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            4,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            -4,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            4,
+            0,
+            0
+          ]
+        }
+      },
+      "collider": {
+        "type": "capsule",
+        "center": [
+          0,
+          0.875,
+          0
+        ],
+        "radius": 0.3,
+        "height": 1.75
+      },
+      "meta": {
+        "kind": "host",
+        "variant": "doran",
+        "rig": {
+          "version": 1,
+          "facing": "+Z",
+          "left": "+X",
+          "units": "m",
+          "nominalHeight": 1.75,
+          "skullTop": 1.7254,
+          "boundsHeight": 1.7811,
+          "restRotations": "all zero (rest pose = standing, arms down; the 4 deg arm splay is baked into the mesh)",
+          "eulerOrder": "PlayCanvas setLocalEulerAngles (R = Rz*Ry*Rx)",
+          "jointWorldRest": {
+            "hips": [
+              0,
+              0.9494,
+              0
+            ],
+            "spine": [
+              0,
+              1.0201,
+              0
+            ],
+            "neck": [
+              0,
+              1.3585,
+              -0.005
+            ],
+            "head": [
+              0,
+              1.3989,
+              -0.005
+            ],
+            "arm_upper_l": [
+              0.2618,
+              1.3231,
+              0
+            ],
+            "arm_lower_l": [
+              0.2807,
+              1.041,
+              0
+            ],
+            "arm_upper_r": [
+              -0.2618,
+              1.3231,
+              0
+            ],
+            "arm_lower_r": [
+              -0.2807,
+              1.041,
+              0
+            ],
+            "leg_upper_l": [
+              0.101,
+              0.8484,
+              0
+            ],
+            "leg_lower_l": [
+              0.101,
+              0.5252,
+              0
+            ],
+            "leg_upper_r": [
+              -0.101,
+              0.8484,
+              0
+            ],
+            "leg_lower_r": [
+              -0.101,
+              0.5252,
+              0
+            ]
+          },
+          "lengths": {
+            "upperArm": 0.28,
+            "forearm": 0.21,
+            "hand": 0.115,
+            "thigh": 0.32,
+            "shinToSole": 0.52
+          },
+          "armTiltBakedDeg": 4,
+          "conventions": "limbs hang along -Y; X<0 swings an arm/thigh forward, X>0 back; leg_lower X>0 bends the knee (foot back); arm_lower X<0 bends the elbow (hand forward/up); arm_upper_r Z<0 / arm_upper_l Z>0 raise the arm sideways; spine/head X>0 lean/nod forward"
+        },
+        "sit": {
+          "seatHeight": 0.45,
+          "rootAt": "floor under the seat centre, facing away from the backrest",
+          "hipsAt": [
+            0,
+            0.645,
+            -0.05
+          ],
+          "otherSeatHeights": "raise/lower the root by (seatY - 0.45); for seats lower than ~0.4 bend the knees more"
+        }
+      },
+      "bytes": 135432
+    },
+    {
+      "name": "tl_char_host_keeper_v01",
+      "file": "characters/tl_char_host_keeper_v01.glb",
+      "url": "/models/characters/tl_char_host_keeper_v01.glb",
+      "triangles": 1558,
+      "trianglesByMaterial": {
+        "tl_matte": 1558
+      },
+      "budget": 2500,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -0.3636,
+          0,
+          -0.1594
+        ],
+        "max": [
+          0.3636,
+          1.7199,
+          0.1813
+        ]
+      },
+      "size": [
+        0.7271,
+        1.7199,
+        0.3408
+      ],
+      "nodes": [
+        "tl_char_host_keeper_v01",
+        "hips",
+        "spine",
+        "neck",
+        "head",
+        "arm_upper_l",
+        "arm_lower_l",
+        "arm_upper_r",
+        "arm_lower_r",
+        "leg_upper_l",
+        "leg_lower_l",
+        "leg_upper_r",
+        "leg_lower_r"
+      ],
+      "emissive": [],
+      "materials": [
+        "tl_matte"
+      ],
+      "notes": "Stall host NPC (keeper), never a player outfit. Memory-wall keeper: an original older fan (not a player) with grey side-parted hair and moustache, warm grey cardigan worn open over a worn-white shirt, brown trousers. Same joints as the fan rig; proportions by node scale (hips 0.975, spine x 1, head [1,1,1]). Poses: host_stand, host_counter, host_greet, host_present, host_hold, host_keeper (standing; hips.at already carries the height scale).",
+      "anchors": {
+        "hand_l": [
+          0.3003,
+          0.7472,
+          0.0039
+        ],
+        "hand_r": [
+          -0.3003,
+          0.7472,
+          0.0039
+        ],
+        "eyes": [
+          0,
+          1.4869,
+          0.1463
+        ],
+        "head_top": [
+          0,
+          1.7199,
+          0
+        ],
+        "name_tag": [
+          0,
+          1.9399,
+          0
+        ],
+        "seat_contact": [
+          0,
+          0.45,
+          -0.05
+        ]
+      },
+      "lights": [],
+      "poses": {
+        "host_stand": {
+          "hips": {
+            "at": [
+              0,
+              0.9165,
+              0
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            3,
+            0,
+            0
+          ],
+          "neck": [
+            0,
+            0,
+            0
+          ],
+          "head": [
+            -2,
+            0,
+            0
+          ],
+          "arm_upper_l": [
+            5,
+            0,
+            2
+          ],
+          "arm_lower_l": [
+            -14,
+            0,
+            0
+          ],
+          "arm_upper_r": [
+            5,
+            0,
+            -2
+          ],
+          "arm_lower_r": [
+            -14,
+            0,
+            0
+          ],
+          "leg_upper_l": [
+            0,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            0,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            0,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            0,
+            0,
+            0
+          ]
+        },
+        "host_counter": {
+          "hips": {
+            "at": [
+              0,
+              0.9165,
+              -0.02
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            9,
+            0,
+            0
+          ],
+          "neck": [
+            -3,
+            0,
+            0
+          ],
+          "head": [
+            -5,
+            0,
+            0
+          ],
+          "arm_upper_l": [
+            -9,
+            0,
+            7
+          ],
+          "arm_lower_l": [
+            -57,
+            0,
+            0
+          ],
+          "arm_upper_r": [
+            -9,
+            0,
+            -7
+          ],
+          "arm_lower_r": [
+            -57,
+            0,
+            0
+          ],
+          "leg_upper_l": [
+            0,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            0,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            0,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            0,
+            0,
+            0
+          ]
+        },
+        "host_greet": {
+          "hips": {
+            "at": [
+              0,
+              0.9165,
+              -0.02
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            6,
+            0,
+            -2
+          ],
+          "neck": [
+            -2,
+            0,
+            0
+          ],
+          "head": [
+            -4,
+            0,
+            3
+          ],
+          "arm_upper_l": [
+            -12,
+            0,
+            7
+          ],
+          "arm_lower_l": [
+            -57,
+            0,
+            0
+          ],
+          "arm_upper_r": [
+            -28,
+            0,
+            -24
+          ],
+          "arm_lower_r": [
+            -118,
+            0,
+            0
+          ],
+          "leg_upper_l": [
+            0,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            0,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            0,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            0,
+            0,
+            0
+          ]
+        },
+        "host_present": {
+          "hips": {
+            "at": [
+              0,
+              0.9165,
+              0
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            2,
+            0,
+            -3
+          ],
+          "neck": [
+            0,
+            0,
+            0
+          ],
+          "head": [
+            -3,
+            0,
+            0
+          ],
+          "arm_upper_l": [
+            -12,
+            0,
+            58
+          ],
+          "arm_lower_l": [
+            -14,
+            0,
+            8
+          ],
+          "arm_upper_r": [
+            5,
+            0,
+            -3
+          ],
+          "arm_lower_r": [
+            -16,
+            0,
+            0
+          ],
+          "leg_upper_l": [
+            0,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            0,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            0,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            0,
+            0,
+            0
+          ]
+        },
+        "host_hold": {
+          "hips": {
+            "at": [
+              0,
+              0.9165,
+              0
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            3,
+            0,
+            0
+          ],
+          "neck": [
+            0,
+            0,
+            0
+          ],
+          "head": [
+            2,
+            0,
+            0
+          ],
+          "arm_upper_l": [
+            5,
+            0,
+            2
+          ],
+          "arm_lower_l": [
+            -14,
+            0,
+            0
+          ],
+          "arm_upper_r": [
+            -18,
+            0,
+            22
+          ],
+          "arm_lower_r": [
+            -78,
+            0,
+            0
+          ],
+          "leg_upper_l": [
+            0,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            0,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            0,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            0,
+            0,
+            0
+          ]
+        },
+        "host_keeper": {
+          "hips": {
+            "at": [
+              0,
+              0.9125,
+              -0.02
+            ],
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "spine": [
+            10,
+            0,
+            0
+          ],
+          "neck": [
+            4,
+            0,
+            0
+          ],
+          "head": [
+            -6,
+            0,
+            0
+          ],
+          "arm_upper_l": [
+            -14,
+            0,
+            10
+          ],
+          "arm_lower_l": [
+            -10,
+            0,
+            0
+          ],
+          "arm_upper_r": [
+            8,
+            0,
+            -3
+          ],
+          "arm_lower_r": [
+            -20,
+            0,
+            0
+          ],
+          "leg_upper_l": [
+            -4,
+            0,
+            0
+          ],
+          "leg_lower_l": [
+            4,
+            0,
+            0
+          ],
+          "leg_upper_r": [
+            -4,
+            0,
+            0
+          ],
+          "leg_lower_r": [
+            4,
+            0,
+            0
+          ]
+        }
+      },
+      "collider": {
+        "type": "capsule",
+        "center": [
+          0,
+          0.875,
+          0
+        ],
+        "radius": 0.3,
+        "height": 1.75
+      },
+      "meta": {
+        "kind": "host",
+        "variant": "keeper",
+        "rig": {
+          "version": 1,
+          "facing": "+Z",
+          "left": "+X",
+          "units": "m",
+          "nominalHeight": 1.75,
+          "skullTop": 1.6478,
+          "boundsHeight": 1.7199,
+          "restRotations": "all zero (rest pose = standing, arms down; the 4 deg arm splay is baked into the mesh)",
+          "eulerOrder": "PlayCanvas setLocalEulerAngles (R = Rz*Ry*Rx)",
+          "jointWorldRest": {
+            "hips": [
+              0,
+              0.9165,
+              0
+            ],
+            "spine": [
+              0,
+              0.9848,
+              0
+            ],
+            "neck": [
+              0,
+              1.3114,
+              -0.0049
+            ],
+            "head": [
+              0,
+              1.3504,
+              -0.0049
+            ],
+            "arm_upper_l": [
+              0.2633,
+              1.2773,
+              0
+            ],
+            "arm_lower_l": [
+              0.2823,
+              1.0049,
+              0
+            ],
+            "arm_upper_r": [
+              -0.2632,
+              1.2773,
+              0
+            ],
+            "arm_lower_r": [
+              -0.2823,
+              1.0049,
+              0
+            ],
+            "leg_upper_l": [
+              0.0975,
+              0.819,
+              0
+            ],
+            "leg_lower_l": [
+              0.0975,
+              0.507,
+              0
+            ],
+            "leg_upper_r": [
+              -0.0975,
+              0.819,
+              0
+            ],
+            "leg_lower_r": [
+              -0.0975,
+              0.507,
+              0
+            ]
+          },
+          "lengths": {
+            "upperArm": 0.28,
+            "forearm": 0.21,
+            "hand": 0.115,
+            "thigh": 0.32,
+            "shinToSole": 0.52
+          },
+          "armTiltBakedDeg": 4,
+          "conventions": "limbs hang along -Y; X<0 swings an arm/thigh forward, X>0 back; leg_lower X>0 bends the knee (foot back); arm_lower X<0 bends the elbow (hand forward/up); arm_upper_r Z<0 / arm_upper_l Z>0 raise the arm sideways; spine/head X>0 lean/nod forward"
+        },
+        "sit": {
+          "seatHeight": 0.45,
+          "rootAt": "floor under the seat centre, facing away from the backrest",
+          "hipsAt": [
+            0,
+            0.645,
+            -0.05
+          ],
+          "otherSeatHeights": "raise/lower the root by (seatY - 0.45); for seats lower than ~0.4 bend the knees more"
+        }
+      },
+      "bytes": 129936
     }
   ]
 }

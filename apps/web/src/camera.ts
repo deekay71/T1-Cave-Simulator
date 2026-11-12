@@ -10,15 +10,19 @@
  *   const { moveX, moveZ } = cam.toWorldAxes(d - a, w - s); // camera-relative WASD -> MoveInput
  *
  * - Yaw θ (deg) looks along (sin θ, 0, cos θ); it only changes when the user drags (no
- *   auto-rotate). Pitch in [-5, 60] deg, positive = looking down. Boom 2.5-8 m (smoothed zoom).
+ *   auto-rotate). Pitch in [-25, 60] deg, positive = looking down. Boom 2.5-8 m (smoothed zoom).
+ *   Below -5 deg the boom stays where it is at -5 and only the view tilts up (look up at the big
+ *   screen high on the wall without the camera diving to the floor behind the avatar).
  * - The pivot (target + 1.3 m) follows with a critically damped spring: no jitter from 20 Hz
  *   snapshots, a small steady lag (~0.4 m at 4 m/s).
  * - Over the shoulder: the pivot sits 0.45 m to the camera's right (less on a short boom, see
  *   cameraMath.shoulderShift), so the avatar stands left of the screen centre and does not hide
  *   what it walks up to; the 18 deg pitch keeps things 1-2 m beyond the head visible over it.
  *   `focus` eases that to 0.75 m and 6 deg more pitch over 0.35 s (and back when cleared).
- * - Containment: the boom is shortened toward the pivot so the camera stays within 16.8 m of the
- *   cave centre (horizontally) and 0.6-9 m high; it snaps in at once and eases back out. When the
+ * - Containment: the boom is shortened toward the pivot so the camera stays inside the cave's
+ *   walk rooms + 0.6 m (big cave, tunnels, side caves: CameraBounds.rooms), 0.6 m above the floor
+ *   and under each room's ceiling (9 m / 2.6 m / 3.2 m); it snaps in at once and eases back out.
+ *   setBoundsCenter() switches to a plain cylinder (the shrine island), useRooms() back. When the
  *   boom gets short (player backed against the wall) the pivot rises up to 0.45 m so the camera
  *   looks over the avatar's head; `boom` tells the caller how close it is (fade the avatar < ~1.8 m).
  *   Optional `bounds.blockers` (tall props): the camera point stays out of them. A prop coming
@@ -34,6 +38,7 @@ import * as pc from "playcanvas";
 import {
   CAVE_BOUNDS,
   DEG,
+  ceilingAt,
   containBoom,
   lookDir,
   outsideBlockers,
@@ -53,6 +58,10 @@ export interface FollowCamera {
   toWorldAxes(right: number, forward: number): Axes;
   /** Look along a heading (deg) and jump there on the next update (spawn / teleport). */
   snapBehind(yawDeg: number): void;
+  /** Contain the camera in a cylinder of `radius` around (x, z) instead of the rooms (the shrine island). */
+  setBoundsCenter(x: number, z: number, radius: number): void;
+  /** Back to the rooms of the bounds the camera was created with (the cave); no-op without rooms. */
+  useRooms(): void;
   attach(el: HTMLElement): void;
   detach(): void;
   yaw: number;
@@ -85,7 +94,9 @@ const DEFAULTS: FollowCameraOptions = {
   shoulder: 0.45,
   bounds: CAVE_BOUNDS,
 };
-const MIN_PITCH = -5;
+const MIN_PITCH = -25;
+/** The boom never swings lower than this; a lower pitch only aims the view up. */
+const BOOM_MIN_PITCH = -5;
 const MAX_PITCH = 60;
 const MIN_DIST = 2.5;
 const MAX_DIST = 8;
@@ -120,7 +131,7 @@ class OrbitFollowCamera implements FollowCamera {
   private readonly height: number;
   private readonly shoulder: number;
   private readonly bounds: CameraBounds;
-  /** the bounds without blockers (cave cylinder + height band only) */
+  /** the bounds without blockers (cave rooms or cylinder + height band only) */
   private readonly walls: CameraBounds;
   private _yaw: number;
   private _pitch: number;
@@ -149,7 +160,13 @@ class OrbitFollowCamera implements FollowCamera {
     this.height = o.height;
     this.shoulder = Math.max(0, o.shoulder);
     this.bounds = o.bounds;
-    this.walls = { maxRadius: o.bounds.maxRadius, minY: o.bounds.minY, maxY: o.bounds.maxY };
+    this.walls = {
+      maxRadius: o.bounds.maxRadius,
+      minY: o.bounds.minY,
+      maxY: o.bounds.maxY,
+      rooms: o.bounds.rooms,
+      roomMargin: o.bounds.roomMargin,
+    };
     this._yaw = wrapDeg(o.yaw);
     this._pitch = clamp(o.pitch, MIN_PITCH, MAX_PITCH);
     this._distance = clamp(o.distance, MIN_DIST, MAX_DIST);
@@ -187,6 +204,26 @@ class OrbitFollowCamera implements FollowCamera {
 
   snapBehind(yawDeg: number): void {
     this.yaw = yawDeg;
+    this.snap = true;
+  }
+
+  setBoundsCenter(x: number, z: number, radius: number): void {
+    const w = this.walls;
+    if (!w.rooms && (w.centerX ?? 0) === x && (w.centerZ ?? 0) === z && w.maxRadius === radius) return;
+    w.rooms = undefined;
+    w.centerX = x;
+    w.centerZ = z;
+    w.maxRadius = radius;
+    this.snap = true;
+  }
+
+  useRooms(): void {
+    const w = this.walls;
+    if (w.rooms === this.bounds.rooms) return;
+    w.rooms = this.bounds.rooms;
+    w.centerX = this.bounds.centerX;
+    w.centerZ = this.bounds.centerZ;
+    w.maxRadius = this.bounds.maxRadius;
     this.snap = true;
   }
 
@@ -229,7 +266,7 @@ class OrbitFollowCamera implements FollowCamera {
     }
     const f = smooth(this.focusT);
     const pitch = clamp(this._pitch + FOCUS_PITCH * f, MIN_PITCH, MAX_PITCH);
-    const d = lookDir(this._yaw, pitch, this.dir);
+    const d = lookDir(this._yaw, Math.max(pitch, BOOM_MIN_PITCH), this.dir);
 
     // over the shoulder: shift the pivot toward the camera's right (scaled down on a short boom)
     const free = containBoom(p, d, this.zoom, this.walls);
@@ -251,7 +288,22 @@ class OrbitFollowCamera implements FollowCamera {
     const l = this.lifted;
     l.x = q.x;
     l.z = q.z;
-    l.y = Math.min(q.y + LIFT * smooth(t), this.bounds.maxY - b * Math.max(0, -d.y));
+    // ... but never above the ceiling of the room the camera point is in (a tunnel is 2.6 m high),
+    // nor up into something hanging over it (a stall's sign board, an awning)
+    const cx = q.x - d.x * b,
+      cz = q.z - d.z * b,
+      cy = q.y - d.y * b;
+    let top = ceilingAt(cx, cz, this.walls);
+    if (t > 0 && blockers)
+      for (const k of blockers)
+        if (
+          k.bottom !== undefined &&
+          k.bottom < top &&
+          k.bottom >= cy - 1e-3 &&
+          (cx - k.x) * (cx - k.x) + (cz - k.z) * (cz - k.z) < k.r * k.r
+        )
+          top = k.bottom;
+    l.y = Math.max(q.y, Math.min(q.y + LIFT * smooth(t), top - b * Math.max(0, -d.y)));
     this.cam.setPosition(l.x - d.x * b, l.y - d.y * b, l.z - d.z * b);
     this.cam.setEulerAngles(-pitch, this._yaw + 180, 0);
   }

@@ -32,17 +32,38 @@ services:
       TICKET_PRIVATE_JWK: ${TICKET_PRIVATE_JWK:?Run `npm run -s keys > .env` first}
       DATABASE_URL: postgres://te_liet:local_only@postgres:5432/te_liet
       WEB_ORIGIN: http://localhost:8080
+      REDIS_URL: redis://redis:6379
+      MATCH_FEED_ENABLED: ${MATCH_FEED_ENABLED:-false}
       TRUST_PROXY: "1"
+      # Trang quản trị /admin.html: để trống = tắt. Theo dõi người chơi hỏi cổng quản trị của game.
+      ADMIN_TOKEN: ${ADMIN_TOKEN:-}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GAME_ADMIN_URL: http://game:9100
     depends_on:
       migrate: {condition: service_completed_successfully}
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://localhost:3000/health/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
       interval: 10s
       retries: 5
+  matches:
+    profiles: [matches]
+    build: {context: ., dockerfile: infra/Dockerfile, target: backend}
+    command: ["node", "dist/server/matches.mjs"]
+    environment:
+      DATABASE_URL: postgres://te_liet:local_only@postgres:5432/te_liet
+      REDIS_URL: redis://redis:6379
+      MATCH_FEED_ENABLED: ${MATCH_FEED_ENABLED:-false}
+      PANDASCORE_TOKEN: ${PANDASCORE_TOKEN:-}
+      PANDASCORE_T1_TEAM_ID: ${PANDASCORE_T1_TEAM_ID:-}
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+      redis: {condition: service_healthy}
+    restart: unless-stopped
   game:
     build: {context: ., dockerfile: infra/Dockerfile, target: backend}
     command: ["node", "dist/server/game.mjs"]
     environment:
+      DATABASE_URL: postgres://te_liet:local_only@postgres:5432/te_liet
       TICKET_PUBLIC_JWKS: ${TICKET_PUBLIC_JWKS:?Run `npm run -s keys > .env` first}
       REDIS_URL: redis://redis:6379
     depends_on:

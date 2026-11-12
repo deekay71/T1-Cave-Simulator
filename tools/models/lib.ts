@@ -2231,7 +2231,7 @@ export async function exportGlb(model: Model): Promise<{ glb: Uint8Array; stats:
  * Output: GLBs + per-group manifest
  * ========================================================================================= */
 
-export const GROUPS = ["environment", "fire", "furniture", "props", "characters"] as const;
+export const GROUPS = ["environment", "fire", "furniture", "props", "characters", "caves", "login"] as const;
 export const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 export const MODELS_DIR = path.join(REPO_ROOT, "apps/web/public/models");
 

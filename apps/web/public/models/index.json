@@ -4,13 +4,17 @@
     "fire",
     "furniture",
     "props",
-    "characters"
+    "characters",
+    "caves",
+    "login"
   ],
   "manifests": [
     "manifest.environment.json",
     "manifest.fire.json",
     "manifest.furniture.json",
     "manifest.props.json",
-    "manifest.characters.json"
+    "manifest.characters.json",
+    "manifest.caves.json",
+    "manifest.login.json"
   ]
 }

@@ -1,0 +1,1389 @@
+{
+  "group": "login",
+  "version": 1,
+  "generator": "tools/models/build.ts",
+  "assets": [
+    {
+      "name": "tl_env_login_ground_v01",
+      "file": "login/tl_env_login_ground_v01.glb",
+      "url": "/models/login/tl_env_login_ground_v01.glb",
+      "triangles": 1730,
+      "trianglesByMaterial": {
+        "tl_matte": 1544,
+        "tl_glow_1.3": 186
+      },
+      "budget": 2200,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -291.5052,
+          0.0002,
+          -248.5565
+        ],
+        "max": [
+          291.5061,
+          217.4509,
+          248.5556
+        ]
+      },
+      "size": [
+        583.0114,
+        217.4507,
+        497.1121
+      ],
+      "nodes": [
+        "tl_env_login_ground_v01"
+      ],
+      "emissive": [
+        {
+          "node": "tl_env_login_ground_v01",
+          "material": "tl_glow_1.3",
+          "strength": 1.3,
+          "triangles": 186
+        }
+      ],
+      "materials": [
+        "tl_glow_1.3",
+        "tl_matte"
+      ],
+      "notes": "Login exterior ground: worn path into the cave mouth, berms, far apron, glowing red cracks (set space)",
+      "anchors": {},
+      "lights": [],
+      "poses": {},
+      "meta": {
+        "placements": [
+          {
+            "at": [
+              6.593,
+              -210.597,
+              5.654
+            ],
+            "yaw": 0,
+            "scale": 1
+          }
+        ],
+        "path": [
+          [
+            -6.3,
+            -6.794,
+            27.5
+          ],
+          [
+            -6.337,
+            -6.348,
+            27.002
+          ],
+          [
+            -6.374,
+            -5.901,
+            26.504
+          ],
+          [
+            -6.411,
+            -5.455,
+            26.007
+          ],
+          [
+            -6.449,
+            -5.009,
+            25.509
+          ],
+          [
+            -6.486,
+            -4.563,
+            25.011
+          ],
+          [
+            -6.523,
+            -4.117,
+            24.513
+          ],
+          [
+            -6.561,
+            -3.672,
+            24.015
+          ],
+          [
+            -6.599,
+            -3.227,
+            23.518
+          ],
+          [
+            -6.636,
+            -2.782,
+            23.02
+          ],
+          [
+            -6.673,
+            -2.338,
+            22.522
+          ],
+          [
+            -6.711,
+            -1.895,
+            22.024
+          ],
+          [
+            -6.751,
+            -1.453,
+            21.527
+          ],
+          [
+            -6.797,
+            -1.013,
+            21.03
+          ],
+          [
+            -6.849,
+            -0.574,
+            20.533
+          ],
+          [
+            -6.905,
+            -0.139,
+            20.037
+          ],
+          [
+            -6.968,
+            0.292,
+            19.542
+          ],
+          [
+            -7.042,
+            0.717,
+            19.049
+          ],
+          [
+            -7.15,
+            1.126,
+            18.561
+          ],
+          [
+            -7.298,
+            1.51,
+            18.085
+          ],
+          [
+            -7.451,
+            1.856,
+            17.61
+          ],
+          [
+            -7.604,
+            2.09,
+            17.135
+          ],
+          [
+            -7.651,
+            2.099,
+            16.64
+          ],
+          [
+            -7.592,
+            2.092,
+            16.145
+          ],
+          [
+            -7.488,
+            2.076,
+            15.657
+          ],
+          [
+            -7.357,
+            2.052,
+            15.175
+          ],
+          [
+            -7.206,
+            2.02,
+            14.699
+          ],
+          [
+            -7.034,
+            1.982,
+            14.231
+          ],
+          [
+            -6.829,
+            1.936,
+            13.776
+          ],
+          [
+            -6.598,
+            1.884,
+            13.334
+          ],
+          [
+            -6.359,
+            1.827,
+            12.895
+          ],
+          [
+            -6.127,
+            1.764,
+            12.453
+          ],
+          [
+            -5.903,
+            1.697,
+            12.007
+          ],
+          [
+            -5.68,
+            1.626,
+            11.56
+          ],
+          [
+            -5.457,
+            1.551,
+            11.114
+          ],
+          [
+            -5.234,
+            1.473,
+            10.667
+          ],
+          [
+            -5.01,
+            1.392,
+            10.221
+          ],
+          [
+            -4.787,
+            1.31,
+            9.774
+          ],
+          [
+            -4.564,
+            1.225,
+            9.328
+          ],
+          [
+            -4.341,
+            1.14,
+            8.881
+          ],
+          [
+            -4.117,
+            1.054,
+            8.435
+          ],
+          [
+            -3.894,
+            0.969,
+            7.988
+          ],
+          [
+            -3.671,
+            0.883,
+            7.542
+          ],
+          [
+            -3.448,
+            0.799,
+            7.096
+          ],
+          [
+            -3.225,
+            0.716,
+            6.649
+          ],
+          [
+            -3.001,
+            0.635,
+            6.203
+          ],
+          [
+            -2.778,
+            0.557,
+            5.756
+          ],
+          [
+            -2.554,
+            0.482,
+            5.31
+          ],
+          [
+            -2.329,
+            0.41,
+            4.865
+          ],
+          [
+            -2.104,
+            0.343,
+            4.419
+          ],
+          [
+            -1.88,
+            0.28,
+            3.973
+          ],
+          [
+            -1.656,
+            0.222,
+            3.527
+          ],
+          [
+            -1.434,
+            0.17,
+            3.079
+          ],
+          [
+            -1.215,
+            0.123,
+            2.631
+          ],
+          [
+            -0.993,
+            0.084,
+            2.184
+          ],
+          [
+            -0.763,
+            0.051,
+            1.741
+          ],
+          [
+            -0.535,
+            0.026,
+            1.297
+          ],
+          [
+            -0.32,
+            0.009,
+            0.847
+          ],
+          [
+            -0.13,
+            0.001,
+            0.385
+          ],
+          [
+            0.025,
+            -0.002,
+            -0.089
+          ],
+          [
+            0.135,
+            -0.023,
+            -0.576
+          ],
+          [
+            0.21,
+            -0.063,
+            -1.07
+          ],
+          [
+            0.267,
+            -0.117,
+            -1.565
+          ],
+          [
+            0.323,
+            -0.155,
+            -2.061
+          ],
+          [
+            0.394,
+            -0.192,
+            -2.556
+          ],
+          [
+            0.494,
+            -0.228,
+            -3.045
+          ],
+          [
+            0.615,
+            -0.265,
+            -3.529
+          ],
+          [
+            0.745,
+            -0.301,
+            -4.011
+          ],
+          [
+            0.887,
+            -0.337,
+            -4.489
+          ],
+          [
+            1.041,
+            -0.372,
+            -4.964
+          ],
+          [
+            1.208,
+            -0.408,
+            -5.434
+          ],
+          [
+            1.391,
+            -0.442,
+            -5.899
+          ],
+          [
+            1.591,
+            -0.477,
+            -6.356
+          ],
+          [
+            1.809,
+            -0.51,
+            -6.805
+          ],
+          [
+            2.038,
+            -0.544,
+            -7.249
+          ],
+          [
+            2.274,
+            -0.577,
+            -7.688
+          ],
+          [
+            2.515,
+            -0.609,
+            -8.126
+          ],
+          [
+            2.758,
+            -0.642,
+            -8.562
+          ],
+          [
+            2.997,
+            -0.675,
+            -9
+          ]
+        ],
+        "pathCrest": 11.022,
+        "pathMouth": 29.359
+      },
+      "bytes": 197772
+    },
+    {
+      "name": "tl_env_login_cave_mouth_v01",
+      "file": "login/tl_env_login_cave_mouth_v01.glb",
+      "url": "/models/login/tl_env_login_cave_mouth_v01.glb",
+      "triangles": 1009,
+      "trianglesByMaterial": {
+        "tl_matte": 932,
+        "tl_glow": 50,
+        "tl_glow_1.2": 27
+      },
+      "budget": 2600,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -21.0473,
+          0,
+          -17.5346
+        ],
+        "max": [
+          21.0476,
+          29.7008,
+          17.535
+        ]
+      },
+      "size": [
+        42.0949,
+        29.7008,
+        35.0696
+      ],
+      "nodes": [
+        "tl_env_login_cave_mouth_v01"
+      ],
+      "emissive": [
+        {
+          "node": "tl_env_login_cave_mouth_v01",
+          "material": "tl_glow",
+          "strength": 1,
+          "triangles": 50
+        },
+        {
+          "node": "tl_env_login_cave_mouth_v01",
+          "material": "tl_glow_1.2",
+          "strength": 1.2,
+          "triangles": 27
+        }
+      ],
+      "materials": [
+        "tl_glow",
+        "tl_glow_1.2",
+        "tl_matte"
+      ],
+      "notes": "Login cave mouth: block cliff, stalactite teeth, emblem slab above the opening, dark throat with a red glow (set space)",
+      "anchors": {
+        "mouth": [
+          -8.146,
+          2.005,
+          7.385
+        ],
+        "emblem": [
+          -11.046,
+          8.855,
+          9.235
+        ],
+        "throat_end": [
+          -1.3023,
+          3.005,
+          -6.015
+        ]
+      },
+      "lights": [
+        {
+          "name": "throat_glow",
+          "at": [
+            -5.946,
+            4.405,
+            0.385
+          ],
+          "color": "#FF3A24",
+          "intensity": 3.4,
+          "range": 16
+        },
+        {
+          "name": "threshold_glow",
+          "at": [
+            -8.246,
+            3.205,
+            7.985
+          ],
+          "color": "#FF4630",
+          "intensity": 1.5,
+          "range": 7.5
+        }
+      ],
+      "poses": {},
+      "meta": {
+        "placements": [
+          {
+            "at": [
+              8.146,
+              -2.005,
+              -7.385
+            ],
+            "yaw": 0,
+            "scale": 1
+          }
+        ],
+        "lights": [
+          {
+            "name": "throat_glow",
+            "at": [
+              2.2,
+              2.4,
+              -7
+            ],
+            "color": "#FF3A24",
+            "intensity": 3.4,
+            "range": 16
+          },
+          {
+            "name": "threshold_glow",
+            "at": [
+              -0.1,
+              1.2,
+              0.6
+            ],
+            "color": "#FF4630",
+            "intensity": 1.5,
+            "range": 7.5
+          }
+        ]
+      },
+      "bytes": 114108
+    },
+    {
+      "name": "tl_env_login_boulder_a_v01",
+      "file": "login/tl_env_login_boulder_a_v01.glb",
+      "url": "/models/login/tl_env_login_boulder_a_v01.glb",
+      "triangles": 36,
+      "trianglesByMaterial": {
+        "tl_matte": 36
+      },
+      "budget": 160,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -1.1901,
+          0,
+          -1.2874
+        ],
+        "max": [
+          1.7251,
+          2.1,
+          1.3671
+        ]
+      },
+      "size": [
+        2.9152,
+        2.1,
+        2.6545
+      ],
+      "nodes": [
+        "tl_env_login_boulder_a_v01"
+      ],
+      "emissive": [],
+      "materials": [
+        "tl_matte"
+      ],
+      "notes": "Login mid-ground boulder: one chunky block with a chip",
+      "anchors": {},
+      "lights": [],
+      "poses": {},
+      "meta": {
+        "placements": [
+          {
+            "at": [
+              -12.6,
+              1.923,
+              9.5
+            ],
+            "yaw": 20,
+            "scale": 1
+          },
+          {
+            "at": [
+              -18.5,
+              1.951,
+              4.5
+            ],
+            "yaw": 250,
+            "scale": 1.25
+          },
+          {
+            "at": [
+              -22,
+              1.964,
+              14
+            ],
+            "yaw": 80,
+            "scale": 0.9
+          },
+          {
+            "at": [
+              -0.4,
+              0.307,
+              5.6
+            ],
+            "yaw": 300,
+            "scale": 0.6
+          },
+          {
+            "at": [
+              -15,
+              1.953,
+              -8
+            ],
+            "yaw": 130,
+            "scale": 1.4
+          }
+        ]
+      },
+      "bytes": 5208
+    },
+    {
+      "name": "tl_env_login_boulder_b_v01",
+      "file": "login/tl_env_login_boulder_b_v01.glb",
+      "url": "/models/login/tl_env_login_boulder_b_v01.glb",
+      "triangles": 54,
+      "trianglesByMaterial": {
+        "tl_matte": 54
+      },
+      "budget": 160,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -1.6719,
+          0,
+          -1.6681
+        ],
+        "max": [
+          2.571,
+          2.5,
+          2.3859
+        ]
+      },
+      "size": [
+        4.243,
+        2.5,
+        4.054
+      ],
+      "nodes": [
+        "tl_env_login_boulder_b_v01"
+      ],
+      "emissive": [],
+      "materials": [
+        "tl_matte"
+      ],
+      "notes": "Login mid-ground boulder cluster: one big, two small",
+      "anchors": {},
+      "lights": [],
+      "poses": {},
+      "meta": {
+        "placements": [
+          {
+            "at": [
+              -14.8,
+              2.116,
+              14.2
+            ],
+            "yaw": 200,
+            "scale": 0.8
+          },
+          {
+            "at": [
+              3.9,
+              0.583,
+              6.2
+            ],
+            "yaw": 30,
+            "scale": 0.8
+          },
+          {
+            "at": [
+              -24,
+              1.677,
+              -3
+            ],
+            "yaw": 110,
+            "scale": 1.5
+          },
+          {
+            "at": [
+              -30,
+              2.008,
+              9
+            ],
+            "yaw": 10,
+            "scale": 1.2
+          }
+        ]
+      },
+      "bytes": 7248
+    },
+    {
+      "name": "tl_env_login_boulder_c_v01",
+      "file": "login/tl_env_login_boulder_c_v01.glb",
+      "url": "/models/login/tl_env_login_boulder_c_v01.glb",
+      "triangles": 54,
+      "trianglesByMaterial": {
+        "tl_matte": 54
+      },
+      "budget": 160,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -2.0377,
+          0,
+          -1.4172
+        ],
+        "max": [
+          1.3216,
+          1.25,
+          1.477
+        ]
+      },
+      "size": [
+        3.3593,
+        1.25,
+        2.8942
+      ],
+      "nodes": [
+        "tl_env_login_boulder_c_v01"
+      ],
+      "emissive": [],
+      "materials": [
+        "tl_matte"
+      ],
+      "notes": "Login low slab pile beside the path",
+      "anchors": {},
+      "lights": [],
+      "poses": {},
+      "meta": {
+        "placements": [
+          {
+            "at": [
+              -10.7,
+              2.273,
+              14.4
+            ],
+            "yaw": 60,
+            "scale": 0.75
+          },
+          {
+            "at": [
+              -2.6,
+              1.71,
+              12.6
+            ],
+            "yaw": 170,
+            "scale": 0.8
+          },
+          {
+            "at": [
+              -9.6,
+              0.962,
+              6.4
+            ],
+            "yaw": 320,
+            "scale": 0.9
+          },
+          {
+            "at": [
+              -4.6,
+              0.515,
+              3.2
+            ],
+            "yaw": 90,
+            "scale": 0.7
+          },
+          {
+            "at": [
+              -16.5,
+              2.087,
+              9.2
+            ],
+            "yaw": 215,
+            "scale": 1
+          }
+        ]
+      },
+      "bytes": 7176
+    },
+    {
+      "name": "tl_env_login_boulder_dark_v01",
+      "file": "login/tl_env_login_boulder_dark_v01.glb",
+      "url": "/models/login/tl_env_login_boulder_dark_v01.glb",
+      "triangles": 52,
+      "trianglesByMaterial": {
+        "tl_matte": 52
+      },
+      "budget": 160,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -2.5411,
+          0,
+          -1.8436
+        ],
+        "max": [
+          2.8841,
+          2.4,
+          1.8035
+        ]
+      },
+      "size": [
+        5.4252,
+        2.4,
+        3.6471
+      ],
+      "nodes": [
+        "tl_env_login_boulder_dark_v01"
+      ],
+      "emissive": [],
+      "materials": [
+        "tl_matte"
+      ],
+      "notes": "Login foreground boulder: near-black, frames the bottom corners",
+      "anchors": {},
+      "lights": [],
+      "poses": {},
+      "meta": {
+        "placements": [
+          {
+            "at": [
+              -12.6,
+              1.948,
+              17
+            ],
+            "yaw": 35,
+            "scale": 0.8
+          },
+          {
+            "at": [
+              -2.9,
+              1.866,
+              15.8
+            ],
+            "yaw": 210,
+            "scale": 0.62
+          },
+          {
+            "at": [
+              -16.2,
+              2.113,
+              16.2
+            ],
+            "yaw": 120,
+            "scale": 0.7
+          },
+          {
+            "at": [
+              0.4,
+              1.257,
+              10.4
+            ],
+            "yaw": 300,
+            "scale": 0.7
+          }
+        ]
+      },
+      "bytes": 6972
+    },
+    {
+      "name": "tl_env_login_spires_near_v01",
+      "file": "login/tl_env_login_spires_near_v01.glb",
+      "url": "/models/login/tl_env_login_spires_near_v01.glb",
+      "triangles": 240,
+      "trianglesByMaterial": {
+        "tl_matte": 240
+      },
+      "budget": 520,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -19.8176,
+          -0.0002,
+          -23.9543
+        ],
+        "max": [
+          19.8181,
+          21.3253,
+          23.955
+        ]
+      },
+      "size": [
+        39.6356,
+        21.3255,
+        47.9093
+      ],
+      "nodes": [
+        "tl_env_login_spires_near_v01"
+      ],
+      "emissive": [],
+      "materials": [
+        "tl_matte"
+      ],
+      "notes": "Login spires, near layer (40-75 m): tall faceted pinnacles left of the cliff",
+      "anchors": {},
+      "lights": [],
+      "poses": {},
+      "meta": {
+        "placements": [
+          {
+            "at": [
+              -24.822,
+              0.392,
+              -43.492
+            ],
+            "yaw": 0,
+            "scale": 1
+          }
+        ]
+      },
+      "bytes": 28500
+    },
+    {
+      "name": "tl_env_login_spires_mid_v01",
+      "file": "login/tl_env_login_spires_mid_v01.glb",
+      "url": "/models/login/tl_env_login_spires_mid_v01.glb",
+      "triangles": 246,
+      "trianglesByMaterial": {
+        "tl_matte": 246
+      },
+      "budget": 520,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -62.8191,
+          0.0002,
+          -31.182
+        ],
+        "max": [
+          62.82,
+          28.2456,
+          31.1823
+        ]
+      },
+      "size": [
+        125.6391,
+        28.2454,
+        62.3643
+      ],
+      "nodes": [
+        "tl_env_login_spires_mid_v01"
+      ],
+      "emissive": [],
+      "materials": [
+        "tl_matte"
+      ],
+      "notes": "Login spires, middle layer (85-135 m): pinnacles and a broken ridge",
+      "anchors": {},
+      "lights": [],
+      "poses": {},
+      "meta": {
+        "placements": [
+          {
+            "at": [
+              -61.832,
+              -0.957,
+              -85.818
+            ],
+            "yaw": 0,
+            "scale": 1
+          }
+        ]
+      },
+      "bytes": 29176
+    },
+    {
+      "name": "tl_env_login_spires_far_v01",
+      "file": "login/tl_env_login_spires_far_v01.glb",
+      "url": "/models/login/tl_env_login_spires_far_v01.glb",
+      "triangles": 212,
+      "trianglesByMaterial": {
+        "tl_matte": 212
+      },
+      "budget": 520,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -110.969,
+          -0.0001,
+          -68
+        ],
+        "max": [
+          110.9693,
+          33.4263,
+          68
+        ]
+      },
+      "size": [
+        221.9383,
+        33.4264,
+        136
+      ],
+      "nodes": [
+        "tl_env_login_spires_far_v01"
+      ],
+      "emissive": [],
+      "materials": [
+        "tl_matte"
+      ],
+      "notes": "Login spires, far layer (160-215 m): low ridge under the sun, a few pinnacles",
+      "anchors": {},
+      "lights": [],
+      "poses": {},
+      "meta": {
+        "placements": [
+          {
+            "at": [
+              -79.031,
+              -0.736,
+              -142
+            ],
+            "yaw": 0,
+            "scale": 1
+          }
+        ]
+      },
+      "bytes": 25272
+    },
+    {
+      "name": "tl_env_login_tree_a_v01",
+      "file": "login/tl_env_login_tree_a_v01.glb",
+      "url": "/models/login/tl_env_login_tree_a_v01.glb",
+      "triangles": 328,
+      "trianglesByMaterial": {
+        "tl_matte": 328
+      },
+      "budget": 520,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -1.9254,
+          0,
+          -2.1369
+        ],
+        "max": [
+          1.9254,
+          8.8774,
+          2.1369
+        ]
+      },
+      "size": [
+        3.8508,
+        8.8774,
+        4.2738
+      ],
+      "nodes": [
+        "tl_env_login_tree_a_v01"
+      ],
+      "emissive": [],
+      "materials": [
+        "tl_matte"
+      ],
+      "notes": "Login dead tree A: tall leaning trunk, long bare limbs reaching to +X",
+      "anchors": {
+        "trunk": [
+          -0.7839,
+          0.0362,
+          0.2507
+        ]
+      },
+      "lights": [],
+      "poses": {},
+      "meta": {
+        "placements": [
+          {
+            "at": [
+              -11.41,
+              1.831,
+              10.171
+            ],
+            "yaw": 8,
+            "scale": 1.2
+          },
+          {
+            "at": [
+              -44.976,
+              3.531,
+              -27.245
+            ],
+            "yaw": 200,
+            "scale": 1.5
+          }
+        ]
+      },
+      "bytes": 35828
+    },
+    {
+      "name": "tl_env_login_tree_b_v01",
+      "file": "login/tl_env_login_tree_b_v01.glb",
+      "url": "/models/login/tl_env_login_tree_b_v01.glb",
+      "triangles": 190,
+      "trianglesByMaterial": {
+        "tl_matte": 190
+      },
+      "budget": 520,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -1.2898,
+          0,
+          -0.5438
+        ],
+        "max": [
+          1.2898,
+          3.9449,
+          0.5438
+        ]
+      },
+      "size": [
+        2.5797,
+        3.9449,
+        1.0876
+      ],
+      "nodes": [
+        "tl_env_login_tree_b_v01"
+      ],
+      "emissive": [],
+      "materials": [
+        "tl_matte"
+      ],
+      "notes": "Login dead tree B: short forked snag",
+      "anchors": {
+        "trunk": [
+          -0.7685,
+          0.0375,
+          -0.0784
+        ]
+      },
+      "lights": [],
+      "poses": {},
+      "meta": {
+        "placements": [
+          {
+            "at": [
+              -12.761,
+              1.419,
+              4.166
+            ],
+            "yaw": 40,
+            "scale": 1
+          },
+          {
+            "at": [
+              -22.314,
+              1.714,
+              -6.588
+            ],
+            "yaw": 150,
+            "scale": 1.3
+          },
+          {
+            "at": [
+              -30.41,
+              1.817,
+              -14.767
+            ],
+            "yaw": 280,
+            "scale": 1.6
+          },
+          {
+            "at": [
+              -10.387,
+              1.64,
+              -14.927
+            ],
+            "yaw": 95,
+            "scale": 1.2
+          },
+          {
+            "at": [
+              -56.352,
+              4.333,
+              -40.416
+            ],
+            "yaw": 20,
+            "scale": 2.2
+          }
+        ]
+      },
+      "bytes": 21824
+    },
+    {
+      "name": "tl_env_login_sky_v01",
+      "file": "login/tl_env_login_sky_v01.glb",
+      "url": "/models/login/tl_env_login_sky_v01.glb",
+      "triangles": 290,
+      "trianglesByMaterial": {
+        "tl_glow": 290
+      },
+      "budget": 520,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -260.4144,
+          0.0002,
+          -144.611
+        ],
+        "max": [
+          260.4153,
+          284.6754,
+          144.6112
+        ]
+      },
+      "size": [
+        520.8297,
+        284.6752,
+        289.2222
+      ],
+      "nodes": [
+        "tl_env_login_sky_v01"
+      ],
+      "emissive": [
+        {
+          "node": "tl_env_login_sky_v01",
+          "material": "tl_glow",
+          "strength": 1,
+          "triangles": 290
+        }
+      ],
+      "materials": [
+        "tl_glow"
+      ],
+      "notes": "Login sky: faceted dusk dome section (unlit), redder around the sun, a few cloud streaks",
+      "anchors": {},
+      "lights": [],
+      "poses": {},
+      "meta": {
+        "placements": [
+          {
+            "at": [
+              -7.053,
+              -22.835,
+              -96.235
+            ],
+            "yaw": 0,
+            "scale": 1
+          }
+        ]
+      },
+      "bytes": 34232
+    },
+    {
+      "name": "tl_fx_login_sun_v01",
+      "file": "login/tl_fx_login_sun_v01.glb",
+      "url": "/models/login/tl_fx_login_sun_v01.glb",
+      "triangles": 42,
+      "trianglesByMaterial": {
+        "tl_glow_1.25": 14,
+        "tl_glow": 28
+      },
+      "budget": 80,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -9.3593,
+          0,
+          -0.2
+        ],
+        "max": [
+          9.3593,
+          19.2,
+          0.2
+        ]
+      },
+      "size": [
+        18.7186,
+        19.2,
+        0.4
+      ],
+      "nodes": [
+        "tl_fx_login_sun_v01"
+      ],
+      "emissive": [
+        {
+          "node": "tl_fx_login_sun_v01",
+          "material": "tl_glow_1.25",
+          "strength": 1.25,
+          "triangles": 14
+        },
+        {
+          "node": "tl_fx_login_sun_v01",
+          "material": "tl_glow",
+          "strength": 1,
+          "triangles": 28
+        }
+      ],
+      "materials": [
+        "tl_glow",
+        "tl_glow_1.25"
+      ],
+      "notes": "Login sun: low red disc with a darker halo ring (unlit), faces +Z",
+      "anchors": {},
+      "lights": [],
+      "poses": {},
+      "meta": {
+        "placements": [
+          {
+            "at": [
+              -53.126,
+              10.273,
+              -211.954
+            ],
+            "yaw": 11.2,
+            "scale": 1
+          }
+        ]
+      },
+      "bytes": 4744
+    }
+  ]
+}

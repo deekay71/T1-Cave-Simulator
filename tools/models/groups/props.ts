@@ -1096,7 +1096,18 @@ function buildOxygen(variant: "green" | "white"): Model {
       ? "Rank 03 oxygen cylinder, faded green with a pale label band, 1.17 m tall, 0.18 m diameter; gauge faces +Z, hose outlet on +X (anchor hose_out). Pivot bottom centre."
       : "White oxygen cylinder with a crimson band (04 catalog), 1.17 m tall, 0.18 m diameter; gauge faces +Z, hose outlet on +X (anchor hose_out). Pivot bottom centre.",
   });
-  const g = m.geo;
+  oxygenGeo(m.geo, green);
+  m.anchor("hose_out", [0.07, 1.1, 0]);
+  m.anchor("top", [0, 1.172, 0]);
+  m.collider = { type: "cylinder", center: [0, 0.586, 0], radius: 0.09, height: 1.172 };
+  return m;
+}
+
+/**
+ * The oxygen cylinder's geometry (bottom centre at the builder's origin, 1.172 m tall, gauge on
+ * +Z, outlet on +X), shared by the standalone cylinders and the rank trolley so they match.
+ */
+function oxygenGeo(g: MeshBuilder, green: boolean): void {
   const body = green ? "#718A72" : "#D0C9BD";
   const bodyDark = green ? "#5A6F5C" : "#B4AC9F";
   const band = green ? "#CEC4A8" : "#A12C36";
@@ -1154,10 +1165,6 @@ function buildOxygen(variant: "green" | "white"): Model {
     [0, 0, 1],
     { color: "#9A2A2E" },
   );
-  m.anchor("hose_out", [0.07, 1.1, 0]);
-  m.anchor("top", [0, 1.172, 0]);
-  m.collider = { type: "cylinder", center: [0, 0.586, 0], radius: 0.09, height: 1.172 };
-  return m;
 }
 
 function buildHose(): Model {
@@ -1449,6 +1456,741 @@ function buildPhone(): Model {
 }
 
 /* =========================================================================================
+ * Player rank gear (apps/web/src/avatarProgression.ts) — 03 tenure looks made walkable:
+ * rank 2 oxygen trolley + flexible hose + cannula, rank 3 crutches, rank 5 bed casters.
+ * Rank 4 / 5 reuse the wheelchair, the metal bed, the bed cover and the phone above.
+ * ========================================================================================= */
+
+/** Rank gear palette: rough wood, dark metal, tape, faded crimson cloth (art bible). */
+const GEAR = {
+  wood: "#74503A",
+  woodLight: "#8A6446",
+  woodDark: "#523726",
+  metal: "#4D4F52",
+  metalDark: "#3A3C3F",
+  tyre: "#262322",
+  hub: "#6C6E70",
+  tape: "#B79E75",
+  tapeDark: "#9A8160",
+  cloth: "#8A3A3C",
+  clothDark: "#6C2C30",
+  worn: "#C6BCA8",
+  thread: "#2A1F1C",
+  tube: "#D3D7D5",
+};
+
+/** Small spoked wheel standing in the YZ plane (axis = X), centred on the node's origin. */
+function gearWheel(b: MeshBuilder, r: number, width: number, hubColor: Color, spokes = true): void {
+  const seg = 10;
+  const t0 = 270 - 5 * (360 / seg); // a vertex straight down: the tyre touches the floor
+  b.ring({ radius: r, inner: r * 0.66, depth: width, segments: seg, start: t0, end: t0 + 360, rot: [0, 90, 0], color: GEAR.tyre, vary: 0.05 });
+  b.ring({ radius: r * 0.66, inner: 0, depth: width * 0.55, segments: seg, start: t0, end: t0 + 360, rot: [0, 90, 0], color: hubColor, vary: 0.05 });
+  if (spokes) {
+    // two bright bars + one tape patch on the tyre: the spin stays readable at game distance
+    b.box({ size: [width * 0.75, r * 1.25, r * 0.2], color: GEAR.worn });
+    b.box({ size: [width * 0.75, r * 0.2, r * 1.25], color: GEAR.tapeDark });
+    b.box({ size: [width * 1.06, r * 0.36, r * 0.3], at: [0, r * 0.83, 0], color: GEAR.tape });
+  }
+}
+
+/* ---------------- rank 2: oxygen cylinder strapped to a hand trolley */
+
+const TROLLEY = {
+  wheelR: 0.085,
+  /** axle line (the runtime tilts the trolley about it) */
+  axle: [0, 0.085, 0.03] as Vec3,
+  /** middle of the cloth-wrapped handle bar */
+  handle: [0, 0.985, 0.1] as Vec3,
+  cylScale: 0.85,
+  cylAt: [0, 0.047, -0.078] as Vec3,
+};
+
+function buildOxygenTrolley(): Model {
+  const T = TROLLEY;
+  const cy = (p: Vec3): Vec3 => [T.cylAt[0] - p[0] * T.cylScale, T.cylAt[1] + p[1] * T.cylScale, T.cylAt[2] - p[2] * T.cylScale];
+  const hoseOut = cy([0.07, 1.1, 0]);
+  const m = new Model("tl_veh_oxygen_trolley_v01", {
+    budget: 2000,
+    notes:
+      "Rank 'Te Tho' player gear: the sage-green oxygen cylinder (x0.85, gauge toward -Z, hose outlet toward -X) strapped with " +
+      "cloth bands onto a rough two-wheel hand trolley: dark metal rails, wooden rungs and toe plate, cloth-wrapped handle bar. " +
+      "Stands upright on its wheels + two rear feet. PULLED toward +Z: tilt the whole model about the axle line (anchor axle, " +
+      "rot X > 0 leans the handle toward +Z) and spin wheel_l / wheel_r about local X by distance / 0.085 rad. " +
+      "Anchors: axle, handle (grip centre), hose_out (start of the flexible hose).",
+  });
+  const g = m.geo;
+  const rng = m.rng.fork("trolley");
+  const rx = 0.108;
+  // rails bending forward into the handle
+  for (const s of [1, -1]) {
+    g.tube(
+      [
+        [s * rx, 0.045, 0.02],
+        [s * rx, 0.9, 0.02],
+        [s * rx, 0.965, 0.05],
+        [s * rx, T.handle[1], T.handle[2] + 0.012],
+      ],
+      { radius: 0.013, sides: 6, color: GEAR.metal, vary: 0.05 },
+    );
+    // rear feet under the toe plate (the trolley stands on wheels + feet)
+    g.box({ size: [0.032, 0.03, 0.036], at: [s * 0.085, 0.015, -0.165], color: GEAR.tyre });
+  }
+  // handle bar + cloth wrap
+  g.tube(
+    [
+      [-rx - 0.012, T.handle[1], T.handle[2]],
+      [rx + 0.012, T.handle[1], T.handle[2]],
+    ],
+    { radius: 0.013, sides: 6, color: GEAR.metalDark },
+  );
+  g.cylinder({ height: 0.15, radius: 0.022, sides: 6, rot: [0, 0, 90], at: T.handle, color: GEAR.cloth, vary: 0.07 });
+  g.cylinder({ height: 0.022, radius: 0.025, sides: 6, rot: [0, 0, 90], at: [0.05, T.handle[1], T.handle[2]], color: GEAR.tape });
+  // wooden rungs behind the cylinder, toe plate with a lip, axle
+  for (const [y, w, tilt] of [
+    [0.3, 0.07, 2],
+    [0.66, 0.06, -3],
+  ] as const)
+    g.plank({ size: [0.262, w, 0.02], at: [0, y, 0.022], rot: [0, 0, tilt], color: y > 0.5 ? GEAR.woodLight : GEAR.wood, vary: 0.06 });
+  g.plank({ size: [0.25, 0.022, 0.215], at: [0, 0.036, -0.085], color: GEAR.woodDark, vary: 0.06 });
+  g.box({ size: [0.24, 0.035, 0.016], at: [0, 0.062, -0.186], color: GEAR.wood, vary: 0.05 });
+  g.tube(
+    [
+      [-0.135, T.axle[1], T.axle[2]],
+      [0.135, T.axle[1], T.axle[2]],
+    ],
+    { radius: 0.011, sides: 5, color: GEAR.metalDark },
+  );
+  for (const s of [1, -1]) g.box({ size: [0.014, 0.075, 0.03], at: [s * rx, 0.075, 0.026], color: GEAR.metalDark });
+  // the cylinder, turned so its gauge faces the camera behind the player
+  g.group({ at: T.cylAt, rot: [0, 180, 0], scale: T.cylScale }, (b) => oxygenGeo(b, true));
+  // two cloth straps round the cylinder and the rails, each with a knot and a loose tail
+  const cz = T.cylAt[2];
+  const cr = 0.09 * T.cylScale + 0.006;
+  for (const [y, color, knot] of [
+    [0.4, GEAR.cloth, 1],
+    [0.78, GEAR.tape, -1],
+  ] as const) {
+    const loop: Vec3[] = [
+      [rx + 0.014, y, 0.036],
+      [rx + 0.012, y, cz],
+      [cr * 0.72, y - 0.004, cz - cr * 0.72],
+      [0, y - 0.006, cz - cr - 0.004],
+      [-cr * 0.72, y - 0.004, cz - cr * 0.72],
+      [-rx - 0.012, y, cz],
+      [-rx - 0.014, y, 0.036],
+    ];
+    g.tube(loop, { radius: [0.02, 0.02, 0.019, 0.019, 0.019, 0.02, 0.02], sides: 4, closed: true, color, vary: 0.07 });
+    g.box({ size: [0.036, 0.04, 0.03], at: [knot * 0.035, y - 0.004, cz - cr - 0.012], rot: [0, 0, 20 * knot], chamfer: 0.006, color: shade(color, 0.86) });
+    g.box({ size: [0.018, 0.075, 0.006], at: [knot * 0.05, y - 0.05, cz - cr - 0.014], rot: [4, 0, 14 * knot], color: shade(color, 0.93) });
+  }
+  // sewn patch on the lower strap, tape wrap on the left rail (patched look)
+  decal(g, [0.062, 0.398, cz - cr * 0.78], [0.6, 0, -0.8], 0.04, 0.03, { color: GEAR.worn }, rng, 0.2, 0.016);
+  g.tube(
+    [
+      [rx, 0.5, 0.02],
+      [rx, 0.57, 0.02],
+    ],
+    { radius: 0.019, sides: 6, color: GEAR.tape, vary: 0.06 },
+  );
+  for (const [name, s] of [
+    ["wheel_l", 1],
+    ["wheel_r", -1],
+  ] as const) {
+    const w = m.node(name, { at: [s * 0.152, T.axle[1], T.axle[2]] });
+    gearWheel(w.geo, T.wheelR, 0.034, s === 1 ? GEAR.wood : GEAR.hub);
+  }
+  m.anchor("axle", T.axle);
+  m.anchor("handle", T.handle);
+  m.anchor("hose_out", hoseOut);
+  m.anchor("top", cy([0, 1.172, 0]));
+  m.pose("rolling", { wheel_l: [70, 0, 0], wheel_r: [70, 0, 0] });
+  m.collider = { type: "box", center: [0, 0.52, -0.04], size: [0.34, 1.04, 0.32] };
+  m.meta = { wheelRadius: T.wheelR, pulledToward: "+Z", tiltAbout: "axle" };
+  return m;
+}
+
+const HOSE_SEGMENTS = 12;
+
+function buildHoseFlex(): Model {
+  const m = new Model("tl_prop_oxygen_hose_flex_v01", {
+    budget: 500,
+    notes:
+      `ATTACHMENT, not a floor prop: ${HOSE_SEGMENTS} unit segments (nodes seg_00..seg_${String(HOSE_SEGMENTS - 1).padStart(2, "0")}, each a thin ` +
+      "tube from its origin to +Y 1 m). The runtime lays them along a curve every frame: position = sample i, +Y aimed at " +
+      "sample i+1, scale Y = the distance (rank 'Te Tho': trolley hose_out -> nasal cannula).",
+  });
+  for (let i = 0; i < HOSE_SEGMENTS; i++) {
+    const n = m.node(`seg_${String(i).padStart(2, "0")}`);
+    n.geo.tube(
+      [
+        [0, 0, 0],
+        [0, 1, 0],
+      ],
+      { radius: 0.0095, sides: 5, color: i % 4 === 3 ? shade(GEAR.tube, 0.9) : GEAR.tube, vary: 0.03 },
+    );
+  }
+  m.meta = { segments: HOSE_SEGMENTS, radius: 0.0095 };
+  return m;
+}
+
+/** Head block of the fan rig in head-joint space (tools/models/groups/characters.ts `H`). */
+const HEAD = { hx: 0.15, top: 0.305, zf: 0.155, zb: -0.13, eyeY: 0.14 };
+
+function buildCannula(): Model {
+  const m = new Model("tl_wear_cannula_v01", {
+    budget: 300,
+    notes:
+      "WEARABLE (node fit_head: parent it to the rig's head joint with a zero local transform): thin nasal cannula under the " +
+      "nose, along the cheeks, over the ears and joined under the chin (anchor inlet, head-joint space), same path as the " +
+      "one modelled on tl_char_fan_oxygen_v01 (do not add it to that variant).",
+  });
+  const b = m.node("fit_head").geo;
+  const zf = HEAD.zf;
+  const ny = HEAD.eyeY - 0.07;
+  const pts: Vec3[] = [
+    [-HEAD.hx - 0.007, 0.105, 0.02],
+    [-0.1, ny + 0.008, zf + 0.006],
+    [-0.028, ny, zf + 0.03],
+    [0.028, ny, zf + 0.03],
+    [0.1, ny + 0.008, zf + 0.006],
+    [HEAD.hx + 0.007, 0.105, 0.02],
+    [HEAD.hx + 0.006, 0.005, 0.035],
+    [0.05, -0.03, 0.09],
+    [-0.05, -0.03, 0.09],
+    [-HEAD.hx - 0.006, 0.005, 0.035],
+  ];
+  b.tube(pts, { radius: 0.0065, sides: 4, closed: true, color: GEAR.tube, vary: 0.03 });
+  // slider where the two tubes join the hose
+  b.box({ size: [0.03, 0.022, 0.022], at: [0, -0.032, 0.092], color: shade(GEAR.tube, 0.82) });
+  m.anchor("inlet", [0, -0.04, 0.094]);
+  m.meta = { fit: { fit_head: "head" } };
+  return m;
+}
+
+/* ---------------- rank 3: patched wooden underarm crutch */
+
+const CRUTCH = { length: 1.27, grip: 0.82, padLength: 0.26 };
+
+function buildCrutch(): Model {
+  const C = CRUTCH;
+  const m = new Model("tl_prop_crutch_v01", {
+    budget: 500,
+    notes:
+      "Rank 'Te Nang' player gear, used twice: patched wooden underarm crutch, 1.27 m. PIVOT AT THE TIP (origin), shaft along " +
+      "+Y, the two struts and the cloth-wrapped underarm pad lie in the YZ plane (pad along Z); the taped hand grip joins the " +
+      "struts at y 0.82 (anchor grip). Tennis-ball foot, tape wraps, a splint tied to the lower leg. Aim +Y from the planted " +
+      "tip to the armpit; the hand goes on the grip between the struts.",
+  });
+  const g = m.geo;
+  const rng = m.rng.fork("crutch");
+  const strutZ = (y: number) => 0.016 + ((y - 0.5) / (C.length - 0.06 - 0.5)) * 0.094;
+  // worn tennis ball on the tip
+  g.icosphere({ radius: 0.052, detail: 1, at: [0, 0.047, 0], color: (f) => (Math.abs(f.center[0] - f.center[1] * 0.6) < 0.012 ? "#D6D2B0" : "#A8A85E"), vary: 0.07 });
+  // lower leg
+  g.tube(
+    [
+      [0, 0.05, 0],
+      [0, 0.56, 0],
+    ],
+    { radius: sq(0.023), sides: 4, phase: 45, color: GEAR.wood, vary: 0.06 },
+  );
+  // struts
+  const top = C.length - 0.06;
+  for (const s of [1, -1])
+    g.tube(
+      [
+        [0, 0.47, s * 0.008],
+        [0, 0.56, s * strutZ(0.56)],
+        [0, top, s * strutZ(top)],
+      ],
+      { radius: sq(0.019), sides: 4, phase: 45, color: s === 1 ? GEAR.woodLight : GEAR.wood, vary: 0.06 },
+    );
+  // bolt block + tape where the struts meet the leg
+  g.cylinder({ height: 0.085, radius: 0.042, sides: 6, at: [0, 0.515, 0], color: GEAR.tape, vary: 0.07 });
+  g.cylinder({ height: 0.024, radius: 0.045, sides: 6, phase: 25, at: [0, 0.465, 0], rot: [0, 0, 5], color: GEAR.tapeDark });
+  // hand grip: dowel between the struts, cloth wrapped
+  const gz = strutZ(C.grip) + 0.012;
+  g.cylinder({ height: gz * 2, radius: 0.019, sides: 6, rot: [90, 0, 0], at: [0, C.grip, 0], color: GEAR.woodDark });
+  g.cylinder({ height: gz * 1.25, radius: 0.027, sides: 6, rot: [90, 0, 0], at: [0, C.grip, 0], color: GEAR.cloth, vary: 0.08 });
+  // underarm pad wrapped in faded crimson cloth, with a sewn worn patch
+  g.box({
+    size: [0.074, 0.07, C.padLength],
+    at: [0, C.length - 0.035, 0],
+    chamfer: 0.02,
+    color: GEAR.cloth,
+    parts: { bottom: GEAR.clothDark },
+    vary: 0.06,
+  });
+  decal(g, [0.037, C.length - 0.034, 0.05], [1, 0, 0], 0.075, 0.034, { color: GEAR.worn }, rng, 0.18, 0.003);
+  decal(g, [-0.037, C.length - 0.034, -0.045], [-1, 0, 0], 0.065, 0.032, { color: GEAR.tape }, rng, 0.18, 0.003);
+  for (const z of [0.022, 0.078]) decal(g, [0.0405, C.length - 0.034, z], [1, 0, 0], 0.004, 0.024, { color: GEAR.thread }, undefined, 0, 0.001);
+  // repairs: tape on the rear strut, a splint tied along the lower leg with two cloth ties
+  g.tube(
+    [
+      [0, 0.98, -strutZ(0.98)],
+      [0, 1.05, -strutZ(1.05)],
+    ],
+    { radius: 0.029, sides: 6, color: GEAR.tape, vary: 0.06 },
+  );
+  g.plank({ size: [0.21, 0.016, 0.036], at: [0.031, 0.27, 0], rot: [0, 0, 90], color: GEAR.woodLight, vary: 0.06 });
+  for (const y of [0.2, 0.34]) g.cylinder({ height: 0.03, radius: 0.046, sides: 6, at: [0.01, y, 0], color: y < 0.3 ? GEAR.cloth : GEAR.worn, vary: 0.06 });
+  m.anchor("tip", [0, 0, 0]);
+  m.anchor("grip", [0, C.grip, 0]);
+  m.anchor("pad", [0, C.length, 0]);
+  m.meta = { length: C.length, gripHeight: C.grip, padLength: C.padLength };
+  return m;
+}
+
+/* ---------------- rank 5: swivel casters under the metal bed */
+
+const CASTER = { lift: 0.115, wheelR: 0.052, trail: 0.036, px: 0.429, pz: 0.979 };
+
+function buildBedCasters(): Model {
+  const K = CASTER;
+  const m = new Model("tl_prop_bed_casters_v01", {
+    budget: 700,
+    notes:
+      `ATTACHMENT for tl_veh_metal_bed_v01 (rank 'Te Liet' rolling bed): four swivel casters under the posts. Raise the bed by ` +
+      `${K.lift} m (meta.lift) and give this model the bed's floor transform. Nodes caster_fl / caster_fr / caster_rl / ` +
+      "caster_rr (f = feet end +Z, l = +X) swivel about local Y at the post (yaw 0 = rolling toward +Z, the wheel trails " +
+      `${K.trail} m behind); their children caster_*_wheel spin about local X by distance / ${K.wheelR} rad.`,
+  });
+  for (const [name, sx, sz] of [
+    ["caster_fl", 1, 1],
+    ["caster_fr", -1, 1],
+    ["caster_rl", 1, -1],
+    ["caster_rr", -1, -1],
+  ] as const) {
+    // fixed top plate under the post (root geometry)
+    m.geo.box({ size: [0.07, 0.014, 0.07], at: [sx * K.px, K.lift - 0.007, sz * K.pz], color: GEAR.metalDark, vary: 0.05 });
+    const c = m.node(name, { at: [sx * K.px, K.lift - 0.014, sz * K.pz] });
+    const b = c.geo;
+    const ay = -(K.lift - 0.014 - K.wheelR); // wheel axle below the swivel
+    b.cylinder({ height: 0.024, radius: 0.024, sides: 6, at: [0, -0.012, 0], color: GEAR.metal });
+    for (const s of [1, -1])
+      b.hull(
+        [
+          [s * 0.021, -0.02, 0.022],
+          [s * 0.021, -0.02, -0.03],
+          [s * 0.021, ay - 0.012, -K.trail - 0.014],
+          [s * 0.021, ay - 0.012, -K.trail + 0.014],
+          [s * 0.027, -0.02, 0.022],
+          [s * 0.027, -0.02, -0.03],
+          [s * 0.027, ay - 0.012, -K.trail - 0.014],
+          [s * 0.027, ay - 0.012, -K.trail + 0.014],
+        ],
+        { color: GEAR.metalDark, vary: 0.05 },
+      );
+    b.box({ size: [0.056, 0.01, 0.056], at: [0, -0.024, -0.004], color: GEAR.metalDark });
+    const w = c.child(`${name}_wheel`, { at: [0, ay, -K.trail] });
+    // solid little wheel with one pale bar so the spin reads
+    w.geo.ring({ radius: K.wheelR, depth: 0.03, segments: 8, start: 22.5, end: 382.5, rot: [0, 90, 0], color: GEAR.tyre, vary: 0.05 });
+    w.geo.box({ size: [0.034, K.wheelR * 1.3, 0.014], color: sx * sz > 0 ? GEAR.hub : GEAR.tapeDark });
+  }
+  m.anchor("bed_floor", [0, K.lift, 0]);
+  m.meta = { lift: K.lift, wheelRadius: K.wheelR, trail: K.trail, posts: [K.px, K.pz] };
+  return m;
+}
+
+/* =========================================================================================
+ * Wearables — shop looks fitted to the fan rig (tools/models/groups/characters.ts).
+ * Every piece is a node "fit_<joint>" authored in that joint's local space: the runtime parents
+ * it to the joint with a zero local transform. Shells sit >= 8 mm outside the bulkiest base
+ * outfit (hoodie + hem band + pocket) so they never z-fight with any variant. No logos, no text.
+ * ========================================================================================= */
+
+interface FitRing {
+  y: number;
+  w: number;
+  d: number;
+  bev?: number;
+  x?: number;
+  z?: number;
+}
+function fitRing(r: FitRing): Vec3[] {
+  const hw = r.w / 2;
+  const hd = r.d / 2;
+  const b = Math.min(r.bev ?? Math.min(r.w, r.d) * 0.16, hw * 0.45, hd * 0.45);
+  const cx = r.x ?? 0;
+  const cz = r.z ?? 0;
+  return [
+    [cx + hw - b, r.y, cz + hd],
+    [cx + hw, r.y, cz + hd - b],
+    [cx + hw, r.y, cz - hd + b],
+    [cx + hw - b, r.y, cz - hd],
+    [cx - hw + b, r.y, cz - hd],
+    [cx - hw, r.y, cz - hd + b],
+    [cx - hw, r.y, cz + hd - b],
+    [cx - hw + b, r.y, cz + hd],
+  ];
+}
+const fitBlock = (b: MeshBuilder, rings: FitRing[], o: PrimOpts) => b.hull(rings.flatMap(fitRing), o);
+
+/** Loose torso shell in spine space (front plane z = SHELL.zf, back plane z = SHELL.zb). */
+const SHELL = {
+  zf: 0.004 + 0.156,
+  zb: 0.004 - 0.156,
+  hw: 0.238,
+  rings: (hem: number, top = true): FitRing[] => [
+    { y: hem, w: 0.476, d: 0.312, z: 0.004, bev: 0.05 },
+    { y: 0.262, w: 0.472, d: 0.312, z: 0.004, bev: 0.05 },
+    ...(top
+      ? [
+          { y: 0.33, w: 0.478, d: 0.264, z: 0.002, bev: 0.05 },
+          { y: 0.38, w: 0.3, d: 0.2, z: -0.004, bev: 0.042 },
+        ]
+      : []),
+  ],
+};
+/** Short sleeve over the upper arm (arm_upper space, follows the rig's baked 4 deg arm tilt). */
+function fitSleeve(b: MeshBuilder, side: 1 | -1, color: Color, cuff: Color | null, len = 0.15): void {
+  b.group({ rot: [0, 0, side * 4] }, (g) => {
+    const end: FitRing = { y: -len, w: 0.18, d: 0.188, bev: 0.034 };
+    fitBlock(g, [{ y: 0.062, w: 0.15, d: 0.158, bev: 0.036 }, { y: 0.014, w: 0.184, d: 0.192, bev: 0.036 }, end], { color, vary: 0.04 });
+    if (cuff) fitBlock(g, [{ ...end, y: -len + 0.036, w: 0.186, d: 0.194 }, { ...end, y: -len - 0.004, w: 0.185, d: 0.193 }], { color: cuff, vary: 0.03 });
+  });
+}
+/** Dark stitches round a rectangular patch lying in a z = const plane (front: dir 1, back: -1). */
+function stitches(b: MeshBuilder, cx: number, cy: number, w: number, h: number, z: number, dir: 1 | -1): void {
+  const n: Vec3 = [0, 0, dir];
+  for (const sx of [-1, 1]) for (const fy of [-0.25, 0.25]) decal(b, [cx + (sx * w) / 2, cy + fy * h, z], n, 0.02, 0.005, { color: GEAR.thread }, undefined, 0, 0.004);
+  for (const sy of [-1, 1]) decal(b, [cx, cy + (sy * h) / 2, z], n, 0.005, 0.02, { color: GEAR.thread }, undefined, 0, 0.004);
+}
+function sewnPatch(b: MeshBuilder, rng: Rng, cx: number, cy: number, w: number, h: number, z: number, dir: 1 | -1, color: Color): void {
+  decal(b, [cx, cy, z], [0, 0, dir], w, h, { color }, rng, 0.14, 0.002);
+  stitches(b, cx, cy, w, h, z, dir);
+}
+/** Ragged triangles hanging under a ring outline (torn hems). */
+function fitRagged(b: MeshBuilder, ring: FitRing, rng: Rng, color: Color, len: [number, number], spacing = 0.06, skip = 0.3): void {
+  const pts = fitRing(ring);
+  for (let i = 0; i < pts.length; i++) {
+    const a = pts[i];
+    const e = pts[(i + 1) % pts.length];
+    const n = Math.max(1, Math.round(len3(sub3(e, a)) / spacing));
+    for (let k = 0; k < n; k++) {
+      if (rng.chance(skip)) continue;
+      const p0 = lerp3(a, e, k / n + 0.06 / n);
+      const p1 = lerp3(a, e, (k + 1) / n - 0.06 / n);
+      const mid = lerp3(a, e, (k + 0.5 + rng.jitter(0.25)) / n);
+      const tip: Vec3 = [mid[0], mid[1] - rng.range(len[0], len[1]), mid[2]];
+      const c: Vec3 = [ring.x ?? 0, ring.y, ring.z ?? 0];
+      const inw = (p: Vec3) => add3(p, scl3(norm3(sub3([c[0], p[1], c[2]], p)), 0.008));
+      b.hull([p0, p1, tip, inw(p0), inw(p1), inw(tip)], { color, vary: 0.06 });
+    }
+  }
+}
+/** V / round neckline drawn on the shell's front plane. */
+function neckline(b: MeshBuilder, color: Color, depth: number, width = 0.085): void {
+  const z = SHELL.zf + 0.002;
+  const strokeW = 0.028;
+  const a: Vec2 = [-width, 0.262];
+  const c: Vec2 = [0, 0.262 - depth];
+  const e: Vec2 = [width, 0.262];
+  const quad = (p: Vec2, q: Vec2) => {
+    const dx = q[0] - p[0];
+    const dy = q[1] - p[1];
+    const l = Math.hypot(dx, dy) || 1;
+    const nx = (-dy / l) * (strokeW / 2);
+    const ny = (dx / l) * (strokeW / 2);
+    face(
+      b,
+      [
+        [p[0] + nx, p[1] + ny, z],
+        [q[0] + nx, q[1] + ny, z],
+        [q[0] - nx, q[1] - ny, z],
+        [p[0] - nx, p[1] - ny, z],
+      ],
+      [0, 0, 1],
+      { color },
+    );
+  };
+  quad(a, c);
+  quad(c, e);
+  // collar band round the neck opening
+  fitBlock(b, [{ y: 0.372, w: 0.2, d: 0.165, z: -0.004, bev: 0.036 }, { y: 0.394, w: 0.19, d: 0.155, z: -0.004, bev: 0.036 }], { color });
+}
+
+function wearModel(name: string, look: string): Model {
+  return new Model(name, {
+    budget: 600,
+    notes:
+      `WEARABLE shop look (${look}). Nodes fit_<joint> are authored in that rig joint's local space: parent each to the joint ` +
+      "(manifest meta.fit) with a zero local transform. Sits >= 8 mm outside every base outfit; one look at a time.",
+  });
+}
+
+function buildWearTshirt(): Model {
+  const m = wearModel("tl_wear_tshirt_v01", "ao thun: loose worn-white T-shirt, short sleeves, sewn patches, frayed hem");
+  const rng = m.rng.fork("tee");
+  const body = "#CFC6B3";
+  const shadeC = "#B4AA95";
+  const b = m.node("fit_spine").geo;
+  fitBlock(b, SHELL.rings(-0.168), { color: (f) => (Math.abs(f.normal[0]) > 0.8 ? shadeC : f.normal[1] < -0.5 ? "#8E8574" : body), vary: 0.04 });
+  neckline(b, "#9E3B3F", 0.05);
+  // darker hem band + a few frayed threads
+  fitBlock(b, [{ y: -0.172, w: 0.482, d: 0.318, z: 0.004, bev: 0.052 }, { y: -0.146, w: 0.482, d: 0.318, z: 0.004, bev: 0.052 }], { color: shadeC, vary: 0.04 });
+  fitRagged(b, { y: -0.17, w: 0.482, d: 0.318, z: 0.004, bev: 0.052 }, rng, shadeC, [0.012, 0.032], 0.075, 0.55);
+  sewnPatch(b, rng, 0.105, -0.05, 0.1, 0.085, SHELL.zf, 1, "#9E4A48");
+  sewnPatch(b, rng, -0.08, 0.1, 0.085, 0.07, SHELL.zb, -1, "#A3865F");
+  // a faded stain block low on the right
+  decal(b, [-0.12, -0.085, SHELL.zf], [0, 0, 1], 0.07, 0.05, { color: "#BDB29C" }, rng, 0.3, 0.002);
+  fitSleeve(m.node("fit_arm_upper_l").geo, 1, body, shadeC);
+  fitSleeve(m.node("fit_arm_upper_r").geo, -1, body, shadeC);
+  m.meta = { fit: { fit_spine: "spine", fit_arm_upper_l: "arm_upper_l", fit_arm_upper_r: "arm_upper_r" } };
+  return m;
+}
+
+function buildWearJersey(): Model {
+  const m = wearModel("tl_wear_jersey_v01", "ao dau: faded-crimson match jersey, black side panels and shoulders, worn-white trim");
+  const rng = m.rng.fork("jersey");
+  const crim = "#A63240";
+  const black = "#2B2725";
+  const white = "#CEC5B2";
+  const b = m.node("fit_spine").geo;
+  fitBlock(b, SHELL.rings(-0.16), {
+    color: (f) => (f.normal[1] > 0.3 ? black : Math.abs(f.normal[0]) > 0.8 ? black : f.normal[1] < -0.5 ? "#6E2028" : crim),
+    vary: 0.04,
+  });
+  neckline(b, white, 0.085, 0.08);
+  // worn-white chest band + thin lower band (front and back), hem band
+  for (const [z, dir] of [
+    [SHELL.zf, 1],
+    [SHELL.zb, -1],
+  ] as const) {
+    decal(b, [0, 0.118, z], [0, 0, dir], 0.372, 0.05, { color: white }, undefined, 0, 0.002);
+    decal(b, [0, 0.07, z], [0, 0, dir], 0.372, 0.014, { color: black }, undefined, 0, 0.002);
+  }
+  fitBlock(b, [{ y: -0.164, w: 0.482, d: 0.318, z: 0.004, bev: 0.052 }, { y: -0.14, w: 0.482, d: 0.318, z: 0.004, bev: 0.052 }], { color: black, vary: 0.04 });
+  sewnPatch(b, rng, -0.1, -0.07, 0.09, 0.075, SHELL.zf, 1, "#A3865F");
+  sewnPatch(b, rng, 0.07, -0.02, 0.1, 0.09, SHELL.zb, -1, white);
+  fitSleeve(m.node("fit_arm_upper_l").geo, 1, crim, white, 0.16);
+  fitSleeve(m.node("fit_arm_upper_r").geo, -1, crim, white, 0.16);
+  m.meta = { fit: { fit_spine: "spine", fit_arm_upper_l: "arm_upper_l", fit_arm_upper_r: "arm_upper_r" } };
+  return m;
+}
+
+function buildWearTankTop(): Model {
+  const m = wearModel("tl_wear_tank_top_v01", "ao ba lo: charcoal tank top with a crimson chest stripe, crimson piping and straps, sewn patches");
+  const rng = m.rng.fork("tank");
+  const body = "#3A3533";
+  const side = "#2E2A28";
+  const pipe = "#A63240";
+  const b = m.node("fit_spine").geo;
+  const chest = 0.215;
+  fitBlock(
+    b,
+    [
+      { y: -0.16, w: 0.476, d: 0.312, z: 0.004, bev: 0.05 },
+      { y: chest, w: 0.472, d: 0.312, z: 0.004, bev: 0.05 },
+    ],
+    { color: (f) => (Math.abs(f.normal[0]) > 0.8 ? side : f.normal[1] < -0.5 ? "#242120" : body), vary: 0.04 },
+  );
+  // crimson piping along the top edge and the hem
+  fitBlock(b, [{ y: chest - 0.012, w: 0.48, d: 0.316, z: 0.004, bev: 0.052 }, { y: chest + 0.012, w: 0.48, d: 0.316, z: 0.004, bev: 0.052 }], { color: pipe, vary: 0.04 });
+  fitBlock(b, [{ y: -0.164, w: 0.48, d: 0.316, z: 0.004, bev: 0.052 }, { y: -0.146, w: 0.48, d: 0.316, z: 0.004, bev: 0.052 }], { color: pipe, vary: 0.04 });
+  // straps: slabs over the shoulders; only what sticks out of the torso shows
+  for (const s of [1, -1]) {
+    const x0 = s * 0.092;
+    const x1 = s * 0.158;
+    b.hull(
+      [
+        [x0, chest - 0.01, SHELL.zf],
+        [x1, chest - 0.01, SHELL.zf],
+        [x0, 0.345, SHELL.zf - 0.012],
+        [x1, 0.33, SHELL.zf - 0.012],
+        [x0, 0.396, 0.1],
+        [x1, 0.38, 0.1],
+        [x0, 0.396, -0.1],
+        [x1, 0.38, -0.1],
+        [x0, 0.345, SHELL.zb + 0.012],
+        [x1, 0.33, SHELL.zb + 0.012],
+        [x0, chest - 0.01, SHELL.zb],
+        [x1, chest - 0.01, SHELL.zb],
+      ],
+      { color: (f) => (Math.abs(f.normal[0]) > 0.8 ? pipe : body), vary: 0.04 },
+    );
+  }
+  // broad crimson chest stripe with a worn-white edge, front and back
+  for (const [z, dir] of [
+    [SHELL.zf, 1],
+    [SHELL.zb, -1],
+  ] as const) {
+    decal(b, [0, 0.13, z], [0, 0, dir], 0.372, 0.085, { color: pipe }, undefined, 0, 0.002);
+    decal(b, [0, 0.08, z], [0, 0, dir], 0.372, 0.014, { color: "#C6BCA8" }, undefined, 0, 0.002);
+  }
+  sewnPatch(b, rng, 0.09, -0.05, 0.1, 0.08, SHELL.zf, 1, "#BDB29C");
+  sewnPatch(b, rng, -0.06, -0.03, 0.09, 0.075, SHELL.zb, -1, "#A3865F");
+  m.meta = { fit: { fit_spine: "spine" } };
+  return m;
+}
+
+function buildWearShorts(): Model {
+  const m = wearModel("tl_wear_shorts_v01", "quan dui rach: faded-crimson ragged shorts, worn-white side stripes, sewn patch");
+  const rng = m.rng.fork("shorts");
+  const body = "#8A3A3C";
+  const dark = "#6C2C30";
+  const stripe = "#C6BCA8";
+  const hips = m.node("fit_hips").geo;
+  // below the torso's hem only (the base torso covers the belt line)
+  fitBlock(
+    hips,
+    [
+      { y: -0.046, w: 0.4, d: 0.248, bev: 0.04 },
+      { y: -0.075, w: 0.402, d: 0.25, bev: 0.04 },
+      { y: -0.156, w: 0.36, d: 0.222, z: -0.006, bev: 0.046 },
+      { y: -0.198, w: 0.318, d: 0.13, z: -0.055, bev: 0.04 },
+    ],
+    { color: (f) => (Math.abs(f.normal[0]) > 0.8 ? stripe : body), vary: 0.04 },
+  );
+  // waistband cord knot at the front
+  hips.box({ size: [0.05, 0.022, 0.016], at: [0.012, -0.066, 0.131], rot: [0, 0, 12], color: stripe });
+  hips.box({ size: [0.012, 0.05, 0.008], at: [0.03, -0.094, 0.131], rot: [0, 0, -10], color: stripe });
+  for (const [name, s] of [
+    ["fit_leg_upper_l", 1],
+    ["fit_leg_upper_r", -1],
+  ] as const) {
+    const b = m.node(name).geo;
+    const hem: FitRing = { y: -0.2, w: 0.232, d: 0.226, bev: 0.034 };
+    fitBlock(b, [{ y: 0.086, w: 0.232, d: 0.226, bev: 0.034 }, hem], {
+      color: (f) => (f.normal[0] * s > 0.8 ? stripe : f.normal[1] < -0.5 ? dark : body),
+      vary: 0.04,
+    });
+    fitRagged(b, hem, rng, body, [0.02, 0.05], 0.055, 0.3);
+    if (s === 1) {
+      decal(b, [0.01, -0.1, 0.113], [0, 0, 1], 0.09, 0.08, { color: "#A3865F" }, rng, 0.16, 0.002);
+      for (const dx of [-0.03, 0, 0.03]) decal(b, [0.01 + dx, -0.058, 0.113], [0, 0, 1], 0.005, 0.022, { color: GEAR.thread }, undefined, 0, 0.004);
+    } else decal(b, [-0.02, -0.12, -0.113], [0, 0, -1], 0.08, 0.07, { color: stripe }, rng, 0.16, 0.002);
+  }
+  m.meta = { fit: { fit_hips: "hips", fit_leg_upper_l: "leg_upper_l", fit_leg_upper_r: "leg_upper_r" } };
+  return m;
+}
+
+function buildWearGlasses(): Model {
+  const m = wearModel("tl_wear_glasses_v01", "kinh co vu: chunky black frames with dark lenses, taped bridge, crimson temple tips");
+  const b = m.node("fit_head").geo;
+  const z = HEAD.zf + 0.036; // in front of the nose block and of the glasses variant's frames
+  const y = HEAD.eyeY + 0.002;
+  const W = 0.112;
+  const Hh = 0.082;
+  const t = 0.017;
+  const dz = 0.016;
+  const frame = "#221E1C";
+  for (const s of [1, -1]) {
+    const cx = s * 0.07;
+    b.box({ size: [W, t, dz], at: [cx, y + Hh / 2 - t / 2, z], color: frame });
+    b.box({ size: [W, t, dz], at: [cx, y - Hh / 2 + t / 2, z], color: frame });
+    b.box({ size: [t, Hh - 2 * t, dz], at: [cx - W / 2 + t / 2, y, z], color: frame });
+    b.box({ size: [t, Hh - 2 * t, dz], at: [cx + W / 2 - t / 2, y, z], color: frame });
+    // lens: dark pane with a pale glint
+    face(
+      b,
+      [
+        [cx - W / 2 + t, y - Hh / 2 + t, z + 0.002],
+        [cx + W / 2 - t, y - Hh / 2 + t, z + 0.002],
+        [cx + W / 2 - t, y + Hh / 2 - t, z + 0.002],
+        [cx - W / 2 + t, y + Hh / 2 - t, z + 0.002],
+      ],
+      [0, 0, 1],
+      { color: "#39424A" },
+    );
+    face(
+      b,
+      [
+        [cx - 0.03, y + 0.004, z + 0.003],
+        [cx - 0.012, y + 0.02, z + 0.003],
+        [cx - 0.004, y + 0.02, z + 0.003],
+        [cx - 0.022, y + 0.004, z + 0.003],
+      ],
+      [0, 0, 1],
+      { color: "#7C8A93" },
+    );
+    // temple arm back over the ear, crimson tip
+    const ax = s * (HEAD.hx + 0.02);
+    b.box({ size: [0.014, 0.014, 0.16], at: [ax, y + Hh / 2 - 0.016, z - 0.088], color: frame });
+    b.box({ size: [0.016, 0.016, 0.05], at: [ax, y + Hh / 2 - 0.02, z - 0.18], rot: [-14, 0, 0], color: "#A63240" });
+    b.box({ size: [0.03, t, dz], at: [s * (0.07 + W / 2 + 0.008), y + Hh / 2 - t / 2, z - 0.002], color: frame });
+  }
+  // bridge, mended with tape
+  b.box({ size: [0.03, 0.014, dz], at: [0, y + 0.014, z], color: frame });
+  b.box({ size: [0.02, 0.024, dz + 0.006], at: [0, y + 0.014, z], color: "#D2C9B6" });
+  m.meta = { fit: { fit_head: "head" } };
+  return m;
+}
+
+function buildKeyboard(): Model {
+  const m = new Model("tl_prop_keyboard_v01", {
+    budget: 600,
+    notes:
+      "Shop look 'ban phim cam tay': small worn mechanical keyboard lying flat, 0.34 W x 0.03 H x 0.125 D, keys up (+Y), the " +
+      "space bar toward +Z (the typist). Chunky worn-white keys, a crimson cluster, one missing key, taped corner, cable stub " +
+      "at the back. Pivot bottom centre. Node sling is a rope loop for carrying it across the back: parent it to the rig's " +
+      "spine with a zero local transform (hide it when the keyboard lies on a lap / a bed).",
+  });
+  const g = m.geo;
+  const rng = m.rng.fork("kb");
+  const W = 0.34;
+  const D = 0.125;
+  g.box({ size: [W, 0.018, D], at: [0, 0.009, 0], chamfer: 0.004, color: "#2B2725", parts: { top: "#35302E" }, vary: 0.04 });
+  const cols = 8;
+  const kw = 0.033;
+  const pitch = 0.039;
+  for (let r = 0; r < 3; r++)
+    for (let c = 0; c < cols; c++) {
+      if (r === 0 && c === 5) continue; // missing key
+      const x = -((cols - 1) * pitch) / 2 + c * pitch + (r === 1 ? 0.006 : 0);
+      const zc = -0.04 + r * 0.03;
+      const crimson = (r === 1 && c >= 1 && c <= 3) || (r === 0 && c === 2);
+      g.box({ size: [kw, 0.012, 0.024], at: [x, 0.023, zc], color: crimson ? "#A63240" : c === cols - 1 ? "#8E8574" : "#CEC5B2", vary: 0.07 });
+    }
+  // bottom row: two keys, the space bar, two keys
+  for (const [x, w, col] of [
+    [-0.14, 0.04, "#CEC5B2"],
+    [-0.095, 0.03, "#8E8574"],
+    [0, 0.14, "#CEC5B2"],
+    [0.095, 0.03, "#8E8574"],
+    [0.14, 0.04, "#A63240"],
+  ] as const)
+    g.box({ size: [w, 0.012, 0.022], at: [x, 0.023, 0.049], color: col, vary: 0.06 });
+  // taped corner + cable stub
+  g.box({ size: [0.05, 0.022, 0.05], at: [W / 2 - 0.022, 0.0105, -D / 2 + 0.022], color: GEAR.tape, vary: 0.05 });
+  g.tube(
+    catmull(
+      [
+        [-0.09, 0.012, -D / 2],
+        [-0.095, 0.01, -D / 2 - 0.03],
+        [-0.07, 0.006, -D / 2 - 0.055],
+        [-0.085, 0.004, -D / 2 - 0.08],
+      ],
+      2,
+    ),
+    { radius: 0.0055, sides: 4, color: "#2A2A2C" },
+  );
+  decal(g, [0.1, 0.0185, -0.058], [0, 1, 0], 0.03, 0.006, { color: "#7C8A93" }, rng, 0.1, 0.001);
+  // rope sling (spine space): diagonal loop from the right shoulder to the left hip
+  const sl = m.node("sling");
+  const zf = SHELL.zf - 0.012;
+  const zb = SHELL.zb + 0.016;
+  sl.geo.tube(
+    [
+      [-0.16, 0.345, 0.05],
+      [-0.1, 0.3, zf],
+      [0.1, 0.02, zf + 0.004],
+      [0.236, -0.09, 0.06],
+      [0.236, -0.09, -0.06],
+      [0.1, 0.0, zb],
+      [-0.1, 0.3, zb + 0.01],
+      [-0.16, 0.345, -0.05],
+    ],
+    { radius: 0.012, sides: 4, closed: true, color: GEAR.tape, vary: 0.07 },
+  );
+  sl.geo.box({ size: [0.034, 0.034, 0.03], at: [0.08, 0.05, zf + 0.008], rot: [0, 0, 35], color: GEAR.tapeDark });
+  m.anchor("carry", [0, 0.012, -D / 2]);
+  m.anchor("keys", [0, 0.03, 0]);
+  m.meta = { sling: "spine" };
+  return m;
+}
+
+/* =========================================================================================
  * Group entry
  * ========================================================================================= */
 
@@ -1469,5 +2211,16 @@ export default function build(): Model[] {
     buildBlanketFolded(),
     buildGamepad(),
     buildPhone(),
+    buildOxygenTrolley(),
+    buildHoseFlex(),
+    buildCannula(),
+    buildCrutch(),
+    buildBedCasters(),
+    buildWearTshirt(),
+    buildWearJersey(),
+    buildWearTankTop(),
+    buildWearShorts(),
+    buildWearGlasses(),
+    buildKeyboard(),
   ];
 }

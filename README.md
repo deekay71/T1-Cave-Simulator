@@ -4,6 +4,10 @@ Bản chơi thử low-poly: hang trú cho fan sau trận thua, 60 người/phòn
 
 Đọc [hướng dẫn chơi thử](docs/playtest.md), [camera và bố cục](docs/cameras-and-layout.md), [review repository](docs/review-2026-11-09.md), [quyết định kỹ thuật](docs/tech-decisions.md), [GDD](docs/GDD.md) và [art direction v3](docs/art-direction.md).
 
+## Bàn giao hiện tại
+
+Nhánh `feat/t1-match-feed` gom match feed, điện thờ riêng, các sạp và lớp progression đang tắt. Đọc [context cho Opus tối ưu visual](docs/opus-visual-handoff.md) trước: có bản đồ code, trạng thái thật, giới hạn bản production và checklist kiểm thử. Các báo cáo update cũ là lịch sử, không thay cho trạng thái mới nhất.
+
 ## Chạy local
 
 ```sh

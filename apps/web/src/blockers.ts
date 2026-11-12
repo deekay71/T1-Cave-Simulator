@@ -1,7 +1,9 @@
 /**
  * Camera blockers: the tall props of the shared placement table (torches, boards, rock clusters,
  * tarp posts, the campfire flames) and the NPC fans' bodies, as vertical cylinders the follow
- * camera must not sit inside (cameraMath Blocker, passed in CameraBounds.blockers).
+ * camera must not sit inside (cameraMath Blocker, passed in CameraBounds.blockers). The table
+ * covers all five caves, so the stalls, torches and crates of the side caves block like those of
+ * the main cave; the rock itself is kept out by the room bounds (CameraBounds.rooms).
  *
  * Footprints are the props' collision circles, which already include a body-width margin; props
  * without colliders (out of reach, hanging, standing on a crate) use their manifest footprint plus

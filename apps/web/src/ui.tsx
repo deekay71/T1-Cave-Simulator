@@ -8,31 +8,73 @@ import {
   type MouseEvent,
 } from "react";
 import { createRoot } from "react-dom/client";
-import { ROOM_CAPACITY } from "@te-liet/shared";
+import { HUB_LANDMARKS, PASSWORD_MIN, ROOM_CAPACITY, SCREEN_SPOT, type AccountView } from "@te-liet/shared";
+import { renderGoogleButton } from "./auth/google.js";
+import { loadDone } from "./stalls/quests.js";
+import { content, offContent } from "./content/api.js";
+import { StallPanel, RankPanel, ResidentHUD } from "./stalls/StallPanel.js";
+import { CAVE_STALLS, CAVE_STALL_RADIUS, stallApproach, type CaveStallId } from "../../../packages/shared/src/stalls.js";
+import { SHRINE_PORTAL, isInShrine } from "../../../packages/shared/src/shrine.js";
+import { ShrinePanel, type ShrineView, type ShrineAction } from "./activities/ShrinePanel.js";
+import { AltarPanel, type AltarView } from "./activities/AltarPanel.js";
+import { MatchPanel } from "./matches/MatchPanel.js";
 
 /** Một dòng trong nhật ký chat; id ổn định làm key React. */
-export type ChatLine = { id: number; text: string; at: number };
+export type ChatLine = { id: number; text: string; at: number; messageId?: string; senderId?: string };
 type Snapshot = {
   connected: boolean;
+  selfId: string;
+  altar: AltarView | null;
+  altarBadge: boolean;
+  shrine: ShrineView | null; shrineSeat: string; position: {x:number;z:number};
+  nearbyShrineSeat: {id:string;label:string} | null;
   busy: boolean;
   status: string;
   count: number;
   messages: ChatLine[];
   panel: string | null;
+  destination: string | null;
+  /** Nhân vật đang tự đi tới `destination`. */
+  autoWalk: boolean;
+  /** Chỗ ngồi trong hang: đang ngồi, có ghế trống trong tầm với, hoặc không. */
+  seat: "seated" | "near" | null;
+  /** Audio khi vào điện thờ: không có tệp, đang bật, hoặc người chơi đã tắt. */
+  shrineAudio: "none" | "on" | "muted";
+  /** Tiếng clip trên màn hình lớn: không có clip / tắt / bật. */
+  screenSound: "none" | "off" | "on";
   /** Điểm tương tác ở gần (bấm E hoặc chạm nút để mở bảng). */
   prompt: { id: string; name: string } | null;
-  /** API yêu cầu mã mời (close test): hiện ô nhập mã trong form vào hang. */
+  /** API yêu cầu mã mời (close test): hiện ô nhập mã trong form vào hang / tạo tài khoản. */
   needInvite: boolean;
+  /** Thông báo dưới nút đăng nhập (lỗi đăng nhập, Google chưa bật…). */
+  loginNotice: string;
+  /** Tài khoản đang đăng nhập (cookie phiên), null khi chưa đăng nhập hoặc chơi thử. */
+  account: AccountView | null;
+  /** Đã hỏi API xong /v1/auth/me (trước đó màn đăng nhập chưa biết hiện gì). */
+  authReady: boolean;
+  /** OAuth client ID khi máy chủ bật đăng nhập Google. */
+  google: string | null;
 };
 let state: Snapshot = {
   connected: false,
+  selfId: "", altar: null, altarBadge: false,
+  shrine: null, shrineSeat: "", position: {x:0,z:10}, nearbyShrineSeat: null,
   busy: false,
   status: "Trong hang vẫn còn chỗ cho bạn.",
   count: 0,
   messages: [],
   panel: null,
+  destination: null,
+  autoWalk: false,
+  seat: null,
+  shrineAudio: "none",
+  screenSound: "none",
   prompt: null,
   needInvite: false,
+  loginNotice: "",
+  account: null,
+  authReady: false,
+  google: null,
 };
 
 /**
@@ -68,6 +110,7 @@ export function rememberInvite(code: string) {
     /* bỏ qua */
   }
 }
+let panelTrigger: HTMLElement | null = null;
 const listeners = new Set<() => void>();
 /** Số dòng chat giữ lại. */
 const MAX_LINES = 40;
@@ -84,12 +127,21 @@ function flushLines() {
 export const ui = {
   get: () => state,
   set: (patch: Partial<Snapshot>) => {
+    if (patch.panel && !state.panel) {
+      const focused = document.activeElement;
+      panelTrigger = focused instanceof HTMLElement && focused !== document.body
+        ? focused : document.querySelector<HTMLElement>('.prompt, .shortcuts button');
+    }
     state = { ...state, ...patch };
     listeners.forEach((f) => f());
   },
+  removeSender: (senderId: string) => {
+    pendingLines = pendingLines.filter(m => m.senderId !== senderId);
+    ui.set({ messages: state.messages.filter(m => m.senderId !== senderId) });
+  },
   /** Thêm một dòng chat; gom lại, tối đa một lần cập nhật React mỗi khung hình. */
-  log: (text: string) => {
-    pendingLines.push({ id: ++lineId, text, at: Date.now() });
+  log: (text: string, meta: { messageId?: string; senderId?: string } = {}) => {
+    pendingLines.push({ id: ++lineId, text, at: Date.now(), ...meta });
     if (pendingLines.length > MAX_LINES)
       pendingLines.splice(0, pendingLines.length - MAX_LINES);
     if (flushQueued) return;
@@ -97,8 +149,53 @@ export const ui = {
     requestAnimationFrame(flushLines);
   },
 };
-export type EmoteName = "wave" | "laugh" | "cheer";
+export type EmoteName = "wave" | "laugh" | "cheer" | "jump";
 /** Ba cảm xúc server nhận (Emote trong @te-liet/shared), theo thứ tự phím 1/2/3. */
+/** Màu chấm của từng điểm trong box "Gần đây" (trùng màu mũi tên trong cảnh). */
+const SPOT_COLORS: Record<string, string> = { altar: "#F2C76B", screen: "#8FB8F2", rest: "#D8C7B0" };
+const spotColor = (id: string) => CAVE_STALLS.find((stall) => stall.id === id)?.accent ?? SPOT_COLORS[id] ?? "#E8DCCB";
+/**
+ * Box gọn dưới thẻ cư dân: đích đang chỉ đường (nếu có), ba điểm tương tác gần nhất kèm khoảng cách
+ * (bấm là nhân vật tự đi tới), và tiến độ quest T1.
+ */
+function NearbyBox({ position, destination, autoWalk, visit }: {
+  position: { x: number; z: number };
+  destination: { id: string; name: string; x: number; z: number } | null;
+  autoWalk: boolean;
+  visit: (id: string) => void;
+}) {
+  const [quests, setQuests] = useState(() => ({ done: loadDone(undefined, content().quests).length, total: content().quests.length }));
+  useEffect(() => {
+    const count = () => setQuests({ done: loadDone(undefined, content().quests).length, total: content().quests.length });
+    count();
+    const on = () => count();
+    content(on);
+    return () => offContent(on);
+  }, [destination?.id]);
+  const far = (p: { x: number; z: number }) => Math.ceil(Math.hypot(position.x - p.x, position.z - p.z));
+  const near = HUB_LANDMARKS.filter((l) => l.id !== destination?.id)
+    .map((l) => ({ ...l, d: far(l) }))
+    .sort((a, b) => a.d - b.d)
+    .slice(0, 3);
+  return (
+    <aside className="nearby" aria-label="Điểm gần đây và quest">
+      {destination && (
+        <div className="nearby-goal">
+          <i style={{ background: spotColor(destination.id) }} />
+          <div><b>{destination.name}</b><small>{far(destination)} m · {autoWalk ? "đang tự đi" : "theo mũi tên"}</small></div>
+          <button onClick={() => ui.set({ destination: null })} aria-label="Bỏ chỉ dẫn">✕</button>
+        </div>
+      )}
+      <header><span>Gần đây</span><button onClick={() => visit("quest")} title="Tới Hang Quest">Quest T1 {quests.done}/{quests.total}</button></header>
+      <ul>
+        {near.map((l) => (
+          <li key={l.id}><button onClick={() => visit(l.id)} title="Tự đi tới đây"><i style={{ background: spotColor(l.id) }} /><span>{l.name}</span><small>{l.d} m</small></button></li>
+        ))}
+      </ul>
+    </aside>
+  );
+}
+
 export const EMOTES: readonly {
   id: EmoteName;
   key: string;
@@ -108,6 +205,7 @@ export const EMOTES: readonly {
   { id: "wave", key: "1", icon: "✋", label: "Chào" },
   { id: "laugh", key: "2", icon: "😆", label: "Cười trừ" },
   { id: "cheer", key: "3", icon: "🙌", label: "Cổ vũ" },
+  { id: "jump", key: "4", icon: "⤴", label: "Nhảy" },
 ];
 /** Màn hình cảm ứng (ngón tay là con trỏ chính): không có phím E / 1 / 2 / 3. */
 export const touch =
@@ -123,13 +221,33 @@ const MOVES: readonly [key: string, label: string][] = [
   ["d", "Sang phải"],
 ];
 export type Actions = {
+  /** Chơi thử (khách): tên tự chọn, không có tài khoản. */
   join: (name: string, invite: string) => void;
+  /** Vào hang bằng tài khoản đang đăng nhập. */
+  enter: () => void;
+  /** Đăng nhập / tạo tài khoản nhanh, xong thì vào hang luôn. */
+  signIn: (mode: "login" | "signup", form: { username: string; password: string; name?: string; invite?: string }) => void;
+  /** Nút Google trả về ID token: gửi cho API, xong thì vào hang luôn. */
+  googleCredential: (credential: string, invite: string) => void;
+  signOut: () => void;
   /** Gửi chat: 0 khi đã gửi, nếu không thì số ms phải chờ (giới hạn tần suất của khách). */
   chat: (text: string) => number;
   emote: (name: EmoteName) => void;
   /** Mở bảng của điểm tương tác đang ở gần (như phím E). */
   interact: () => void;
+  visit: (id: string) => void;
+  /** Ngồi xuống ghế gần nhất / đứng dậy. */
+  seat: () => void;
+  /** Bật / tắt audio điện thờ (chỉ mình nghe). */
+  toggleShrineAudio: () => void;
+  /** Bật / tắt tiếng clip trên màn hình lớn (chỉ mình nghe). */
+  toggleScreenSound: () => void;
   leave: () => void;
+  copyInvite: () => Promise<void>;
+  report: (messageId: string, reason: string) => void;
+  mute: (senderId: string) => void;
+  shrine: (request: ShrineAction) => void;
+  altar: (action: "join" | "leave", preset?: "prayer" | "cheer") => void;
   move: (key: string, down: boolean) => void;
 };
 
@@ -158,10 +276,11 @@ const LINE_FADE_MS = 900;
  */
 const ChatLog = memo(function ChatLog({
   messages,
-  open,
+  open, report, mute,
 }: {
   messages: ChatLine[];
   open: boolean;
+  report: Actions["report"]; mute: Actions["mute"];
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const stickToEnd = useRef(true);
@@ -198,7 +317,6 @@ const ChatLog = memo(function ChatLog({
       </div>
       <div
         className="messages"
-        aria-hidden="true"
         ref={ref}
         onScroll={(e) => {
           const el = e.currentTarget;
@@ -216,6 +334,10 @@ const ChatLog = memo(function ChatLog({
             }
           >
             {m.text}
+            {open && m.messageId && m.senderId && m.senderId !== state.selfId && <span className="chat-actions">
+              <button title="Ẩn tin của người này trong phiên hiện tại" onClick={() => mute(m.senderId!)}>Ẩn</button>
+              <button onClick={() => report(m.messageId!, "Nội dung chat không phù hợp")}>Báo cáo</button>
+            </span>}
           </p>
         ))}
         {open && !messages.length && (
@@ -228,10 +350,11 @@ const ChatLog = memo(function ChatLog({
 
 function Chat({
   messages,
-  send,
+  send, report, mute,
 }: {
   messages: ChatLine[];
   send: Actions["chat"];
+  report: Actions["report"]; mute: Actions["mute"];
 }) {
   const [typing, setTyping] = useState(false);
   const [hover, setHover] = useState(false);
@@ -260,7 +383,7 @@ function Chat({
       <div className="chat-title" aria-hidden="true">
         TIẾNG VỌNG TRONG HANG
       </div>
-      <ChatLog messages={messages} open={open} />
+      <ChatLog messages={messages} open={open} report={report} mute={mute} />
       {hint && (
         <p className="chat-hint" role="status">
           {hint}
@@ -336,6 +459,273 @@ function LeaveButton({ leave }: { leave: () => void }) {
   );
 }
 
+/** Chữ G bốn màu, vẽ tay bằng bốn cung tròn và một thanh ngang. */
+function GoogleMark() {
+  return (
+    <svg className="slab-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" strokeWidth="4.2">
+      <path d="M18.8 7.24A8.3 8.3 0 0 0 4.81 7.85" stroke="#EA4335" />
+      <path d="M4.81 7.85A8.3 8.3 0 0 0 5.2 16.76" stroke="#FBBC05" />
+      <path d="M5.2 16.76A8.3 8.3 0 0 0 18.8 16.76" stroke="#34A853" />
+      <path d="M18.8 16.76A8.3 8.3 0 0 0 20.3 12" stroke="#4285F4" />
+      <path d="M12 12H21.6" stroke="#4285F4" />
+    </svg>
+  );
+}
+function GamepadIcon() {
+  return (
+    <svg className="slab-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path
+        fill="currentColor"
+        fillRule="evenodd"
+        d="M7.2 6h9.6c2.5 0 4.2 1.7 4.7 4.3l.9 5.1c.3 1.9-.8 3.3-2.4 3.3-1 0-1.8-.5-2.5-1.3L16.2 16H7.8l-1.3 1.4c-.7.8-1.5 1.3-2.5 1.3-1.6 0-2.7-1.4-2.4-3.3l.9-5.1C3 7.7 4.7 6 7.2 6zM7 9v1.6H5.4v1.8H7V14h1.8v-1.6h1.6v-1.8H8.8V9zM15.3 12.7a1.2 1.2 0 1 0 0 2.4 1.2 1.2 0 0 0 0-2.4zM17.8 9.7a1.2 1.2 0 1 0 0 2.4 1.2 1.2 0 0 0 0-2.4z"
+      />
+    </svg>
+  );
+}
+
+function KeyIcon() {
+  return (
+    <svg className="slab-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path
+        fill="currentColor"
+        fillRule="evenodd"
+        d="M8 5.5a6.5 6.5 0 0 1 6.2 8.5H22v3h-2v3h-3v-3h-2.8A6.5 6.5 0 1 1 8 5.5zm0 4a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5z"
+      />
+    </svg>
+  );
+}
+
+/**
+ * Nút Google chính thức (Google vẽ trong iframe của họ, rộng bằng cột nút). Không tải được thư viện
+ * (mạng, trình chặn quảng cáo) thì hiện phiến xám kèm thông báo.
+ */
+function GoogleSlot({ clientId, invite, actions }: { clientId: string; invite: string; actions: Actions }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const inviteRef = useRef(invite);
+  inviteRef.current = invite;
+  const [failed, setFailed] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    let live = true;
+    renderGoogleButton(el, clientId, el.clientWidth || 252, (credential) => actions.googleCredential(credential, inviteRef.current)).catch(() => {
+      if (live) setFailed(true);
+    });
+    return () => {
+      live = false;
+    };
+  }, [clientId, actions]);
+  if (failed)
+    return (
+      <button type="button" className="slab" aria-disabled="true" onClick={() => ui.set({ loginNotice: "Không tải được nút Google (mạng hoặc trình chặn quảng cáo). Dùng Tài khoản hoặc Chơi thử nhé." })}>
+        <GoogleMark />
+        <span>Google</span>
+        <span className="slab-tag">Lỗi tải</span>
+      </button>
+    );
+  return <div ref={ref} className="login-google" aria-label="Đăng nhập bằng Google" />;
+}
+
+type LoginMode = "home" | "guest" | "account";
+
+/**
+ * Màn đăng nhập (design/concepts/login-low-poly): tựa game bằng chữ + CSS, các phiến nút.
+ *
+ * - Chưa đăng nhập: Google (nút chính thức, khi máy chủ bật), Tài khoản (đăng nhập / tạo nhanh bằng
+ *   tên + mật khẩu), Chơi thử (khách, chỉ cần tên). Đăng nhập xong là vào hang luôn.
+ * - Đã đăng nhập (cookie phiên còn hạn): chào theo tên, "Vào hang", "Đăng xuất".
+ *
+ * Luôn được gắn (ẩn khi đã vào hang) để tên, mã mời và bước đang mở còn nguyên khi rời hang quay lại.
+ */
+function LoginPanel({ s, actions }: { s: Snapshot; actions: Actions }) {
+  const [name, setName] = useState("Người trong hang");
+  const [invite, setInvite] = useState(initialInvite);
+  const [mode, setMode] = useState<LoginMode>("home");
+  const [tab, setTab] = useState<"login" | "signup">("login");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [caveName, setCaveName] = useState("");
+  const firstRef = useRef<HTMLInputElement>(null);
+  const backTo = useRef<LoginMode>("home");
+  const homeRef = useRef<HTMLDivElement>(null);
+  // mở một bước: con trỏ vào ô đầu; quay lại: focus về nút vừa bấm
+  useEffect(() => {
+    if (mode !== "home") {
+      firstRef.current?.focus();
+      if (mode === "guest") firstRef.current?.select();
+    } else if (backTo.current !== "home") {
+      homeRef.current?.querySelector<HTMLButtonElement>(`[data-step="${backTo.current}"]`)?.focus();
+    }
+    backTo.current = mode;
+  }, [mode]);
+  // đăng nhập xong (hoặc đăng xuất) thì về màn chính
+  useEffect(() => {
+    setMode("home");
+    setPassword("");
+  }, [s.account?.id]);
+  if (s.connected) return null;
+  const open = (next: LoginMode) => {
+    ui.set({ loginNotice: "" });
+    setMode(next);
+  };
+  const back = () => {
+    if (s.busy) return;
+    ui.set({ loginNotice: "" });
+    setMode("home");
+  };
+  const escape = (e: React.KeyboardEvent) => {
+    if (e.key !== "Escape" || s.busy) return;
+    e.stopPropagation();
+    back();
+  };
+  const inviteField = (required: boolean) =>
+    (s.needInvite || invite !== "") && (
+      <>
+        <label htmlFor="invite">Mã mời</label>
+        <input id="invite" maxLength={64} autoComplete="off" value={invite} onChange={(e) => setInvite(e.target.value)} required={required && s.needInvite} />
+      </>
+    );
+  let body;
+  if (mode === "guest") {
+    body = (
+      <form
+        className="login-guest"
+        onSubmit={(e) => {
+          e.preventDefault();
+          actions.join(name, invite);
+        }}
+        onKeyDown={escape}
+      >
+        <label htmlFor="name">Tên trong hang</label>
+        <input ref={firstRef} id="name" maxLength={24} autoComplete="nickname" enterKeyHint="go" value={name} onChange={(e) => setName(e.target.value)} required />
+        {inviteField(true)}
+        <button className="slab slab-crimson" disabled={s.busy}>
+          <span>{s.busy ? "Đang tìm chỗ…" : "Vào hang →"}</span>
+        </button>
+        <button type="button" className="login-back" disabled={s.busy} onClick={back}>
+          ← Quay lại
+        </button>
+      </form>
+    );
+  } else if (mode === "account") {
+    const signup = tab === "signup";
+    body = (
+      <form
+        className="login-guest login-account"
+        onSubmit={(e) => {
+          e.preventDefault();
+          actions.signIn(tab, { username, password, ...(signup && caveName.trim() ? { name: caveName } : {}), ...(signup && invite.trim() ? { invite } : {}) });
+        }}
+        onKeyDown={escape}
+      >
+        <div className="login-tabs" role="group" aria-label="Chọn cách vào">
+          <button type="button" aria-pressed={!signup} onClick={() => { ui.set({ loginNotice: "" }); setTab("login"); }}>Đăng nhập</button>
+          <button type="button" aria-pressed={signup} onClick={() => { ui.set({ loginNotice: "" }); setTab("signup"); }}>Tạo tài khoản</button>
+        </div>
+        <label htmlFor="username">Tên đăng nhập</label>
+        <input
+          ref={firstRef}
+          id="username"
+          maxLength={24}
+          autoComplete="username"
+          autoCapitalize="none"
+          spellCheck={false}
+          pattern={signup ? "[A-Za-z0-9][A-Za-z0-9._\\-]{2,23}" : undefined}
+          title={signup ? "3–24 ký tự: chữ không dấu, số, dấu . _ -" : undefined}
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          required
+        />
+        <label htmlFor="password">Mật khẩu</label>
+        <input
+          id="password"
+          type="password"
+          maxLength={128}
+          minLength={signup ? PASSWORD_MIN : undefined}
+          autoComplete={signup ? "new-password" : "current-password"}
+          enterKeyHint={signup ? "next" : "go"}
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+        />
+        {signup && (
+          <>
+            <label htmlFor="cave-name">Tên trong hang <span className="login-hint">(không bắt buộc)</span></label>
+            <input id="cave-name" maxLength={24} autoComplete="nickname" placeholder={username.trim() || "Giống tên đăng nhập"} value={caveName} onChange={(e) => setCaveName(e.target.value)} />
+            {inviteField(true)}
+          </>
+        )}
+        <button className="slab slab-crimson" disabled={s.busy}>
+          <span>{s.busy ? "Đang vào…" : signup ? "Tạo & vào hang →" : "Đăng nhập →"}</span>
+        </button>
+        <button type="button" className="login-back" disabled={s.busy} onClick={back}>
+          ← Quay lại
+        </button>
+      </form>
+    );
+  } else if (s.account) {
+    body = (
+      <div className="login-actions" ref={homeRef}>
+        <p className="login-who">
+          Chào <b>{s.account.name}</b>
+          <span>{s.account.provider === "google" ? "Tài khoản Google" : `@${s.account.username}`}{s.account.role === "admin" ? " · quản trị" : ""}</span>
+        </p>
+        <button type="button" className="slab slab-crimson" disabled={s.busy} onClick={actions.enter}>
+          <span>{s.busy ? "Đang tìm chỗ…" : "Vào hang →"}</span>
+        </button>
+        <button type="button" className="login-back" disabled={s.busy} onClick={actions.signOut}>
+          Đăng xuất
+        </button>
+      </div>
+    );
+  } else {
+    body = (
+      <div className="login-actions" ref={homeRef}>
+        {s.google ? (
+          <GoogleSlot clientId={s.google} invite={invite} actions={actions} />
+        ) : (
+          <button
+            type="button"
+            className="slab"
+            aria-disabled="true"
+            aria-describedby="login-notice"
+            onClick={() => ui.set({ loginNotice: s.authReady ? "Máy chủ này chưa bật đăng nhập Google. Dùng Tài khoản hoặc Chơi thử nhé." : "Đang hỏi máy chủ…" })}
+          >
+            <GoogleMark />
+            <span>Google</span>
+            <span className="slab-tag">Chưa bật</span>
+          </button>
+        )}
+        <button type="button" className="slab" data-step="account" onClick={() => open("account")}>
+          <KeyIcon />
+          <span>Tài khoản</span>
+        </button>
+        <button type="button" className="slab slab-crimson" data-step="guest" onClick={() => open("guest")}>
+          <GamepadIcon />
+          <span>Chơi thử</span>
+        </button>
+      </div>
+    );
+  }
+  return (
+    <section className={`login ${mode}`} aria-labelledby="login-title">
+      <h1 id="login-title" className="login-title">
+        <span className="login-title-main">Tê Liệt</span>
+        <span className="login-title-sub">Cave Simulator</span>
+        <svg className="login-brush" viewBox="0 0 300 30" aria-hidden="true" focusable="false">
+          <path d="M6 15 C60 5 150 2 292 8 C230 8 150 11 96 17 C150 14 220 14 262 17 C190 17 120 21 62 27 C96 20 60 19 6 15Z" />
+          <path d="M20 24 C70 17 120 15 176 15 C130 19 80 23 34 29Z" />
+        </svg>
+      </h1>
+      {body}
+      <p id="login-notice" className="login-notice" role="status" aria-live="polite">
+        {s.loginNotice}
+      </p>
+      <small aria-live="polite">{s.status}</small>
+    </section>
+  );
+}
+
 export function mountUI(actions: Actions) {
   function Overlay() {
     const s = useSyncExternalStore((cb) => {
@@ -347,17 +737,23 @@ export function mountUI(actions: Actions) {
     const panelRef = useRef<HTMLElement>(null);
     useEffect(() => {
       if (!s.panel) return;
-      const previous = document.activeElement as HTMLElement;
-      return () => previous?.focus();
+      const previous = panelTrigger;
+      panelRef.current?.querySelector<HTMLButtonElement>(".close")?.focus();
+      return () => { if (previous?.isConnected) previous.focus(); };
     }, [s.panel]);
-    const [name, setName] = useState("Người trong hang");
-    const [invite, setInvite] = useState(initialInvite);
+    const isStall = CAVE_STALLS.some(stall => stall.id === s.panel);
+    const destination = s.destination === "altar" ? {id:"altar",name:"Điện thờ",...SHRINE_PORTAL} : s.destination === "screen" ? {id:"screen",name:"Màn hình lớn",...SCREEN_SPOT} : CAVE_STALLS.find(stall=>stall.id===s.destination);
+    const target = destination && (destination.id === "altar" || destination.id === "screen" ? destination : stallApproach(destination as (typeof CAVE_STALLS)[number]));
     return (
       <>
-        <header>
-          <div className="brand">
-            TÊ LIỆT<span>HANG TRÚ THUA</span>
-          </div>
+        <header className={s.connected ? undefined : "at-login"}>
+          {s.connected ? (
+            <div className="brand">
+              TÊ LIỆT<span>HANG TRÚ THUA</span>
+            </div>
+          ) : (
+            <span />
+          )}
           <div className="header-right">
             <div className="presence">
               <i />
@@ -368,56 +764,13 @@ export function mountUI(actions: Actions) {
             {s.connected && <LeaveButton leave={actions.leave} />}
           </div>
         </header>
-        {!s.connected && (
-          <section className="welcome">
-            <p className="eyebrow">THUA THÌ VỀ HANG.</p>
-            <h1>
-              Ở đây,
-              <br />
-              không ai hỏi tỉ số.
-            </h1>
-            <p>
-              Một đốm lửa. Vài người cùng cảnh.
-              <br />
-              Ngồi lại một chút rồi tính.
-            </p>
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                actions.join(name, invite);
-              }}
-            >
-              <label htmlFor="name">Tên trong hang</label>
-              <input
-                id="name"
-                maxLength={24}
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-              />
-              {(s.needInvite || invite !== "") && (
-                <>
-                  <label htmlFor="invite">Mã mời</label>
-                  <input
-                    id="invite"
-                    maxLength={64}
-                    autoComplete="off"
-                    value={invite}
-                    onChange={(e) => setInvite(e.target.value)}
-                    required={s.needInvite}
-                  />
-                </>
-              )}
-              <button disabled={s.busy}>
-                {s.busy ? "Đang tìm chỗ…" : "Vào hang →"}
-              </button>
-            </form>
-            <small aria-live="polite">{s.status}</small>
-          </section>
-        )}
+        <LoginPanel s={s} actions={actions} />
         {s.connected && (
           <>
-            <Chat messages={s.messages} send={actions.chat} />
+            <ResidentHUD />
+            {isInShrine(s.position) && s.shrineAudio !== "none" && <button className="shrine-audio" onClick={() => actions.toggleShrineAudio()} aria-pressed={s.shrineAudio === "on"} title="Chỉ bạn nghe thấy">{s.shrineAudio === "on" ? "🔊 Bình luận pha Zed · Tắt" : "🔇 Bình luận pha Zed · Bật"}</button>}
+            {!s.panel && !isInShrine(s.position) && <NearbyBox position={s.position} destination={destination && target ? { id: destination.id, name: destination.name, x: target.x, z: target.z } : null} autoWalk={s.autoWalk} visit={actions.visit} />}
+            <Chat messages={s.messages} send={actions.chat} report={actions.report} mute={actions.mute} />
             {s.prompt && !s.panel && (
               <button
                 className="prompt"
@@ -426,10 +779,14 @@ export function mountUI(actions: Actions) {
                   actions.interact();
                 }}
               >
-                {!touch && <kbd>E</kbd>} Xem {s.prompt.name}
+                {!touch && <kbd>E</kbd>} Vào {s.prompt.name}
               </button>
             )}
-            <div className="toolbar" role="group" aria-label="Cảm xúc">
+            {isInShrine(s.position) && !s.panel && <div className={s.shrineSeat ? "shrine-quick seated" : "shrine-quick"} role="group" aria-label="Thao tác điện thờ">
+              {s.shrineSeat ? <><strong>Cả điện thờ cùng cúi lạy rồi giơ tay cầu nguyện</strong><button onClick={() => actions.shrine({action:"stand"})}>Đứng dậy</button></> : <><span>Chọn ghế đá còn trống</span>{s.nearbyShrineSeat && <button onClick={() => actions.shrine({action:"sit",seatId:s.nearbyShrineSeat!.id})}>Ngồi {s.nearbyShrineSeat.label}</button>}</>}
+              <button onClick={() => actions.shrine({action:"exit"})}>Về hang</button>
+            </div>}
+            {!s.shrineSeat && <div className="toolbar" role="group" aria-label="Cảm xúc">
               {EMOTES.map((e) => (
                 <button
                   key={e.id}
@@ -442,26 +799,15 @@ export function mountUI(actions: Actions) {
                   {!touch && <kbd>{e.key}</kbd>} {e.icon} {e.label}
                 </button>
               ))}
-            </div>
-            <nav className="shortcuts" aria-label="Góc trong hang">
-              <button
-                onClick={(e) => {
-                  releaseFocus(e);
-                  ui.set({ panel: "memory" });
-                }}
-              >
-                Vách ký ức
-              </button>
-              <button
-                onClick={(e) => {
-                  releaseFocus(e);
-                  ui.set({ panel: "rest" });
-                }}
-              >
-                Thâm niên
-              </button>
+              {s.seat && <button className="seat-toggle" onClick={() => actions.seat()} title={touch ? undefined : "Phím F"}>{!touch && <kbd>F</kbd>} 🪑 {s.seat === "seated" ? "Đứng dậy" : "Ngồi"}</button>}
+            </div>}
+            <nav className="shortcuts" aria-label="Tiện ích trong hang">
+              <button onClick={() => ui.set({ panel: "map" })}>⌖ Các sạp trong hang</button>
+              <button onClick={() => ui.set({ panel: "rest" })}>Hạng · Nhân dạng</button>
+              <button onClick={() => void actions.copyInvite()}>Mời bạn</button>
+              {s.screenSound !== "none" && !isInShrine(s.position) && <button className={s.screenSound === "on" ? "screen-sound on" : "screen-sound"} aria-pressed={s.screenSound === "on"} onClick={() => actions.toggleScreenSound()} title="Tiếng clip trên màn hình lớn, chỉ bạn nghe">{s.screenSound === "on" ? "🔊 Tiếng màn hình" : "🔇 Tiếng màn hình"}</button>}
             </nav>
-            <div className="movement" role="group" aria-label="Di chuyển">
+            {!s.shrineSeat && <div className="movement" role="group" aria-label="Di chuyển">
               {MOVES.map(([k, label]) => (
                 <button
                   key={k}
@@ -478,7 +824,7 @@ export function mountUI(actions: Actions) {
                   {k.toUpperCase()}
                 </button>
               ))}
-            </div>
+            </div>}
           </>
         )}
         <footer>
@@ -501,7 +847,7 @@ export function mountUI(actions: Actions) {
                 }
                 if (e.key !== "Tab") return;
                 const nodes = panelRef.current?.querySelectorAll<HTMLElement>(
-                  "button,a[href],input",
+                  'button:not([disabled]):not([tabindex="-1"]),a[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),iframe',
                 );
                 if (!nodes?.length) return;
                 const first = nodes[0],
@@ -514,16 +860,10 @@ export function mountUI(actions: Actions) {
                   first.focus();
                 }
               }}
-              className="panel"
+              className={isStall ? "panel stall-dialog" : "panel"}
               role="dialog"
               aria-modal="true"
-              aria-label={
-                s.panel === "memory"
-                  ? "Vách ký ức"
-                  : s.panel === "rest"
-                    ? "Góc thâm niên"
-                    : "TV trú thua"
-              }
+              aria-label={isStall ? CAVE_STALLS.find(stall=>stall.id===s.panel)!.name : s.panel === "map" ? "Các sạp trong hang" : s.panel === "rest" ? "Hạng và nhân dạng" : s.panel === "screen" ? "Lịch đấu T1" : "Điện thờ"}
               onClick={(e) => e.stopPropagation()}
             >
               <button
@@ -533,56 +873,12 @@ export function mountUI(actions: Actions) {
               >
                 Đóng ✕
               </button>
-              {s.panel === "memory" ? (
-                <>
-                  <p className="eyebrow">NHỚ NGÀY CHƯA PHẢI VÀO HANG</p>
-                  <h2>Vách ký ức</h2>
-                  <p>2013 · 2015 · 2016 · 2023 · 2024 · 2025</p>
-                  <p>
-                    Những mùa Worlds đáng nhớ của đội nhà. Đôi khi nhìn lại cũng
-                    đủ để ngồi thêm một lúc.
-                  </p>
-                  <a
-                    href="https://www.korea.net/NewsFocus/Sports/view?articleId=281930"
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    Đọc nguồn lịch sử ↗
-                  </a>
-                  <small>
-                    Sắp có: dán kỷ niệm của bạn lên vách.
-                  </small>
-                </>
-              ) : s.panel === "rest" ? (
-                <>
-                  <p className="eyebrow">CƯ DÂN LÂU NĂM</p>
-                  <h2>Càng ở lâu, càng có chỗ nằm.</h2>
-                  {[
-                    "01 · Rách rưới",
-                    "02 · Xe lăn",
-                    "03 · Thở oxy",
-                    "04 · Liệt giường",
-                  ].map((t) => (
-                    <p className="rank" key={t}>
-                      {t}
-                    </p>
-                  ))}
-                  <small>
-                    Bốn hạng đang ngồi quanh lửa trại và nằm ở góc này. Thâm
-                    niên sẽ tính theo những ngày bạn ghé hang; đợt thử này chưa
-                    ghi lại.
-                  </small>
-                </>
-              ) : (
-                <>
-                  <h2>DEFEAT</h2>
-                  <p>TV vẫn chiếu lại khoảnh khắc ấy.</p>
-                  <small>
-                    Máy chơi game còn đang sửa. Tạm thời ngồi lại, chat và bày
-                    tỏ cảm xúc bằng phím 1/2/3.
-                  </small>
-                </>
-              )}
+              {isStall ? <StallPanel id={s.panel as CaveStallId} onClose={()=>ui.set({panel:null})} onVisit={actions.visit}/> : s.panel === "screen" ? <div className="screen-panel"><p className="eyebrow">MÀN HÌNH LỚN · HANG LỚN</p><h2>Lịch đấu T1</h2><MatchPanel/></div> : s.panel === "rest" ? <RankPanel onClose={()=>ui.set({panel:null})}/> : s.panel === "map" ? <>
+                <p className="eyebrow">ĐI MỘT VÒNG QUANH HANG</p><h2>Gặp nhau ở sạp.</h2>
+                <p className="map-intro">Mỗi sạp có một vòng sáng. Đi vào vòng rồi bấm E hoặc chạm nút để trò chuyện. Chọn một sạp bên dưới để theo dõi khoảng cách.</p>
+                <div className="map-grid">{[...CAVE_STALLS.map(stall=>({...stall,...stallApproach(stall)})),{id:"altar",name:"ĐIỆN THỜ",npc:"Tượng Faker",...SHRINE_PORTAL},{id:"screen",name:"MÀN HÌNH LỚN",npc:"Lịch đấu T1",...SCREEN_SPOT}].map(stall=>{const distance=Math.hypot(s.position.x-stall.x,s.position.z-stall.z);return <button key={stall.id} onClick={()=>actions.visit(stall.id)}><b>{stall.name}</b><small>{stall.npc} · {Math.ceil(distance)} m</small><small>{distance <= (stall.id==='altar'||stall.id==='screen'?3:CAVE_STALL_RADIUS)?'Vào ngay →':'Chỉ đường →'}</small></button>;})}</div>
+              </> : <ShrinePanel state={s.shrine} self={s.selfId} position={s.position} seated={s.shrineSeat} act={actions.shrine} />}
+
             </section>
           </div>
         )}

@@ -9,11 +9,14 @@
  *
  * Tham số URL chỉ cho bản dev (import.meta.env.DEV; bản build bỏ qua):
  *   ?view=<preset>          không vào hang, đặt camera theo preset của world (concept, spawn,
- *                           campfire, memory, tv, rest, living, quiz, exit, overview)
+ *                           campfire, overview, exit, rest, living, quest, screen, memory, quiz, shop,
+ *                           cave_<id>, tunnel_<id>, mouth_<id>…: xem world/views.ts) hoặc
+ *                           ?view=login: màn đăng nhập (cảnh ngoài hang + hàng người)
  *   ?autojoin=<tên>         tự vào hang; &yaw=&pitch=&dist= cho camera bám theo
  *   ?stats=1                fps, ms/khung, draw call, tam giác
  *   ?batch=0                tắt gom batch avatar (so sánh)
- * window.__ready = true (title READY) khi: ?view → world xong + 10 khung; ?autojoin → đã vào,
+ * window.__ready = true (title READY) khi: ?view → world xong + 10 khung (login: cảnh ngoài hang và
+ * nhân vật đã tải + 10 khung); ?autojoin → đã vào,
  * avatar của mình đã có, mô hình đã tải + 20 khung. Lỗi đẩy vào window.__errors.
  * window.__game (chỉ dev) cho test headless: snapshot(), follow, world.
  */
@@ -25,9 +28,20 @@ import {
   Emote,
   LIMITS,
   MoveInput,
+  type AccountView,
 } from "@te-liet/shared";
+import { SHRINE_CENTER, SHRINE_SEATS, SHRINE_SEAT_HEIGHT, SHRINE_RADIUS, applyShrineAwareInput, isInShrine, shrineLoopAt } from "../../../packages/shared/src/shrine.js";
 import "./style.css";
+import { resident } from "./stalls/client.js";
+import { CAVE_STALLS, CAVE_STALL_RADIUS } from "../../../packages/shared/src/stalls.js";
+import { findPath } from "../../../packages/shared/src/nav.js";
+import { CAVE_SEATS, CAVE_SEAT_REACH, caveSeat, type CaveSeat, type CaveSeatRequest } from "../../../packages/shared/src/seats.js";
+import { buildMarkers, buildSeatRings } from "./world/markers.js";
+import { createShrineAudio } from "./shrineAudio.js";
+import { STALL_CAMERA_BLOCKERS } from "./world/stalls.js";
+import { requestedRoom, roomInviteUrl } from "./roomInvite.js";
 import {
+  AVATAR_VARIANTS,
   createAvatar,
   preloadAvatars,
   variantFor,
@@ -36,13 +50,17 @@ import {
 } from "./avatar.js";
 import { cameraBlockers } from "./blockers.js";
 import { createFollowCamera } from "./camera.js";
+import { createLoginScene } from "./login/scene.js";
 import { chatBucket } from "./chatLimit.js";
-import { CAVE_BOUNDS, DEG, fitFov, type Blocker } from "./cameraMath.js";
+import { CAVE_BOUNDS, DEG, clearLine, fitFov, type Blocker } from "./cameraMath.js";
 import { GLOW_MATERIAL_PREFIX } from "./models.js";
 import { createNameTags } from "./nametags.js";
 import { createNearFlames } from "./nearFlames.js";
 import { createWorld, landmarks } from "./scene.js";
 import { CONTROLS_HELP, focusChat, mountUI, rememberInvite, touch, ui } from "./ui.js";
+import { auth, AuthError } from "./auth/client.js";
+import { forgetGoogleChoice } from "./auth/google.js";
+import { SHRINE_CAMERA_BLOCKERS } from "./world/shrine.js";
 import { loadManifests } from "./world/manifest.js";
 
 declare global {
@@ -80,8 +98,10 @@ const autojoin = devView ? null : dev?.get("autojoin")?.trim() || null;
 /* ------------------------------------------------------------------ cảnh */
 
 const canvas = document.querySelector<HTMLCanvasElement>("#scene")!;
+// alpha: the big screen's video window draws transparent pixels where a YouTube clip shows through
+// from behind the canvas (world/youtubeScreen.ts). Everything else stays opaque.
 const app = new pc.Application(canvas, {
-  graphicsDeviceOptions: { antialias: true, alpha: false },
+  graphicsDeviceOptions: { antialias: true, alpha: true },
 });
 app.setCanvasFillMode(pc.FILLMODE_FILL_WINDOW);
 app.setCanvasResolution(pc.RESOLUTION_AUTO);
@@ -91,14 +111,30 @@ window.addEventListener("resize", () => app.resizeCanvas());
 const world = createWorld(app);
 const camera = world.camera;
 /** Đồ cao (đuốc, bảng, đá, cột bạt) và thân NPC: camera không được nằm bên trong. Điền khi manifest đã tải. */
-const blockers: Blocker[] = [];
+const blockers: Blocker[] = [...STALL_CAMERA_BLOCKERS, ...SHRINE_CAMERA_BLOCKERS];
 const follow = createFollowCamera(camera, {
   bounds: { ...CAVE_BOUNDS, blockers },
 });
 /** Đuốc sát camera: ngọn lửa thụt xuống thay vì che kín khung hình. */
 const flames = createNearFlames();
+/** Audio khi vào điện thờ, chỉ người chơi này nghe (tệp do người host cung cấp, xem shrineAudio.ts). */
+const shrineAudio = createShrineAudio(import.meta.env.VITE_SHRINE_AUDIO_URL || "/audio/shrine-entry.mp3");
+shrineAudio.onChange((state) => ui.set({ shrineAudio: state }));
+// Tiếng clip trên màn hình lớn: tắt cho tới khi người chơi bật, nhỏ dần theo khoảng cách.
+world.screenSound.onChange((state) => ui.set({ screenSound: state }));
+/** Vòng tròn trắng dưới chân mọi vật ngồi được (ghế đẩu, thùng, đá thấp). */
+const seatRings = buildSeatRings(app, app.root, CAVE_SEATS);
+const takenSeats = new Set<string>();
+/** Vòng sáng + mũi tên nhấp nhô ở mọi điểm tương tác (màu theo sạp). */
+const MARKER_COLORS: Record<string, string> = { altar: "#F2C76B", screen: "#8FB8F2", rest: "#D8C7B0" };
+const markers = buildMarkers(
+  app,
+  app.root,
+  landmarks.map((l) => ({ id: l.id, x: l.x, z: l.z, color: CAVE_STALLS.find((s) => s.id === l.id)?.accent ?? MARKER_COLORS[l.id] ?? "#E8DCCB" })),
+);
 const tags = createNameTags(document.querySelector<HTMLElement>("#tags")!);
 const log = ui.log;
+const mutedSenders = new Set<string>();
 /** Góc nhìn dọc của camera bám theo (độ) trên màn hình ngang; màn dọc được nới cho đủ bề ngang. */
 const FOLLOW_FOV = 50;
 const aspect = () => window.innerWidth / Math.max(1, window.innerHeight);
@@ -166,9 +202,15 @@ Promise.all([world.ready, loadAvatars()]).then(
   },
 );
 
-// Trước khi vào hang: khung hình concept 01, trôi rất chậm.
-if (devView && !world.setView(devView))
-  report(`unknown view "${devView}" (${Object.keys(world.views).join(", ")})`);
+/**
+ * Trước khi vào hang (và sau khi rời hang): màn đăng nhập, cảnh ngoài hang của login/scene.ts. Khi
+ * đang hiện, nó giữ camera, sương và ánh sáng nền; vào hang xong thì trả lại và tắt hẳn.
+ * Bản dev: ?view=<preset của world> và ?autojoin bỏ qua màn này lúc khởi động.
+ */
+const login = createLoginScene(app, camera, { report });
+if (devView === "login" || (!devView && !autojoin)) login.show();
+else if (devView && !world.setView(devView))
+  report(`unknown view "${devView}" (login, ${Object.keys(world.views).join(", ")})`);
 const concept = world.views.concept;
 /**
  * Màn ngang, trước khi vào hang: thẻ chào che ~30 % bên trái, nên khung concept lùi ra sau
@@ -230,11 +272,15 @@ const EMOTE_CODES: Record<string, AvatarEmote> = {
   Numpad2: "laugh",
   Digit3: "cheer",
   Numpad3: "cheer",
+  Digit4: "jump",
+  Numpad4: "jump",
+  Space: "jump",
 };
 const EMOTE_KEYS: Record<string, AvatarEmote> = {
   "1": "wave",
   "2": "laugh",
   "3": "cheer",
+  "4": "jump",
 };
 function moveKey(e: KeyboardEvent): string | undefined {
   const k = e.key.toLowerCase();
@@ -270,6 +316,10 @@ window.addEventListener("keydown", (e) => {
     }
     return;
   }
+  if (e.code === "KeyF" || e.key.toLowerCase() === "f") {
+    if (!e.repeat) toggleSeat();
+    return;
+  }
   if (e.code === "KeyE" || e.key.toLowerCase() === "e") {
     if (!e.repeat) interact();
     return;
@@ -298,11 +348,127 @@ const held = (...names: string[]) => names.some((n) => keys.has(n));
 const STILL = { moveX: 0, moveZ: 0 } as const;
 /** Trục input theo hướng camera (int8, đúng giá trị gửi lên và dùng để dự đoán). */
 function axes(s: Session): { moveX: number; moveZ: number } {
-  if (ui.get().panel || s.dropped) return STILL;
+  const self = playersOf(s.room)?.get(s.room.sessionId);
+  if (ui.get().panel || s.dropped || self?.shrineSeat) {
+    stopAuto(false);
+    return STILL;
+  }
   const right =
     Number(held("d", "arrowright")) - Number(held("a", "arrowleft"));
   const forward = Number(held("w", "arrowup")) - Number(held("s", "arrowdown"));
-  return right || forward ? follow.toWorldAxes(right, forward) : STILL;
+  if (self?.seat) {
+    // Đang ngồi: bấm phím di chuyển là đứng dậy (server trả về chỗ đứng cũ), chưa đi ngay.
+    stopAuto(false);
+    if (right || forward) sendSeat({ action: "stand" });
+    return STILL;
+  }
+  if (right || forward) {
+    stopAuto(false); // tự tay điều khiển: thôi tự đi, vẫn giữ chỉ dẫn
+    return follow.toWorldAxes(right, forward);
+  }
+  return autoAxes() ?? STILL;
+}
+
+/* ------------------------------------------------------------------ ngồi */
+
+let lastSeatAt = -Infinity;
+function sendSeat(request: CaveSeatRequest) {
+  const s = session,
+    now = performance.now();
+  if (!s || s.dropped || now - lastSeatAt < 550) return; // server cho 2 lần/giây
+  lastSeatAt = now;
+  s.room.send("seat", request);
+}
+/** Ghế trống gần nhất trong tầm với (không tính ghế có người chơi khác ngồi). */
+function nearestFreeSeat(x: number, z: number): CaveSeat | null {
+  const players = session ? playersOf(session.room) : undefined;
+  const taken = new Set<string>();
+  players?.forEach((p) => { if (p.seat) taken.add(p.seat); });
+  let best: CaveSeat | null = null,
+    bestD = CAVE_SEAT_REACH - 0.1;
+  for (const seat of CAVE_SEATS) {
+    if (taken.has(seat.id)) continue;
+    const d = Math.hypot(seat.x - x, seat.z - z);
+    if (d < bestD) { best = seat; bestD = d; }
+  }
+  return best;
+}
+/** F (hoặc nút trên màn hình): ngồi xuống ghế gần nhất, đang ngồi thì đứng dậy. */
+function toggleSeat() {
+  const s = session,
+    f = me();
+  if (!s || !f || ui.get().panel) return;
+  if (playersOf(s.room)?.get(s.room.sessionId)?.seat) return sendSeat({ action: "stand" });
+  const seat = nearestFreeSeat(f.x, f.z);
+  if (seat) { stopAuto(false); sendSeat({ action: "sit", seatId: seat.id }); }
+}
+
+/* ------------------------------------------------------------------ tự đi tới đích */
+
+/**
+ * "Chỉ đường": nhân vật tự đi tới điểm tương tác đã chọn theo đường tìm được trên đồ thị điểm mốc
+ * (packages/shared/src/nav.ts), bằng chính input di chuyển thường (server vẫn quyết định vị trí).
+ * Bấm phím di chuyển, mở bảng hoặc bỏ chỉ dẫn là dừng. Kẹt 1 giây thì tìm đường lại, quá 3 lần thì thôi.
+ */
+interface AutoWalk {
+  id: string;
+  goal: { x: number; z: number };
+  path: { x: number; z: number }[];
+  next: number;
+  /** Mốc đo tiến độ: vị trí và thời điểm (ms). */
+  mark: { x: number; z: number; at: number };
+  repaths: number;
+}
+let auto: AutoWalk | null = null;
+const AUTO_ARRIVE = 0.45;
+const AUTO_PASS = 0.9;
+function stopAuto(clearGuide: boolean) {
+  if (!auto) return;
+  auto = null;
+  ui.set(clearGuide ? { autoWalk: false, destination: null } : { autoWalk: false });
+}
+function startAuto(id: string): boolean {
+  const f = me(),
+    goal = landmarks.find((l) => l.id === id);
+  if (!f || !goal || f.x > 80) return false; // đảo điện thờ: không có đường bộ về hang
+  const path = findPath({ x: f.x, z: f.z }, goal);
+  if (!path) return false;
+  auto = { id, goal, path, next: 0, mark: { x: f.x, z: f.z, at: performance.now() }, repaths: 0 };
+  ui.set({ autoWalk: true });
+  return true;
+}
+function autoAxes(): { moveX: number; moveZ: number } | null {
+  const a = auto,
+    f = me();
+  if (!a || !f) return null;
+  if (ui.get().destination !== a.id) {
+    stopAuto(false);
+    return null;
+  }
+  if (Math.hypot(a.goal.x - f.x, a.goal.z - f.z) < AUTO_ARRIVE) {
+    stopAuto(true);
+    return null;
+  }
+  while (a.next < a.path.length - 1 && Math.hypot(a.path[a.next].x - f.x, a.path[a.next].z - f.z) < AUTO_PASS) a.next++;
+  const now = performance.now();
+  if (now - a.mark.at > 1000) {
+    if (Math.hypot(f.x - a.mark.x, f.z - a.mark.z) < 0.3) {
+      const path = a.repaths < 3 ? findPath({ x: f.x, z: f.z }, a.goal) : null;
+      if (!path) {
+        stopAuto(false);
+        return null;
+      }
+      a.path = path;
+      a.next = 0;
+      a.repaths++;
+    }
+    a.mark = { x: f.x, z: f.z, at: now };
+  }
+  const t = a.path[a.next];
+  const dx = t.x - f.x,
+    dz = t.z - f.z,
+    d = Math.sqrt(dx * dx + dz * dz) || 1;
+  return { moveX: Math.round((dx / d) * 127), moveZ: Math.round((dz / d) * 127) };
 }
 
 /* ------------------------------------------------------------------ người chơi */
@@ -316,6 +482,9 @@ interface PlayerState {
   x: number;
   z: number;
   connected: boolean;
+  shrineSeat: string; shrineGesture: string; shrineGestureAt: number;
+  /** Chỗ ngồi trong hang (packages/shared seats.ts) và hướng mặt (độ). */
+  seat: string; seatYaw: number;
 }
 interface HubState {
   players: {
@@ -330,11 +499,15 @@ type Session = {
   predict: Predict;
   input: InputHandle<MoveInput>;
   reconciled: boolean;
+  controller?: { reset(): void };
+  shrinePose?: string;
   idleSteps: number;
   /** Mất kết nối, SDK đang tự nối lại: không gửi di chuyển. */
   dropped: boolean;
 };
 let session: Session | undefined;
+let shrineClockOffset = 0;
+let shrineUiAt = 0;
 
 interface Fan {
   readonly self: boolean;
@@ -468,10 +641,12 @@ function setSelfOpacity(f: Fan, opacity: number) {
 function spawnAvatar(id: string, f: Fan) {
   if (f.avatar || f.failed || !assetsReady) return;
   try {
-    f.avatar = createAvatar(app, { variant: variantFor(id) });
+    const saved = session ? (playersOf(session.room)?.get(id) as { avatarKey?: string } | undefined)?.avatarKey : '';
+    f.avatar = createAvatar(app, { variant: saved && AVATAR_VARIANTS.includes(saved) ? saved : variantFor(id) });
     if (f.self) prepareSelf(f.avatar);
     else batchAvatar(f.avatar);
     f.avatar.entity.enabled = !f.hidden;
+    if(f.self){const p=resident.get();f.avatar.setProgression(p.visualRank??p.state?.experience.rank.level??1,p.visualItem!==undefined?p.visualItem:p.state?.equippedItemId);}
   } catch (err) {
     f.failed = true;
     report(`avatar ${id}: ${describe(err)}`);
@@ -494,6 +669,7 @@ function moveFan(
   z: number,
   dt: number,
   intent: { moveX: number; moveZ: number } | null,
+  y = 0,
 ) {
   const dx = x - f.x,
     dz = z - f.z;
@@ -516,10 +692,12 @@ function moveFan(
   );
   const a = f.avatar;
   if (!a) return;
-  a.entity.setPosition(x, 0, z);
+  a.entity.setPosition(x, y, z);
   a.entity.setEulerAngles(0, (f.yaw * 180) / Math.PI, 0);
   a.update(dt, f.speed);
 }
+
+resident.subscribe(()=>{const f=me(),p=resident.get(); if(f?.avatar) f.avatar.setProgression(p.visualRank??p.state?.experience.rank.level??1,p.visualItem!==undefined?p.visualItem:p.state?.equippedItemId);});
 
 /** Điểm tương tác gần nhất trong 3 m. */
 function nearestLandmark(x: number, z: number) {
@@ -529,7 +707,8 @@ function nearestLandmark(x: number, z: number) {
     const dx = l.x - x,
       dz = l.z - z;
     const d2 = dx * dx + dz * dz;
-    if (d2 < bestD2) {
+    const radius = l.id === "altar" || l.id === "rest" || l.id === "screen" ? 3 : CAVE_STALL_RADIUS;
+    if (d2 <= radius * radius && d2 < bestD2) {
       best = l;
       bestD2 = d2;
     }
@@ -544,7 +723,7 @@ function interact() {
   const f = me();
   const near = f ? nearestLandmark(f.x, f.z) : null;
   if (!near) return;
-  ui.set({ panel: near.id });
+  ui.set({ panel: near.id, destination: null });
   keys.clear();
 }
 
@@ -552,6 +731,7 @@ const EMOTE_LINES: Record<AvatarEmote, (who: string) => string> = {
   wave: (who) => `✋ ${who} vẫy tay chào cả hang`,
   laugh: (who) => `😆 ${who} cười trừ cho qua`,
   cheer: (who) => `🙌 ${who} hô to: mùa sau làm lại!`,
+  jump: (who) => `⤴ ${who} nhảy cẫng lên`,
 };
 /** Một người emote liên tục chỉ ghi một dòng chat mỗi ngần này (ms); avatar vẫn diễn mọi lần. */
 const EMOTE_LOG_GAP = 8000;
@@ -594,7 +774,10 @@ app.on("update", (dt: number) => {
   devTick();
   const s = session;
   if (!s) {
-    if (!devView) drift(dt);
+    // Màn đăng nhập tự quản sương và ánh sáng của nó; chỉ trả về kiểu "ngày" khi nó đã ẩn.
+    if (!login.active) world.setMood("day");
+    shrineAudio.leave();
+    if (!devView && !login.active) drift(dt);
     return;
   }
   const { room, predict, input } = s;
@@ -604,19 +787,37 @@ app.on("update", (dt: number) => {
   // Nhân vật của mình: dự đoán ngay bằng cùng applyInput() với server, rồi đối chiếu khi server xác nhận.
   const self = players.get(room.sessionId);
   if (self && !s.reconciled) {
-    predict.reconciler(self, {
+    s.controller = predict.reconciler(self, {
       input,
       fields: ["x", "z"],
       smoothMs: 65,
-      step: (ctx, st, cmd) => applyInput(st, cmd, ctx.dt),
+      snap: 2,
+      step: (ctx, st, cmd) => { if (!self.shrineSeat && !self.seat) applyShrineAwareInput(st, cmd, ctx.dt); },
     });
     s.reconciled = true;
+  }
+
+  if (self && s.controller) {
+    const pose = `${isInShrine(self) ? "shrine" : "cave"}:${self.shrineSeat || self.seat || ""}`;
+    if (s.shrinePose !== undefined && s.shrinePose !== pose) {
+      s.controller.reset(); keys.clear();
+      if (s.shrinePose.split(":")[0] !== pose.split(":")[0]) {
+        follow.snapBehind(180); follow.distance = isInShrine(self) ? 7.5 : 5.5; follow.pitch = isInShrine(self) ? 12 : 18;
+      }
+    }
+    s.shrinePose = pose;
   }
 
   // Gửi trước, đọc sau. Đứng yên thì chỉ gửi 5 bước đuôi và 1 bước mỗi giây (giữ đồng hồ đồng bộ),
   // thay vì 20 input/giây. Trục gửi đi chính là trục reconciler dùng để dự đoán.
   const a = axes(s);
   const moving = a.moveX !== 0 || a.moveZ !== 0;
+  // Đang tự đi: camera xoay dần ra sau lưng theo hướng đi (tối đa 150 độ/giây), như khi tự cầm lái.
+  if (auto && moving) {
+    const want = Math.atan2(a.moveX, a.moveZ) / DEG;
+    const turn = ((want - follow.yaw + 540) % 360) - 180;
+    follow.yaw += Math.max(-150 * dt, Math.min(150 * dt, turn));
+  }
   const steps = predict.tick(performance.now());
   for (let i = 0; i < steps; i++) {
     s.idleSteps = moving ? 0 : s.idleSteps + 1;
@@ -631,8 +832,10 @@ app.on("update", (dt: number) => {
   seen.clear();
   players.forEach((p, id) => {
     seen.add(id);
-    const x: number = predict.value(p, "x"),
-      z: number = predict.value(p, "z");
+    const px: number = predict.value(p, "x"), pz: number = predict.value(p, "z");
+    const sitting = p.seat ? caveSeat(p.seat) : undefined;
+    const x = p.shrineSeat || sitting ? p.x : px;
+    const z = p.shrineSeat || sitting ? p.z : pz;
     let f = fans.get(id);
     if (!f) {
       const face = Math.atan2(-x, -z); // xuất hiện: nhìn về lửa trại
@@ -659,7 +862,18 @@ app.on("update", (dt: number) => {
       tags.set(id, name, { self: f.self, away });
     }
     spawnAvatar(id, f);
-    moveFan(f, x, z, dt, f.self ? a : null);
+    const shrineSeat = SHRINE_SEATS.find(seat => seat.id === p.shrineSeat);
+    if (shrineSeat) f.yaw = f.wantYaw = shrineSeat.yaw * DEG;
+    else if (sitting) f.yaw = f.wantYaw = p.seatYaw * DEG;
+    // Ghế điện thờ: cả điện thờ cúi lạy rồi giơ tay cầu nguyện theo đồng hồ server, lặp lại. Ghế trong hang: chỉ ngồi.
+    const worship = shrineSeat ? shrineLoopAt(Date.now() + shrineClockOffset) : null;
+    f.avatar?.setShrinePose(!!shrineSeat || !!sitting, worship?.gesture ?? null, worship?.elapsed ?? 0);
+    // Ghế trong hang cao thấp khác nhau: dáng ngồi dựng cho mặt ghế SHRINE_SEAT_HEIGHT, nâng/hạ gốc cho khớp.
+    moveFan(f, x, z, dt, f.self && !shrineSeat && !sitting ? a : null, sitting ? sitting.h - SHRINE_SEAT_HEIGHT : 0);
+    if (sitting && f.avatar) f.avatar.entity.setEulerAngles(0, p.seatYaw, 0);
+    if (shrineSeat && f.avatar) { f.yaw = f.wantYaw = shrineSeat.yaw * DEG; f.avatar.entity.setEulerAngles(0,shrineSeat.yaw,0); }
+    // Separate spaces share a server room, but residents do not float across the void visually.
+    if (f.avatar) f.avatar.entity.enabled = !f.hidden && isInShrine(p) === isInShrine(self ?? p);
   });
   for (const id of fans.keys()) if (!seen.has(id)) dropFan(id);
   if (ui.get().count !== seen.size) ui.set({ count: seen.size });
@@ -671,7 +885,28 @@ app.on("update", (dt: number) => {
   stillFor = mine.speed < 0.15 && !moving ? stillFor + dt : 0;
   follow.focus = !!near && stillFor >= FOCUS_AFTER;
   setFov(fitFov(FOLLOW_FOV, aspect()));
+  const inShrine = isInShrine(self ?? mine);
+  // Trong game hang tối: chỉ lửa, đuốc, màn hình và chiếc đèn lồng theo người chơi là sáng.
+  world.setMood(inShrine ? "shrine" : "cave");
+  // Vào điện thờ: phát đoạn audio riêng cho người chơi này (nếu máy chủ web có tệp); ra thì tắt dần.
+  if (inShrine) shrineAudio.enter();
+  else shrineAudio.leave();
+  world.setLantern(mine.x, mine.z);
+  // Điện thờ: hình trụ quanh tâm đảo; hang: hợp các phòng (hang lớn, hầm, hang nhỏ) của CAVE_BOUNDS.
+  if (inShrine) follow.setBoundsCenter(SHRINE_CENTER.x, SHRINE_CENTER.z, 14);
+  else follow.useRooms();
   follow.update(dt, target.set(mine.x, 0, mine.z));
+  if (performance.now() - shrineUiAt > 120 || ui.get().shrineSeat !== (self?.shrineSeat || "")) {
+    shrineUiAt = performance.now();
+    const nearest = inShrine && !self?.shrineSeat ? SHRINE_SEATS.filter(seat => !ui.get().shrine?.seats.find(s=>s.id===seat.id)?.occupant && Math.hypot(seat.x-mine.x,seat.z-mine.z)<=2).sort((a,b)=>Math.hypot(a.x-mine.x,a.z-mine.z)-Math.hypot(b.x-mine.x,b.z-mine.z))[0] : null;
+    const seated = !!self?.seat;
+    ui.set({ position:{x:mine.x,z:mine.z}, shrineSeat:self?.shrineSeat || "", nearbyShrineSeat: nearest ? {id:nearest.id,label:nearest.label} : null,
+      seat: seated ? "seated" : !inShrine && nearestFreeSeat(mine.x, mine.z) ? "near" : null });
+  }
+  markers.update(dt, inShrine ? null : mine, ui.get().destination);
+  takenSeats.clear();
+  players.forEach((p) => { if (p.seat) takenSeats.add(p.seat); });
+  seatRings.update(inShrine ? null : mine, takenSeats);
   flames.update(camera); // sau hiệu ứng lửa của world (handler update của world chạy trước)
   // Camera bị ép sát đầu (lưng sát vách, sát đồ cao): avatar mình mờ dần rồi ẩn hẳn.
   setSelfOpacity(mine, smoothstep(SELF_FADE_TO, SELF_FADE_FROM, follow.boom));
@@ -689,7 +924,11 @@ app.on("update", (dt: number) => {
           ? touch
             ? `Chạm nút sáng để xem ${near.name}`
             : `Nhấn E để xem ${near.name}`
-          : CONTROLS_HELP;
+          : ui.get().seat === "seated"
+            ? touch ? "Chạm Đứng dậy hoặc đi để rời chỗ" : "Nhấn F hoặc phím di chuyển để đứng dậy"
+            : ui.get().seat === "near"
+              ? touch ? "Chạm Ngồi để ngồi xuống đây" : "Nhấn F để ngồi xuống đây"
+              : CONTROLS_HELP;
   if (ui.get().status !== status) ui.set({ status });
 });
 
@@ -697,8 +936,15 @@ app.on("update", (dt: number) => {
 app.on("postrender", () => {
   if (!session) return;
   tags.begin(camera);
+  // Bảng tên không hiện xuyên vách đá: người ở hang khác / trong hầm chỉ có bảng tên khi đường thẳng
+  // từ camera tới họ nằm trong các phòng của hang (điện thờ là một phòng riêng, không cần xét).
+  const eye = camera.getPosition();
+  const mine = me();
+  const rooms = mine && !isInShrine(mine) ? CAVE_BOUNDS.rooms : undefined;
   for (const [id, f] of fans) {
-    if (f.avatar) tags.place(id, f.hidden ? null : f.avatar.headTop);
+    const seen = !rooms || f.self || clearLine(eye.x, eye.z, f.x, f.z, rooms, CAVE_BOUNDS.roomMargin);
+    if (!seen) tags.place(id, null);
+    else if (f.avatar) tags.place(id, f.hidden || !f.avatar.entity.enabled ? null : f.avatar.headTop);
     else if (avatarsFailed) tags.place(id, tagAt.set(f.x, TAG_HEIGHT, f.z));
     else tags.place(id, null);
   }
@@ -716,37 +962,68 @@ const gameUrl =
     ? "ws://localhost:2567"
     : `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}`);
 
+/** Vé vào game cho khách (Chơi thử): tên tự chọn, mã mời khi close test đòi. */
+async function guestTicket(name: string, code: string): Promise<string> {
+  const res = await fetch(apiUrl, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json", "X-T1-Request": "1" },
+    body: JSON.stringify(code ? { name, invite: code } : { name }),
+  });
+  if (res.status === 403) {
+    // close test: API đòi mã mời (thiếu hoặc sai) → hiện ô nhập mã
+    const body = (await res.json().catch(() => null)) as { error?: string } | null;
+    ui.set({ needInvite: true });
+    if (code) rememberInvite("");
+    throw new Error(body?.error || "Cần mã mời để vào hang");
+  }
+  if (res.status === 429) throw new Error("Đông người vào quá, thử lại sau ít giây nhé.");
+  if (!res.ok) throw new Error("Không thể đăng nhập");
+  if (code) rememberInvite(code);
+  return (await res.json()).ticket;
+}
+/** Vé vào game cho tài khoản đang đăng nhập; phiên hết hạn thì quay về màn đăng nhập. */
+async function memberTicket(): Promise<string> {
+  try {
+    return (await auth.ticket()).ticket;
+  } catch (error) {
+    if (error instanceof AuthError && error.status === 401) {
+      ui.set({ account: null });
+      throw new Error("Phiên đăng nhập đã hết. Đăng nhập lại hoặc chơi thử nhé.");
+    }
+    throw error;
+  }
+}
+
+/** Vào hang: bằng tài khoản đang đăng nhập nếu có, không thì là khách tên `name`. */
 async function join(name: string, invite = "") {
   if (session || ui.get().busy) return;
   ui.set({ busy: true });
   let joined: Room | undefined;
   try {
-    const code = invite.trim();
-    const res = await fetch(apiUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(code ? { name, invite: code } : { name }),
-    });
-    if (res.status === 403) {
-      // close test: API đòi mã mời (thiếu hoặc sai) → hiện ô nhập mã
-      const body = (await res.json().catch(() => null)) as { error?: string } | null;
-      ui.set({ needInvite: true });
-      if (code) rememberInvite("");
-      throw new Error(body?.error || "Cần mã mời để vào hang");
+    const account = ui.get().account;
+    if (account) name = account.name;
+    const ticket = account ? await memberTicket() : await guestTicket(name, invite.trim());
+    const targetRoom = requestedRoom(location.href);
+    if (new URL(location.href).searchParams.has("room") && !targetRoom) throw new Error("Link phòng không hợp lệ. Bỏ tham số room để tìm hang mới.");
+    const client = new Client(gameUrl);
+    let room: Room;
+    try {
+      room = targetRoom
+        ? await client.joinById(targetRoom, { ticket })
+        : await client.joinOrCreate("hub_v1", { ticket });
+    } catch (error) {
+      if (targetRoom) throw new Error("Không vào được phòng được mời: phòng có thể đã đầy hoặc đã đóng. Bỏ link phòng để tìm hang khác.");
+      throw error;
     }
-    if (res.status === 429) throw new Error("Đông người vào quá, thử lại sau ít giây nhé.");
-    if (!res.ok) throw new Error("Không thể đăng nhập");
-    if (code) rememberInvite(code);
-    const { ticket } = await res.json();
-    const room = await new Client(gameUrl).joinOrCreate("hub_v1", { ticket });
     joined = room;
     // Rớt mạng ngay sau khi vào (mặc định SDK: 5 s) vẫn tự nối lại vào đúng chỗ.
     room.reconnection.minUptime = 1000;
     const input = room.input({ type: MoveInput });
     if (input.tickRate === undefined)
       throw new Error("Server chưa khai báo nhịp mô phỏng cố định");
-    const predict = Predict.get(room, { mode: "lerp", delay: 100 });
-    predict.attachAll("players", { x: "lerp", z: "lerp" });
+    const predict = Predict.get(room, { mode: "lerp", delay: 100, smoothMs: 25 });
+    predict.attachAll("players", { x: "lerp", z: "lerp", snap: 2 });
     const s: Session = {
       room,
       predict,
@@ -758,6 +1035,8 @@ async function join(name: string, invite = "") {
     session = s;
     keys.clear();
     chatLimit.reset();
+    mutedSenders.clear();
+    ui.set({ messages: [] });
     stillFor = 0;
 
     // Camera bám theo avatar mình, nhìn về cửa hang (-Z) lúc xuất hiện.
@@ -768,9 +1047,13 @@ async function join(name: string, invite = "") {
     if (pitch !== undefined) follow.pitch = pitch;
     if (dist !== undefined) follow.distance = dist;
     follow.attach(canvas);
+    login.enterCave(); // đẩy camera vào cửa hang, mờ qua đỏ-đen rồi trả camera cho hang
 
+    resident.name(name);
+    void resident.load(true);
     ui.set({
       connected: true,
+      selfId: room.sessionId, altar: null, altarBadge: false, shrine:null, shrineSeat:"",
       busy: false,
       panel: null,
       prompt: null,
@@ -781,9 +1064,18 @@ async function join(name: string, invite = "") {
           : LOADING,
     });
 
-    room.onMessage("chat", (m: { name?: string; text: string }) =>
-      log(`${m.name || "Ai đó"}: ${m.text}`),
-    );
+    room.onMessage("shrineState", (value) => {
+      shrineClockOffset = value.serverNow - Date.now();
+      ui.set({ shrine:value });
+    });
+    room.send("shrineSync");
+    room.onMessage("altarState", (value) => ui.set({ altar: value }));
+    room.send("altarSync");
+    room.onMessage("altarComplete", () => ui.set({ altarBadge: true }));
+    room.onMessage("chat", (m: { id?: string; senderId?: string; name?: string; text: string }) => {
+      if (m.senderId && mutedSenders.has(m.senderId)) return;
+      log(`${m.name || "Ai đó"}: ${m.text}`, { messageId: m.id, senderId: m.senderId });
+    });
     // Thông báo riêng từ server: chat bị chặn (kiểm duyệt, bị mute), kết quả báo cáo…
     room.onMessage("notice", (text: unknown) => {
       if (typeof text === "string") log(`⚠ ${text}`);
@@ -791,7 +1083,9 @@ async function join(name: string, invite = "") {
     room.onMessage("emote", (m: { id: string; emote: unknown }) => {
       const e = Emote.safeParse(m?.emote);
       if (!e.success) return;
-      fans.get(m.id)?.avatar?.emote(e.data);
+      const actor = fans.get(m.id);
+      actor?.avatar?.emote(e.data);
+      if (actor && actor.x < 80) world.cheerNear(actor.x, actor.z); // fan NPC gần đó nhún đáp lại
       // dòng chat: tối đa một dòng mỗi EMOTE_LOG_GAP cho mỗi người (avatar vẫn diễn mọi lần)
       const now = performance.now();
       if (now - (emoteLogged.get(m.id) ?? -Infinity) < EMOTE_LOG_GAP) return;
@@ -812,6 +1106,8 @@ async function join(name: string, invite = "") {
     });
     room.onReconnect(() => {
       s.dropped = false;
+      room.send("altarSync");
+      room.send("shrineSync");
     });
     room.onLeave((code: number) => {
       predict.dispose();
@@ -823,8 +1119,10 @@ async function join(name: string, invite = "") {
       follow.focus = false;
       world.setView("concept");
       driftT = 0;
+      login.show();
       ui.set({
         connected: false,
+        altar: null, altarBadge: false, selfId: "", shrine:null, shrineSeat:"", nearbyShrineSeat:null,
         busy: false,
         count: 0,
         panel: null,
@@ -843,6 +1141,7 @@ async function join(name: string, invite = "") {
       clearFans();
       follow.detach();
       world.setView("concept");
+      login.show();
     }
     if (joined) await joined.leave().catch(() => {});
     ui.set({ connected: false, status: describe(err), busy: false });
@@ -853,14 +1152,94 @@ async function join(name: string, invite = "") {
   }
 }
 
+/* ------------------------------------------------------------------ tài khoản */
+
+/** Hỏi API ai đang đăng nhập (cookie phiên) và máy chủ có bật Google / mã mời không. */
+async function loadAccount() {
+  try {
+    const me = await auth.me();
+    ui.set({ account: me.account, google: me.google, needInvite: ui.get().needInvite || me.inviteRequired, authReady: true });
+  } catch {
+    ui.set({ authReady: true });
+  }
+}
+void loadAccount();
+
+const authMessage = (error: unknown) => (error instanceof Error ? error.message : "Không đăng nhập được, thử lại nhé.");
+/** Đăng nhập xong (mật khẩu hoặc Google): nhớ tài khoản rồi vào hang luôn. */
+async function signedIn(run: () => Promise<{ account: AccountView }>, invite?: string) {
+  if (session || ui.get().busy) return;
+  ui.set({ busy: true, loginNotice: "" });
+  try {
+    const { account } = await run();
+    if (invite?.trim()) rememberInvite(invite.trim());
+    ui.set({ account, busy: false });
+    void join(account.name);
+  } catch (error) {
+    const code = error instanceof AuthError ? error.code : "";
+    if (code === "invite_required" || code === "invite_invalid") ui.set({ needInvite: true });
+    ui.set({ busy: false, loginNotice: authMessage(error) });
+  }
+}
+
 mountUI({
   join,
+  enter: () => void join(ui.get().account?.name ?? ""),
+  signIn: (mode, form) =>
+    void signedIn(
+      () => (mode === "login" ? auth.login({ username: form.username, password: form.password }) : auth.signup(form)),
+      form.invite,
+    ),
+  googleCredential: (credential, invite) => void signedIn(() => auth.google(credential, invite.trim() || undefined), invite),
+  signOut: () => {
+    if (ui.get().busy) return;
+    ui.set({ busy: true });
+    auth
+      .logout()
+      .then(() => ui.set({ account: null, loginNotice: "Đã đăng xuất." }))
+      .catch((error) => ui.set({ loginNotice: authMessage(error) }))
+      .finally(() => {
+        forgetGoogleChoice();
+        ui.set({ busy: false });
+      });
+  },
   chat: sendChat,
   emote: sendEmote,
   interact,
+  seat: toggleSeat,
+  toggleShrineAudio: () => shrineAudio.toggle(),
+  toggleScreenSound: () => world.screenSound.toggle(),
+  visit: (id) => {
+    const landmark = landmarks.find(l => l.id === id); const f=me();
+    if (!landmark || !f) return;
+    const radius=id==='altar'||id==='rest'||id==='screen'?3:CAVE_STALL_RADIUS;
+    keys.clear();
+    if (Math.hypot(f.x-landmark.x,f.z-landmark.z)<=radius) { stopAuto(false); ui.set({panel:id,destination:null}); }
+    else { ui.set({panel:null,destination:id}); startAuto(id); }
+  },
   leave: () => {
     keys.clear();
     void session?.room.leave();
+  },
+  report: (messageId, reason) => session?.room.send("report", { messageId, reason }),
+  mute: (senderId) => {
+    mutedSenders.add(senderId);
+    ui.removeSender(senderId);
+    ui.set({ status: "Đã ẩn tin của người này trong phiên hiện tại. Vào lại hang để bỏ ẩn." });
+  },
+  shrine: (request) => {
+    keys.clear(); session?.room.send("shrine", request);
+    ui.set({panel:null});
+  },
+  altar: (action, preset) => {
+    keys.clear();
+    session?.room.send("altar", { action, ...(preset ? { preset } : {}) });
+  },
+  copyInvite: async () => {
+    if (!session) return;
+    const url = roomInviteUrl(location.href, session.room.roomId);
+    try { await navigator.clipboard.writeText(url); ui.set({ status: "Đã sao chép link đúng phòng. Người được mời vẫn cần mã vào hang nếu có." }); }
+    catch { ui.set({ status: `Link phòng: ${url}` }); }
   },
   move: (key, down) => {
     if (down) keys.add(key);
@@ -868,10 +1247,35 @@ mountUI({
   },
 });
 
+let seatPointer: {x:number;y:number;id:number;moved:boolean} | null = null;
+canvas.addEventListener("pointerdown", e => {
+  seatPointer=e.isPrimary && e.button===0 ? {x:e.clientX,y:e.clientY,id:e.pointerId,moved:false} : null;
+});
+canvas.addEventListener("pointermove", e => {
+  if(seatPointer && (e.pointerId!==seatPointer.id || Math.hypot(e.clientX-seatPointer.x,e.clientY-seatPointer.y)>6)) seatPointer.moved=true;
+});
+canvas.addEventListener("pointercancel",()=>{seatPointer=null;});
+canvas.addEventListener("pointerup", e => {
+  const down=seatPointer; seatPointer=null;
+  if (!down || down.moved || !e.isPrimary || e.button!==0 || e.pointerId!==down.id || Math.hypot(e.clientX-down.x,e.clientY-down.y)>6 || !session || ui.get().panel || !isInShrine(me() ?? {x:0,z:0})) return;
+  const rect=canvas.getBoundingClientRect(); const x=e.clientX-rect.left,y=e.clientY-rect.top;
+  const from=camera.camera!.screenToWorld(x,y,0); const to=camera.camera!.screenToWorld(x,y,100);
+  const dy=to.y-from.y; if(Math.abs(dy)<1e-6)return;
+  const t=(0.48-from.y)/dy; if(t<0||t>1)return;
+  const hx=from.x+(to.x-from.x)*t,hz=from.z+(to.z-from.z)*t;
+  const seat=SHRINE_SEATS.find(s=>Math.hypot(s.x-hx,s.z-hz)<0.68);
+  if(seat){keys.clear();session.room.send("shrine",{action:"sit",seatId:seat.id});}
+});
+
 /* ------------------------------------------------------------------ dev */
 
 const r = (v: number, k = 1000) => Math.round(v * k) / k;
 /** Trạng thái đọc được cho test headless (window.__game.snapshot()). */
+function selfShrineSeat() { return session ? playersOf(session.room)?.get(session.room.sessionId)?.shrineSeat || "" : ""; }
+function selfServer() {
+  const p = session ? playersOf(session.room)?.get(session.room.sessionId) : undefined;
+  return p ? { x: r(p.x), z: r(p.z) } : null;
+}
 function snapshot() {
   const s = session,
     mine = me(),
@@ -891,6 +1295,9 @@ function snapshot() {
           speed: r(mine.speed, 100),
           hidden: mine.hidden,
           opacity: selfOpacity,
+          shrineSeat: selfShrineSeat(),
+          // vị trí server đã xác nhận (state của room), để so với vị trí dự đoán ở trên
+          server: selfServer(),
         }
       : null,
     camera: {
@@ -913,10 +1320,15 @@ function snapshot() {
       avatar: !!f.avatar,
     })),
     tags: tags.inspect(),
+    login: login.inspect(),
     ui: {
       status: ui.get().status,
       panel: ui.get().panel,
       prompt: ui.get().prompt?.id ?? null,
+      destination: ui.get().destination,
+      shrineAudio: ui.get().shrineAudio,
+      shrineAudioPlaying: shrineAudio.playing,
+      autoWalk: ui.get().autoWalk,
       count: ui.get().count,
       messages: ui
         .get()
@@ -934,7 +1346,12 @@ function snapshot() {
 
 function devTick() {
   if (!dev || window.__ready || !(devView || autojoin)) return;
-  const ok = devView ? worldReady : assetsReady && !!session && !!me()?.avatar;
+  const ok =
+    devView === "login"
+      ? login.ready
+      : devView
+        ? worldReady
+        : assetsReady && !!session && !!me()?.avatar;
   devFrames = ok ? devFrames + 1 : 0;
   if (devFrames < (devView ? 10 : 20)) return;
   window.__info = snapshot();
@@ -943,7 +1360,7 @@ function devTick() {
 }
 
 if (dev) {
-  window.__game = { snapshot, follow, world, app, blockers };
+  window.__game = { snapshot, follow, world, app, blockers, login };
   if (dev.get("stats") === "1") {
     const el = document.createElement("div");
     el.className = "dev-stats";

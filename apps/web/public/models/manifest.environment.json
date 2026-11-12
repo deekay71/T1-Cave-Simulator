@@ -1467,6 +1467,745 @@
         ]
       },
       "bytes": 14612
+    },
+    {
+      "name": "tl_env_shrine_floor_v01",
+      "file": "environment/tl_env_shrine_floor_v01.glb",
+      "url": "/models/environment/tl_env_shrine_floor_v01.glb",
+      "triangles": 692,
+      "trianglesByMaterial": {
+        "tl_matte": 692
+      },
+      "budget": 1600,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -15.5729,
+          0,
+          -15.5765
+        ],
+        "max": [
+          15.5813,
+          0.6678,
+          15.577
+        ]
+      },
+      "size": [
+        31.1542,
+        0.6678,
+        31.1535
+      ],
+      "nodes": [
+        "tl_env_shrine_floor_v01"
+      ],
+      "emissive": [],
+      "materials": [
+        "tl_matte"
+      ],
+      "notes": "Shrine grotto floor, r = 15.6 m, shrine space (origin = idol, +Z = the way in). Packed earth, exactly flat (y = 0) inside r = 9.3, rising under the rock walls; rough flagstones (1.4 cm proud) around the plinth, on the approach from +Z and as stepping stones between the seats on the r = 3 and r = 5 circles; trodden paler bands on those circles; darker toward the rim.",
+      "anchors": {},
+      "lights": [],
+      "poses": {},
+      "collider": {
+        "type": "cylinder",
+        "center": [
+          0,
+          -0.25,
+          0
+        ],
+        "radius": 15.6,
+        "height": 0.5
+      },
+      "meta": {
+        "space": "shrine",
+        "flatRadius": 9.3,
+        "radius": 15.6
+      },
+      "bytes": 53856
+    },
+    {
+      "name": "tl_env_shrine_seat_a_v01",
+      "file": "environment/tl_env_shrine_seat_a_v01.glb",
+      "url": "/models/environment/tl_env_shrine_seat_a_v01.glb",
+      "triangles": 57,
+      "trianglesByMaterial": {
+        "tl_matte": 47,
+        "tl_cloth": 10
+      },
+      "budget": 160,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -0.5297,
+          0,
+          -0.4745
+        ],
+        "max": [
+          0.5297,
+          0.483,
+          0.4745
+        ]
+      },
+      "size": [
+        1.0594,
+        0.483,
+        0.9489
+      ],
+      "nodes": [
+        "tl_env_shrine_seat_a_v01"
+      ],
+      "emissive": [],
+      "materials": [
+        "tl_cloth",
+        "tl_matte"
+      ],
+      "notes": "Rough stone block seat with a faded crimson cloth strip over it (inner ring). Flat top at exactly y = 0.48, no backrest. The seated avatar's root stands at anchor 'sit' (0.16 m in front of the block centre) facing +Z, so its calves clear the block's front face. Carries its own dark contact patch.",
+      "anchors": {
+        "sit": [
+          -0.0069,
+          0.48,
+          0.1592
+        ]
+      },
+      "lights": [],
+      "poses": {},
+      "meta": {
+        "seatHeight": 0.48,
+        "topSize": [
+          0.756,
+          0.576
+        ]
+      },
+      "bytes": 6996
+    },
+    {
+      "name": "tl_env_shrine_seat_b_v01",
+      "file": "environment/tl_env_shrine_seat_b_v01.glb",
+      "url": "/models/environment/tl_env_shrine_seat_b_v01.glb",
+      "triangles": 57,
+      "trianglesByMaterial": {
+        "tl_matte": 57
+      },
+      "budget": 160,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -0.5772,
+          0,
+          -0.4372
+        ],
+        "max": [
+          0.5772,
+          0.48,
+          0.4372
+        ]
+      },
+      "size": [
+        1.1545,
+        0.48,
+        0.8743
+      ],
+      "nodes": [
+        "tl_env_shrine_seat_b_v01"
+      ],
+      "emissive": [],
+      "materials": [
+        "tl_matte"
+      ],
+      "notes": "Rough stone block seat, plain (outer ring). Flat top at exactly y = 0.48, no backrest. The seated avatar's root stands at anchor 'sit' (0.16 m in front of the block centre) facing +Z, so its calves clear the block's front face. Carries its own dark contact patch.",
+      "anchors": {
+        "sit": [
+          -0.0149,
+          0.48,
+          0.1876
+        ]
+      },
+      "lights": [],
+      "poses": {},
+      "meta": {
+        "seatHeight": 0.48,
+        "topSize": [
+          0.81,
+          0.558
+        ]
+      },
+      "bytes": 6488
+    },
+    {
+      "name": "tl_env_shrine_idol_v01",
+      "file": "environment/tl_env_shrine_idol_v01.glb",
+      "url": "/models/environment/tl_env_shrine_idol_v01.glb",
+      "triangles": 2452,
+      "trianglesByMaterial": {
+        "tl_matte": 2196,
+        "tl_cloth": 136,
+        "tl_glow_1.5": 120
+      },
+      "budget": 2800,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -1.1103,
+          0,
+          -1.1104
+        ],
+        "max": [
+          1.0616,
+          3.3335,
+          1.1485
+        ]
+      },
+      "size": [
+        2.1719,
+        3.3335,
+        2.2589
+      ],
+      "nodes": [
+        "tl_env_shrine_idol_v01"
+      ],
+      "emissive": [
+        {
+          "node": "tl_env_shrine_idol_v01",
+          "material": "tl_glow_1.5",
+          "strength": 1.5,
+          "triangles": 120
+        }
+      ],
+      "materials": [
+        "tl_cloth",
+        "tl_glow_1.5",
+        "tl_matte"
+      ],
+      "notes": "Shrine idol, 3.3 m with its rock plinth (fits the r = 1.2 obstacle): a fan-carved, painted wooden caricature of the champion the cave prays to - heavy straight fringe / bowl hair, thin round wire glasses, slim oval face, calm; white jersey with black raglan shoulders and side panels and red collar piping (worn paint, no logos or text), in the 'silent' pose: right index finger raised to the lips, left arm at the side. The trophy floats above the head as its own model (tl_env_shrine_trophy_v01, anchor 'trophy'). A real crimson cloth cloak (tl_cloth) hangs from the shoulders. Offerings on the plinth and its front ledge: candles (glow), a noodle cup, mugs, flowers, notes.",
+      "anchors": {
+        "head": [
+          0,
+          3.0289,
+          0.05
+        ],
+        "plinth_top": [
+          0,
+          0.9,
+          0
+        ],
+        "trophy": [
+          0,
+          3.75,
+          0
+        ]
+      },
+      "lights": [
+        {
+          "name": "candles",
+          "at": [
+            0,
+            0.82,
+            1.05
+          ],
+          "color": "#FFB65C",
+          "intensity": 1.3,
+          "range": 4.5
+        }
+      ],
+      "poses": {},
+      "collider": {
+        "type": "cylinder",
+        "center": [
+          0,
+          1.6,
+          0
+        ],
+        "radius": 1.16,
+        "height": 3.2
+      },
+      "meta": {
+        "plinthHeight": 0.9,
+        "figureScale": 1.3,
+        "obstacleRadius": 1.2
+      },
+      "bytes": 200260
+    },
+    {
+      "name": "tl_env_shrine_trophy_v01",
+      "file": "environment/tl_env_shrine_trophy_v01.glb",
+      "url": "/models/environment/tl_env_shrine_trophy_v01.glb",
+      "triangles": 480,
+      "trianglesByMaterial": {
+        "tl_glow_1.5": 480
+      },
+      "budget": 700,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -0.525,
+          0,
+          -0.335
+        ],
+        "max": [
+          0.525,
+          0.9186,
+          0.335
+        ]
+      },
+      "size": [
+        1.0499,
+        0.9186,
+        0.67
+      ],
+      "nodes": [
+        "tl_env_shrine_trophy_v01"
+      ],
+      "emissive": [
+        {
+          "node": "tl_env_shrine_trophy_v01",
+          "material": "tl_glow_1.5",
+          "strength": 1.5,
+          "triangles": 480
+        }
+      ],
+      "materials": [
+        "tl_glow_1.5"
+      ],
+      "notes": "The championship trophy that floats above the shrine idol: a generic low-poly cup, 0.96 m tall - stepped base, slim stem with a knot, a wide flaring bowl and two tall looping handles (no logos, plates or text). Every face is emissive (tl_glow, pale silver-blue with warm gold bands), shaded per facet so the form reads without light. The runtime spins it about Y, bobs it and puts a pulsing omni at 'light_anchor'. Pivot: centre of the base.",
+      "anchors": {
+        "light_anchor": [
+          0,
+          0.62,
+          0
+        ]
+      },
+      "lights": [
+        {
+          "name": "trophy",
+          "at": [
+            0,
+            0.62,
+            0
+          ],
+          "color": "#CFE2FF",
+          "intensity": 1.6,
+          "range": 7
+        }
+      ],
+      "poses": {},
+      "meta": {
+        "height": 0.96,
+        "hoverAt": 3.75,
+        "spin": "about Y, runtime"
+      },
+      "bytes": 36256
+    },
+    {
+      "name": "tl_env_shrine_gate_v01",
+      "file": "environment/tl_env_shrine_gate_v01.glb",
+      "url": "/models/environment/tl_env_shrine_gate_v01.glb",
+      "triangles": 376,
+      "trianglesByMaterial": {
+        "tl_matte": 334,
+        "tl_cloth": 42
+      },
+      "budget": 700,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -2.2535,
+          0,
+          -0.3102
+        ],
+        "max": [
+          2.2535,
+          3.9019,
+          0.3102
+        ]
+      },
+      "size": [
+        4.5069,
+        3.9019,
+        0.6204
+      ],
+      "nodes": [
+        "tl_env_shrine_gate_v01"
+      ],
+      "emissive": [],
+      "materials": [
+        "tl_cloth",
+        "tl_matte"
+      ],
+      "notes": "Rough timber gate (two leaning posts, a long top beam, a tie beam) with a paper-strip rope and rags knotted to the posts; clear opening 2.8 m wide, 2.7 m under the rope. Faces +Z. It marks the shrine's way back to the cave, in front of the tunnel mouth on the +Z side. Lanterns hang at anchors 'lantern_l' / 'lantern_r'.",
+      "anchors": {
+        "lantern_l": [
+          2.0221,
+          3.38,
+          0.0234
+        ],
+        "lantern_r": [
+          -2.0179,
+          3.38,
+          0.0234
+        ],
+        "post_l": [
+          1.5521,
+          0,
+          0.0034
+        ],
+        "post_r": [
+          -1.5479,
+          0,
+          0.0034
+        ]
+      },
+      "lights": [],
+      "poses": {},
+      "meta": {
+        "clearWidth": 2.86,
+        "clearHeight": 2.73,
+        "postColliders": [
+          {
+            "type": "cylinder",
+            "center": [
+              1.55,
+              1.775,
+              0
+            ],
+            "radius": 0.16,
+            "height": 3.55
+          },
+          {
+            "type": "cylinder",
+            "center": [
+              -1.55,
+              1.775,
+              0
+            ],
+            "radius": 0.16,
+            "height": 3.55
+          }
+        ]
+      },
+      "bytes": 33168
+    },
+    {
+      "name": "tl_env_shrine_banner_v01",
+      "file": "environment/tl_env_shrine_banner_v01.glb",
+      "url": "/models/environment/tl_env_shrine_banner_v01.glb",
+      "triangles": 182,
+      "trianglesByMaterial": {
+        "tl_matte": 140,
+        "tl_cloth": 42
+      },
+      "budget": 320,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -0.692,
+          0,
+          -0.2911
+        ],
+        "max": [
+          0.692,
+          4.3003,
+          0.2911
+        ]
+      },
+      "size": [
+        1.384,
+        4.3003,
+        0.5821
+      ],
+      "nodes": [
+        "tl_env_shrine_banner_v01"
+      ],
+      "emissive": [],
+      "materials": [
+        "tl_cloth",
+        "tl_matte"
+      ],
+      "notes": "Banner pole 4.3 m: a leaning timber pole with a cross arm and a long tattered crimson cloth (worn-white patches, no emblem), base rocks. The cloth faces +Z. The rim rope ties on at anchor 'tie' (1.12 m).",
+      "anchors": {
+        "tie": [
+          -0.463,
+          1.12,
+          0.0188
+        ],
+        "pole": [
+          -0.463,
+          0,
+          0.0188
+        ]
+      },
+      "lights": [],
+      "poses": {},
+      "meta": {
+        "poleCollider": {
+          "type": "cylinder",
+          "center": [
+            -0.463,
+            2.15,
+            0.0188
+          ],
+          "radius": 0.1,
+          "height": 4.3
+        }
+      },
+      "bytes": 18260
+    },
+    {
+      "name": "tl_env_shrine_post_v01",
+      "file": "environment/tl_env_shrine_post_v01.glb",
+      "url": "/models/environment/tl_env_shrine_post_v01.glb",
+      "triangles": 68,
+      "trianglesByMaterial": {
+        "tl_matte": 58,
+        "tl_cloth": 10
+      },
+      "budget": 160,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -0.3386,
+          0,
+          -0.2691
+        ],
+        "max": [
+          0.3386,
+          1.4606,
+          0.2691
+        ]
+      },
+      "size": [
+        0.6773,
+        1.4606,
+        0.5382
+      ],
+      "nodes": [
+        "tl_env_shrine_post_v01"
+      ],
+      "emissive": [],
+      "materials": [
+        "tl_cloth",
+        "tl_matte"
+      ],
+      "notes": "Rope post of the shrine rim, 1.45 m: a rough timber post wedged between two rocks, rope lashing and rags at 1.12 m (anchor 'tie'). Two of them leave the opening of the rope circle on the approach.",
+      "anchors": {
+        "tie": [
+          0.0131,
+          1.12,
+          -0.0311
+        ],
+        "pole": [
+          0.0011,
+          0,
+          -0.0311
+        ]
+      },
+      "lights": [],
+      "poses": {},
+      "meta": {},
+      "bytes": 8060
+    },
+    {
+      "name": "tl_env_shrine_rope_v01",
+      "file": "environment/tl_env_shrine_rope_v01.glb",
+      "url": "/models/environment/tl_env_shrine_rope_v01.glb",
+      "triangles": 160,
+      "trianglesByMaterial": {
+        "tl_matte": 138,
+        "tl_cloth": 22
+      },
+      "budget": 260,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -2.3085,
+          0.493,
+          -0.0361
+        ],
+        "max": [
+          2.3085,
+          1.158,
+          0.048
+        ]
+      },
+      "size": [
+        4.617,
+        0.665,
+        0.0841
+      ],
+      "nodes": [
+        "tl_env_shrine_rope_v01"
+      ],
+      "emissive": [],
+      "materials": [
+        "tl_cloth",
+        "tl_matte"
+      ],
+      "notes": "Rim rope of the shrine: 4.61 m span between two posts (ends at y = 1.12 m, anchors 'end_l' / 'end_r'), sagging 0.3 m, with paper strips and faded rags: a low cordon that marks the edge of the walkable circle and stays under a follow camera's view. Cosmetic, no collider.",
+      "anchors": {
+        "end_l": [
+          2.3035,
+          1.12,
+          0
+        ],
+        "end_r": [
+          -2.3035,
+          1.12,
+          0
+        ]
+      },
+      "lights": [],
+      "poses": {},
+      "meta": {
+        "span": 4.607,
+        "endHeight": 1.12,
+        "lowest": 0.82
+      },
+      "bytes": 14248
+    },
+    {
+      "name": "tl_env_shrine_candles_v01",
+      "file": "environment/tl_env_shrine_candles_v01.glb",
+      "url": "/models/environment/tl_env_shrine_candles_v01.glb",
+      "triangles": 238,
+      "trianglesByMaterial": {
+        "tl_matte": 198,
+        "tl_glow_1.5": 40
+      },
+      "budget": 260,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -0.3079,
+          0,
+          -0.196
+        ],
+        "max": [
+          0.3079,
+          0.4474,
+          0.196
+        ]
+      },
+      "size": [
+        0.6159,
+        0.4474,
+        0.3921
+      ],
+      "nodes": [
+        "tl_env_shrine_candles_v01"
+      ],
+      "emissive": [
+        {
+          "node": "tl_env_shrine_candles_v01",
+          "material": "tl_glow_1.5",
+          "strength": 1.5,
+          "triangles": 40
+        }
+      ],
+      "materials": [
+        "tl_glow_1.5",
+        "tl_matte"
+      ],
+      "notes": "A flat stone with five wax candles (unlit glow flames) and a note. Light anchor 'light'. Cosmetic.",
+      "anchors": {
+        "light": [
+          0,
+          0.42,
+          0
+        ]
+      },
+      "lights": [
+        {
+          "name": "candles",
+          "at": [
+            0,
+            0.42,
+            0
+          ],
+          "color": "#FFB65C",
+          "intensity": 0.9,
+          "range": 3.2
+        }
+      ],
+      "poses": {},
+      "meta": {},
+      "bytes": 21984
+    },
+    {
+      "name": "tl_env_shrine_door_v01",
+      "file": "environment/tl_env_shrine_door_v01.glb",
+      "url": "/models/environment/tl_env_shrine_door_v01.glb",
+      "triangles": 675,
+      "trianglesByMaterial": {
+        "tl_matte": 644,
+        "tl_cloth": 31
+      },
+      "budget": 900,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -2.0933,
+          0.0481,
+          -2.3667
+        ],
+        "max": [
+          2.0933,
+          3.72,
+          0.281
+        ]
+      },
+      "size": [
+        4.1867,
+        3.6719,
+        2.6477
+      ],
+      "nodes": [
+        "tl_env_shrine_door_v01"
+      ],
+      "emissive": [],
+      "materials": [
+        "tl_cloth",
+        "tl_matte"
+      ],
+      "notes": "Cave-side door of the shrine. Place at the tunnel frame, cave (0, 0, -18.35) rotY 0 (tl_env_tunnel_frame_v01 stays as the porch): a rough plank double door recessed in the tunnel mouth 1 m behind the frame (z = -1.03; the right leaf stands half open inward, a faded cloth is pinned to the closed leaf), a two-plank name board hung by ropes from the frame's lintel (anchor 'sign' = the board's face, 2.5 x 0.8 m), two lantern brackets on the posts (anchors 'lantern_l' / 'lantern_r'). Authored around the frame's pivot, so its bounds are not centred (expected pivot warning).",
+      "anchors": {
+        "sign": [
+          0,
+          2.33,
+          0.262
+        ],
+        "lantern_l": [
+          2.03,
+          2.24,
+          0.16
+        ],
+        "lantern_r": [
+          -2.03,
+          2.24,
+          0.16
+        ],
+        "door_gap": [
+          0.45,
+          1.5,
+          -1.63
+        ]
+      },
+      "lights": [],
+      "poses": {},
+      "meta": {
+        "place": {
+          "at": [
+            0,
+            0,
+            -18.35
+          ],
+          "rotY": 0
+        },
+        "signSize": [
+          2.5,
+          0.8
+        ],
+        "doorPlaneZ": -1.03
+      },
+      "bytes": 55396
     }
   ]
 }

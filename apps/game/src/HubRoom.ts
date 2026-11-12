@@ -2,29 +2,74 @@ import { Room, type Client } from '@colyseus/core';
 import type { Deferred } from '@colyseus/core';
 import { schema, t, type SchemaType } from '@colyseus/schema';
 import {
-  AXIS_MAX, applyInput, Chat, CLOSE_SIGNED_IN_ELSEWHERE, Emote, LIMITS, MoveInput,
+  AXIS_MAX, CaveSeating, CaveSeatRequest, Chat, HUB_CAVES, HUB_RADIUS, SIDE_CAVE_RADIUS, CLOSE_SIGNED_IN_ELSEWHERE, Emote, LIMITS, MoveInput,
   PATCH_MS, ROOM_CAPACITY, spawnPoint, TICK_RATE,
 } from '@te-liet/shared';
 import type { TicketIdentity } from '@te-liet/auth';
 import { verifyTicket } from './auth.js';
 import { RateLimiter } from './rateLimit.js';
+import { AltarActivity, type AltarUpdate } from './altar.js';
+import { ShrineActivity, type ShrineUpdate } from './shrine.js';
+import { applyShrineAwareInput, isInShrine } from '../../../packages/shared/src/shrine.js';
 import { log, metrics } from './telemetry.js';
 import {SeatLease,banned,moderate,rateLimit} from '@te-liet/security';
 import {randomUUID} from 'node:crypto';
 import pg from 'pg';
-const reportDb=process.env.DATABASE_URL?new pg.Pool({connectionString:process.env.DATABASE_URL,max:3}):null;
+import { COSMETICS } from '../../../packages/shared/src/progression.js';
+const reportDb=process.env.DATABASE_URL?new pg.Pool({connectionString:process.env.DATABASE_URL,max:3,connectionTimeoutMillis:1500,statement_timeout:1500,query_timeout:2000}):null;
 
 export const Player = schema({
   name: t.string().default(''),
+  avatarKey: t.string().default(''),
   x: t.float32().default(0),
   z: t.float32().default(0),
   connected: t.boolean().default(true),
+  shrineSeat: t.string().default(''),
+  shrineGesture: t.string().default(''),
+  shrineGestureAt: t.float64().default(0),
+  /** Chỗ ngồi trong hang (packages/shared seats.ts): id ghế và hướng mặt (độ). */
+  seat: t.string().default(''),
+  seatYaw: t.int16().default(0),
 });
 export type Player = SchemaType<typeof Player>;
 export const HubState = schema({ players: t.map(Player) });
 export type HubState = SchemaType<typeof HubState>;
 
 const RECONNECT_SECONDS = 15;
+
+/* ---------------------------------------------------------------- theo dõi (cổng quản trị) */
+
+/** Các room của tiến trình này và vài con số từ lúc khởi động, cho /live của cổng quản trị. */
+const LIVE_ROOMS = new Set<HubRoom>();
+const LIVE = {
+  startedAt: Date.now(),
+  joins: 0,
+  peak: 0,
+  /** 40 lượt vào gần nhất (mới nhất trước). */
+  recent: [] as { id: string; name: string; at: number; leftAt: number | null }[],
+};
+function zoneOf(p: { x: number; z: number }): string {
+  if (isInShrine(p)) return 'Điện thờ';
+  for (const c of HUB_CAVES) if (Math.hypot(p.x - c.x, p.z - c.z) <= SIDE_CAVE_RADIUS + 1.5) return c.name;
+  return Math.hypot(p.x, p.z) <= HUB_RADIUS + 1 ? 'Hang lớn' : 'Đường hầm';
+}
+const onlineNow = () => [...LIVE_ROOMS].reduce((n, r) => n + r.state.players.size, 0);
+/** Ảnh chụp cho trang quản trị: ai đang ở đâu, bao lâu; không có IP hay tài khoản. */
+export function liveSnapshot(now = Date.now()) {
+  const rooms = [...LIVE_ROOMS].map((r) => r.describe(now));
+  const zones: Record<string, number> = {};
+  for (const room of rooms) for (const p of room.players) zones[p.zone] = (zones[p.zone] ?? 0) + 1;
+  return {
+    at: now,
+    startedAt: LIVE.startedAt,
+    online: rooms.reduce((n, r) => n + r.players.length, 0),
+    peak: LIVE.peak,
+    joins: LIVE.joins,
+    zones,
+    rooms,
+    recent: LIVE.recent.map((e) => ({ name: e.name, at: e.at, leftAt: e.leftAt })),
+  };
+}
 const identity = (c: Client) => c.auth as TicketIdentity | undefined;
 
 export class HubRoom extends Room<{ state: HubState; input: MoveInput }> {
@@ -37,6 +82,10 @@ export class HubRoom extends Room<{ state: HubState; input: MoveInput }> {
   });
 
   private limiter = new RateLimiter();
+  private altar = new AltarActivity();
+  private shrine = new ShrineActivity();
+  private seating = new CaveSeating();
+  private altarBroadcastAt = 0;
   private leases=new Map<string,SeatLease>();
   private history:{id:string;accountId:string;name:string;text:string;at:number}[]=[];
   private renewing=false;
@@ -45,15 +94,29 @@ export class HubRoom extends Room<{ state: HubState; input: MoveInput }> {
   /** Phiên bị đóng vì tài khoản đã vào ở nơi khác: không giữ ghế chờ kết nối lại. */
   private replaced = new Set<string>();
 
+  /** Lúc vào (ms) của từng phiên, cho trang quản trị. */
+  private joinedAt = new Map<string, number>();
+
+  describe(now: number) {
+    const players: { id: string; name: string; zone: string; seat: 'cave' | 'shrine' | null; connected: boolean; minutes: number }[] = [];
+    this.state.players.forEach((p, id) => players.push({
+      id: id.slice(0, 6), name: p.name, zone: zoneOf(p),
+      seat: p.shrineSeat ? 'shrine' : p.seat ? 'cave' : null,
+      connected: p.connected, minutes: Math.round((now - (this.joinedAt.get(id) ?? now)) / 6000) / 10,
+    }));
+    return { roomId: this.roomId, players };
+  }
+
   onCreate() {
+    LIVE_ROOMS.add(this);
     this.setState(new HubState());
     this.setPatchRate(PATCH_MS);
-    // Mỗi bước áp đúng một input của mỗi người chơi; client dự đoán bằng cùng applyInput().
+    // Mỗi bước áp đúng một input; client dùng cùng solver theo khu vực và ghế ngồi.
     this.setFixedTimestep((ctx) => {
       const done = metrics.startTick();
       for (const [sessionId, player] of this.state.players) {
         const cmd = this.inputs.get(sessionId).next();
-        if (cmd && player.connected && this.leases.get(sessionId)?.active) applyInput(player, cmd, ctx.dt);
+        if (cmd && player.connected && this.leases.get(sessionId)?.active) applyShrineAwareInput(player, cmd, ctx.dt);
       }
       done();
     }, TICK_RATE);
@@ -71,7 +134,7 @@ export class HubRoom extends Room<{ state: HubState; input: MoveInput }> {
        if(!this.leases.get(c.sessionId)?.active||!this.state.players.has(c.sessionId))return;
        const message={id:randomUUID(),accountId:who.id,name:who.name,text:parsed.data,at:Date.now()};
        this.history.push(message);if(this.history.length>50)this.history.shift();
-       this.broadcast('chat',{id:message.id,name:message.name,text:message.text});
+       this.broadcast('chat',{id:message.id,senderId:c.sessionId,name:message.name,text:message.text});
       }catch{c.send('notice','Chat tạm ngừng vì không kiểm tra được trạng thái an toàn.');}
     });
     this.onMessage('report',async(c,raw)=>{
@@ -90,6 +153,63 @@ export class HubRoom extends Room<{ state: HubState; input: MoveInput }> {
       const emote = Emote.safeParse(raw);
       if (emote.success) this.broadcast('emote', { id: c.sessionId, emote: emote.data });
     });
+    // Ngồi lên ghế đẩu, thùng, đá thấp trong hang; đứng dậy trả về chỗ cũ.
+    this.onMessage('seat', (c, raw) => {
+      if (!this.leases.get(c.sessionId)?.active || !this.limiter.allow(`${c.sessionId}:seat`, LIMITS.emote)) return;
+      const player = this.state.players.get(c.sessionId);
+      const request = CaveSeatRequest.safeParse(raw);
+      if (!player || !player.connected || !request.success || isInShrine(player)) return;
+      const error = request.data.action === 'sit'
+        ? this.seating.sit(c.sessionId, player, request.data.seatId)
+        : this.seating.stand(c.sessionId, player);
+      if (error === 'occupied-seat') c.send('notice', 'Chỗ này có người ngồi rồi.');
+    });
+    this.onMessage('altar', (c, raw) => {
+      const now = Date.now();
+      const result = this.altar.request(c.sessionId, raw, now, (id) => this.altarActor(id));
+      this.publishAltar(result, now);
+      if (result.error === 'rate-limit' || result.error === 'invalid-request' || result.error === 'inactive-seat') return;
+      if (result.error === 'too-far') c.send('notice', 'Đến gần bàn thờ (trong 3 m) để cùng tham gia.');
+      if (result.error === 'results') c.send('notice', 'Lượt vừa xong. Chờ vài giây để bắt đầu lượt mới.');
+      if (!result.changed) c.send('altarState', this.altar.snapshot(now));
+    });
+    this.onMessage('altarSync', (c) => {
+      if (!this.limiter.allow(`${c.sessionId}:altarSync`, { capacity: 2, perMs: 5_000 })) return;
+      const actor = this.altarActor(c.sessionId);
+      if (actor?.connected && actor.activeSeat) this.syncAltar(c);
+    });
+    this.onMessage('shrine', (c, raw) => {
+      const now = Date.now();
+      // Đang ngồi trong hang mà vào điện thờ: đứng dậy trước, kẻo mang ghế hang sang đảo.
+      const seated = this.state.players.get(c.sessionId);
+      if (seated?.seat) this.seating.stand(c.sessionId, seated);
+      const result = this.shrine.request(c.sessionId, raw, now, (id) => this.shrineActor(id));
+      if (result.changed && raw?.action === 'enter') this.removeFromAltar(c.sessionId);
+      this.publishShrine(result, now);
+      const notices = {
+        'too-far': 'Đến gần cổng điện thờ (3 m) hoặc ghế muốn ngồi (2 m).',
+        'outside-shrine': 'Vào điện thờ trước khi chọn chỗ ngồi.',
+        'unknown-seat': 'Không tìm thấy chỗ ngồi này.',
+        'occupied-seat': 'Chỗ này đã có người ngồi. Hãy chọn một ghế khác.',
+        'not-seated': 'Ngồi vào một ghế đá để cầu nguyện hoặc cúi lạy.',
+      };
+      if (result.error && result.error in notices) c.send('notice', notices[result.error as keyof typeof notices]);
+      if (!result.changed && !['rate-limit', 'invalid-request', 'inactive-seat'].includes(result.error ?? '')) {
+        c.send('shrineState', this.shrine.snapshot(now));
+      }
+    });
+    this.onMessage('shrineSync', (c) => {
+      if (!this.limiter.allow(`${c.sessionId}:shrineSync`, { capacity: 2, perMs: 5_000 })) return;
+      const actor = this.shrineActor(c.sessionId);
+      if (actor?.player.connected && actor.activeSeat) this.syncShrine(c);
+    });
+    this.clock.setInterval(() => {
+      const now = Date.now();
+      const update = this.altar.advance(now, (id) => this.altarActor(id));
+      const heartbeat = this.altar.snapshot(now).phase !== 'idle' && now - this.altarBroadcastAt >= 1_000;
+      this.publishAltar(update, now, heartbeat);
+      this.publishShrine(this.shrine.advance(now, (id) => this.shrineActor(id)), now);
+    }, 250);
     this.onMessage('ping', (c, raw) => {
       if (!this.limiter.allow(`${c.sessionId}:ping`, LIMITS.ping)) return;
       if (typeof raw === 'number' && Number.isFinite(raw)) c.send('pong', raw);
@@ -102,10 +222,73 @@ export class HubRoom extends Room<{ state: HubState; input: MoveInput }> {
   }
 
   async onAuth(_c: Client, options: { ticket?: unknown } | undefined) {
-    const who=await verifyTicket(options?.ticket);if(!moderate(who.name,'name').ok||await banned(who.id,'ban'))throw new Error('Access denied');return who;
+    const who = await verifyTicket(options?.ticket);
+    if (!moderate(who.name, 'name').ok || await banned(who.id, 'ban')) throw new Error('Access denied');
+    let avatarKey = '';
+    if (process.env.PROGRESSION_ENABLED === 'true' && reportDb) {
+      try {
+        const result = await reportDb.query('SELECT avatar_key FROM profiles WHERE account_id = $1', [who.id]);
+        const saved = result.rows[0]?.avatar_key;
+        if (COSMETICS.some(item => item.assetKey === saved)) avatarKey = saved;
+      } catch { log.warn('Cosmetic profile unavailable; using default avatar'); }
+    }
+    return { ...who, avatarKey };
+  }
+
+  private altarActor(sessionId: string) {
+    const player = this.state.players.get(sessionId);
+    return player ? {
+      x: player.x, z: player.z, connected: player.connected,
+      activeSeat: this.leases.get(sessionId)?.active === true,
+    } : undefined;
+  }
+
+  private shrineActor(sessionId: string) {
+    const player = this.state.players.get(sessionId);
+    return player ? { player, activeSeat: this.leases.get(sessionId)?.active === true } : undefined;
+  }
+
+  private publishShrine(update: ShrineUpdate, now = Date.now()) {
+    if (update.changed) this.broadcast('shrineState', this.shrine.snapshot(now));
+  }
+
+  private syncShrine(c: Client) {
+    const now = Date.now();
+    this.publishShrine(this.shrine.advance(now, (id) => this.shrineActor(id)), now);
+    c.send('shrineState', this.shrine.snapshot(now));
+  }
+
+  private removeFromShrine(sessionId: string, forget = false) {
+    this.publishShrine({ changed: this.shrine.remove(sessionId, (id) => this.shrineActor(id), forget) });
+  }
+
+  private publishAltar(update: AltarUpdate, now: number, heartbeat = false) {
+    for (const { sessionId, result } of update.completed) {
+      this.clients.find((client) => client.sessionId === sessionId)?.send('altarComplete', result);
+    }
+    if (update.changed || heartbeat) {
+      this.broadcast('altarState', this.altar.snapshot(now));
+      this.altarBroadcastAt = now;
+    }
+  }
+
+  private syncAltar(c: Client) {
+    const now = Date.now();
+    const update = this.altar.advance(now, (id) => this.altarActor(id));
+    this.publishAltar(update, now);
+    c.send('altarState', this.altar.snapshot(now));
+    const completed = this.altar.completionFor(c.sessionId);
+    if (completed && !update.completed.some(item => item.sessionId === c.sessionId)) c.send('altarComplete', completed);
+  }
+
+  private removeFromAltar(sessionId: string, forget = false) {
+    const changed = forget ? this.altar.forget(sessionId) : this.altar.remove(sessionId);
+    this.publishAltar({ changed, completed: [] }, Date.now());
   }
 
   private evict(c:Client){
+    this.removeFromShrine(c.sessionId);
+    this.removeFromAltar(c.sessionId);
     const player=this.state.players.get(c.sessionId);if(player)player.connected=false;
     const pending=this.reconnecting.get(c.sessionId);
     if(pending){pending.reject(new Error('signed-in-elsewhere'));return;}
@@ -126,12 +309,19 @@ export class HubRoom extends Room<{ state: HubState; input: MoveInput }> {
       }
       if(!acquired||!lease.active)throw new Error('Seat busy; retry shortly');
       this.leases.set(c.sessionId,lease);
-      const player=new Player();player.name=who.name;const spawn=spawnPoint();player.x=spawn.x;player.z=spawn.z;
+      const player=new Player();player.name=who.name;player.avatarKey=(c.auth as TicketIdentity & {avatarKey?:string}).avatarKey || '';const spawn=spawnPoint();player.x=spawn.x;player.z=spawn.z;
       this.state.players.set(c.sessionId,player);metrics.clients.inc();
+      const at=Date.now();this.joinedAt.set(c.sessionId,at);LIVE.joins++;LIVE.peak=Math.max(LIVE.peak,onlineNow());
+      LIVE.recent.unshift({id:c.sessionId,name:who.name,at,leftAt:null});LIVE.recent.length=Math.min(LIVE.recent.length,40);
+      this.syncShrine(c);
+      this.publishShrine({ changed: true });
+      this.syncAltar(c);
     }catch(e){await lease.release().catch(()=>{});await this.presence.unsubscribe(topic,listener);this.seatListeners.delete(c.sessionId);throw e;}
   }
 
   async onDrop(c: Client) {
+    this.removeFromShrine(c.sessionId);
+    this.removeFromAltar(c.sessionId);
     if (this.replaced.delete(c.sessionId)) return;   // không gọi allowReconnection: Colyseus chuyển thẳng sang onLeave
     const player = this.state.players.get(c.sessionId);
     if (player) player.connected = false;
@@ -148,11 +338,18 @@ export class HubRoom extends Room<{ state: HubState; input: MoveInput }> {
 
   onReconnect(c: Client) {
     const player = this.state.players.get(c.sessionId);
-    if (player && this.leases.get(c.sessionId)?.active) player.connected = true;
+    if (player && this.leases.get(c.sessionId)?.active) {
+      player.connected = true;
+      this.syncShrine(c);
+      this.syncAltar(c);
+    }
     else this.evict(c);
   }
 
   async onLeave(c: Client) {
+    this.removeFromShrine(c.sessionId, true);
+    this.removeFromAltar(c.sessionId, true);
+    this.seating.forget(c.sessionId);
     const hadPlayer=this.state.players.delete(c.sessionId);
     const lease=this.leases.get(c.sessionId);this.leases.delete(c.sessionId);
     await lease?.release().catch(()=>{});
@@ -163,9 +360,12 @@ export class HubRoom extends Room<{ state: HubState; input: MoveInput }> {
     this.seatListeners.delete(c.sessionId);
     this.replaced.delete(c.sessionId);
     if(hadPlayer)metrics.clients.dec();
+    this.joinedAt.delete(c.sessionId);
+    const entry=LIVE.recent.find(e=>e.id===c.sessionId&&e.leftAt===null);if(entry)entry.leftAt=Date.now();
   }
 
   onDispose() {
+    LIVE_ROOMS.delete(this);
     metrics.rooms.dec();
     log.debug({ roomId: this.roomId }, 'room disposed');
   }

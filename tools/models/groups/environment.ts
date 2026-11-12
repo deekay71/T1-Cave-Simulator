@@ -21,7 +21,7 @@
  * bottom centre and face +Z. Stalactites are modelled hanging (tip at y = 0, ceiling attachment at
  * the top, anchor "attach").
  */
-import { Model, MeshBuilder, PALETTE as P, Rng, mix, shade, type Color, type Vec2, type Vec3 } from "../lib.js";
+import { Model, MeshBuilder, PALETTE as P, Rng, mix, shade, type Color, type PrimOpts, type Vec2, type Vec3 } from "../lib.js";
 
 /* =========================================================================================
  * Small maths helpers (local; lib.ts keeps its own private)
@@ -1397,6 +1397,1064 @@ function buildTunnelFrame(): Model {
 }
 
 /* =========================================================================================
+ * Shrine grotto ("điện thờ"): a hidden chapel the fans built from what the cave had.
+ *
+ * All pieces are props (pivot bottom centre, facing +Z) placed by apps/web/src/world/shrine.ts
+ * around SHRINE_CENTER (packages/shared/src/shrine.ts): floor disc, two stone seats (top at
+ * exactly y = 0.48), the painted wooden idol on its rock plinth, a rough timber gate, banner
+ * poles, the paper-strip rope strung between the rim posts, candle slabs and the plank door
+ * that closes the old exit tunnel of the cave. No logos, no text, no sponsor marks.
+ * ========================================================================================= */
+
+const SH_ROPE: Color = mix(P.cardboard, P.worn, 0.25);
+const SH_WOODS: Color[] = [P.wood, mix(P.wood, P.woodGrey, 0.4), mix(P.woodDark, P.wood, 0.5)];
+const SH_CRIMSONS: Color[] = [
+  P.crimson,
+  mix(P.crimson, P.crimsonFaded, 0.5),
+  mix(P.crimsonDark, P.crimson, 0.55),
+  mix(P.tarp, P.crimson, 0.4),
+];
+const SH_PAPER: Color = mix(P.worn, P.paper, 0.4);
+/** Seat / plinth stone: the cave's boulders, a little warmer. */
+const SH_STONE: Color = mix(P.pebble, P.rock, 0.32);
+/**
+ * Height (m) at which the rim rope ties to its posts: a low cordon, so it stays under the view of
+ * a follow camera standing just outside it.
+ */
+const SHRINE_TIE_Y = 1.12;
+const shWood = (tone: Color, vary = 0.06): PrimOpts => ({
+  color: tone,
+  parts: { top: mix(tone, P.woodLight, 0.25), end: shade(tone, 0.7), bottom: shade(tone, 0.6) },
+  vary,
+});
+
+/** Octagonal ring (a rectangle w x d with its corners cut by `bev` metres) at height y. */
+function shRing(y: number, w: number, d: number, zc = 0, bev = 0.03, bevFront = bev): Vec3[] {
+  const hx = w / 2;
+  const hz = d / 2;
+  const bx = Math.min(bev, hx * 0.9);
+  const bz = Math.min(bev, hz * 0.9);
+  const fx = Math.min(bevFront, hx * 0.9);
+  const fz = Math.min(bevFront, hz * 0.9);
+  return [
+    [-hx + fx, y, zc + hz],
+    [hx - fx, y, zc + hz],
+    [hx, y, zc + hz - fz],
+    [hx, y, zc - hz + bz],
+    [hx - bx, y, zc - hz],
+    [-hx + bx, y, zc - hz],
+    [-hx, y, zc - hz + bz],
+    [-hx, y, zc + hz - fz],
+  ];
+}
+
+/** Box-like beam from p0 to p1 with cross-section w x d (d along `up` projected), tapered at p1. */
+function shBeam(
+  b: MeshBuilder,
+  p0: Vec3,
+  p1: Vec3,
+  w: number,
+  d: number,
+  style: PrimOpts,
+  up: Vec3 = [0, 0, 1],
+  taper = 1,
+): void {
+  const ax = norm(sub(p1, p0));
+  let sx = cross(up, ax);
+  if (len(sx) < 1e-6) sx = cross([1, 0, 0], ax);
+  sx = norm(sx);
+  const sz = norm(cross(ax, sx));
+  const pts: Vec3[] = [];
+  for (const [p, k] of [
+    [p0, 1],
+    [p1, taper],
+  ] as const)
+    for (const [u, v] of [
+      [-1, -1],
+      [1, -1],
+      [1, 1],
+      [-1, 1],
+    ])
+      pts.push(add(p, add(scl(sx, (u * w * k) / 2), scl(sz, (v * d * k) / 2))));
+  b.hull(pts, style);
+}
+
+/** Two cloth triangles a-b-c-d whose lit side faces `out`. */
+function shClothQuad(b: MeshBuilder, q: [Vec3, Vec3, Vec3, Vec3], out: Vec3, color: Color, half = false): void {
+  const [a, bb, c, d] = q;
+  const put = (p0: Vec3, p1: Vec3, p2: Vec3) => {
+    const n = cross(sub(p1, p0), sub(p2, p0));
+    if (dot(n, out) < 0) b.tri(p0, p2, p1, { mat: "cloth", color });
+    else b.tri(p0, p1, p2, { mat: "cloth", color });
+  };
+  put(a, bb, c);
+  if (!half) put(a, c, d);
+}
+
+/** Wax candle standing at `at` (its base); lit ones carry a small unlit flame. */
+function shCandle(b: MeshBuilder, rng: Rng, at: Vec3, h: number, r = 0.024, lit = true): void {
+  const wax = mix(P.worn, P.paper, rng.next() * 0.6);
+  b.cylinder({
+    height: h,
+    radius: r * 1.08,
+    radiusTop: r * 0.9,
+    sides: 5,
+    phase: rng.range(0, 72),
+    at: [at[0], at[1] + h / 2, at[2]],
+    color: wax,
+    parts: { top: shade(wax, 0.8) },
+    vary: 0.05,
+  });
+  b.cylinder({
+    height: 0.012,
+    radius: r * 2.2,
+    radiusTop: r * 1.5,
+    sides: 6,
+    phase: rng.range(0, 60),
+    caps: "top",
+    at: [at[0] + rng.jitter(0.006), at[1] + 0.006, at[2] + rng.jitter(0.006)],
+    color: shade(wax, 0.9),
+    vary: 0.05,
+  });
+  if (!lit) return;
+  const fy = at[1] + h + 0.008;
+  const fh = 0.07 + rng.range(0, 0.025);
+  const lean: Vec2 = [rng.jitter(0.008), rng.jitter(0.008)];
+  b.cone({ radius: r * 0.78, height: fh, sides: 4, phase: 45, lean, cap: false, at: [at[0], fy + 0.016 + fh / 2, at[2]], color: mix(P.flame, P.flameCore, 0.55), mat: "glow", glow: 1.5 });
+  b.cone({ radius: r * 0.78, height: 0.016, sides: 4, phase: 45, cap: false, at: [at[0], fy + 0.008, at[2]], rot: [180, 0, 0], color: P.flameOuter, mat: "glow", glow: 1.5 });
+}
+
+/** Zig-zag paper strip (shide) hanging from `top`, facing +Z. */
+function shPaperStrip(b: MeshBuilder, rng: Rng, top: Vec3, w = 0.075, seg = 0.105, n = 3): void {
+  const tone = shade(SH_PAPER, 1 + rng.jitter(0.06));
+  let x = top[0];
+  let y = top[1];
+  const z = top[2] + 0.012;
+  for (let k = 0; k < n; k++) {
+    const dx = (k % 2 ? -1 : 1) * w * 0.55;
+    const q: [Vec3, Vec3, Vec3, Vec3] = [
+      [x - w / 2, y, z],
+      [x - w / 2 + dx, y - seg, z + 0.012 * (k + 1)],
+      [x + w / 2 + dx, y - seg, z + 0.012 * (k + 1)],
+      [x + w / 2, y, z],
+    ];
+    shClothQuad(b, q, [0, 0, 1], shade(tone, k % 2 ? 0.9 : 1));
+    x += dx;
+    y -= seg;
+  }
+}
+
+/** A knotted rag strip hanging from `top`, facing +Z. */
+function shRag(b: MeshBuilder, rng: Rng, top: Vec3, length: number, w: number, color: Color): void {
+  const sway = rng.jitter(0.04);
+  const q: [Vec3, Vec3, Vec3, Vec3] = [
+    [top[0] - w / 2, top[1] + 0.006, top[2] + 0.008],
+    [top[0] - w / 2 + sway, top[1] - length, top[2] + 0.024],
+    [top[0] + w / 2 + sway, top[1] - length * (0.82 + rng.next() * 0.2), top[2] + 0.024],
+    [top[0] + w / 2, top[1] + 0.006, top[2] + 0.008],
+  ];
+  shClothQuad(b, q, [0, 0, 1], shade(color, 1 + rng.jitter(0.05)));
+}
+
+/** Sagging rope between (-half, endY) and (+half, endY) with paper strips and rags; returns rope y at x. */
+function shGarland(b: MeshBuilder, rng: Rng, half: number, endY: number, sag: number, radius: number, z = 0, every = 0.85, gap = 0): (x: number) => number {
+  const yAt = (x: number) => endY - sag * (1 - (x / half) ** 2);
+  const n = 10;
+  b.tube(
+    Array.from({ length: n + 1 }, (_, i) => {
+      const x = -half + (2 * half * i) / n;
+      return [x, yAt(x), z] as Vec3;
+    }),
+    { radius, sides: 5, color: SH_ROPE, vary: 0.06 },
+  );
+  for (const s of [-1, 1])
+    b.cylinder({ height: radius * 4.5, radius: radius * 1.9, sides: 5, at: [s * (half - radius * 2), yAt(half), z], rot: [0, 0, 90], color: shade(SH_ROPE, 0.9), vary: 0.05 });
+  const strips = Math.max(3, Math.round((2 * half) / every));
+  for (let k = 0; k < strips; k++) {
+    const x = -half + ((k + 0.5) / strips) * 2 * half + rng.jitter(0.06);
+    if (Math.abs(x) < gap) continue; // keep the view through the middle clear
+    if (k % 3 === 1) shRag(b, rng, [x, yAt(x) - radius * 0.6, z], rng.range(0.26, 0.4), 0.085, rng.pick(SH_CRIMSONS));
+    else shPaperStrip(b, rng, [x, yAt(x) - radius * 0.6, z]);
+  }
+  return yAt;
+}
+
+/* ---------------------------------------------------------------- floor */
+
+const SHRINE_FLAT_R = 9.3;
+const SHRINE_FLOOR_R = 15.6;
+
+/** Shrine floor height: exactly 0 inside r = 9.3, rising toward the rock (not on the +Z approach). */
+function shrineFloorY(x: number, z: number): number {
+  const r = Math.hypot(x, z);
+  const rim = smoothstep(SHRINE_FLAT_R, SHRINE_FLOOR_R - 0.6, r);
+  const approach = z > 0 ? smoothstep(1.9, 4.6, Math.abs(x)) : 1;
+  return Math.max(0, (0.62 * rim * rim + 0.07 * rim * vnoise(x / 1.9, z / 1.9, 71)) * approach);
+}
+
+function buildShrineFloor(): Model {
+  const name = "tl_env_shrine_floor_v01";
+  const m = new Model(name, {
+    budget: 1600,
+    notes:
+      "Shrine grotto floor, r = 15.6 m, shrine space (origin = idol, +Z = the way in). Packed earth, exactly flat " +
+      "(y = 0) inside r = 9.3, rising under the rock walls; rough flagstones (1.4 cm proud) around the plinth, on the " +
+      "approach from +Z and as stepping stones between the seats on the r = 3 and r = 5 circles; trodden paler bands " +
+      "on those circles; darker toward the rim.",
+  });
+  const rng = new Rng(`${name}/points`);
+  const seeds: Vec2[] = [];
+  const nb = 48;
+  for (let k = 0; k < nb; k++) {
+    const a = ((k + 0.5) / nb) * Math.PI * 2 + rng.jitter(0.02);
+    seeds.push([Math.cos(a) * SHRINE_FLOOR_R, Math.sin(a) * SHRINE_FLOOR_R]);
+  }
+  seeds.push([0, 0]);
+  const pts = scatter(rng, SHRINE_FLOOR_R - 0.8, (x, z) => 1.45 + 0.95 * smoothstep(7, SHRINE_FLOOR_R, Math.hypot(x, z)), seeds, 5000);
+  const verts: Vec3[] = pts.map(([x, z]) => [x, shrineFloorY(x, z), z]);
+  const paint = new Rng(`${name}/paint`);
+  const dust = mix(P.ochre, P.pebble, 0.3);
+  for (const [a, b, c] of delaunay(pts)) {
+    const p0 = verts[a],
+      p1 = verts[b],
+      p2 = verts[c];
+    const ctr = centroid3([p0, p1, p2]);
+    const r = Math.hypot(ctr[0], ctr[2]);
+    const patch = vnoise(ctr[0] / 5.5, ctr[2] / 5.5, 81) * 0.7 + vnoise(ctr[0] / 2.2, ctr[2] / 2.2, 82) * 0.3;
+    let col = mix(P.dirt, P.earth, clamp(0.6 + 0.55 * patch, 0, 1));
+    col = mix(col, P.ochre, 0.2 * smoothstep(0.1, 0.7, patch));
+    // trodden: the two seat circles, the apron of the plinth and the approach from the tunnel
+    const band = (r0: number, w: number) => 1 - smoothstep(0, w, Math.abs(r - r0));
+    const approach = ctr[2] > 5.2 ? 1 - smoothstep(0.9, 2.3, Math.abs(ctr[0])) : 0;
+    const trodden = Math.max(band(3.9, 1.5) * 0.75, band(1.9, 0.9), approach, band(6.6, 1.3) * 0.6);
+    col = mix(col, dust, 0.36 * trodden);
+    const k =
+      (1 + paint.jitter(0.045)) *
+      (1 - 0.46 * smoothstep(8.3, 14.2, r)) *
+      (1 - 0.3 * (1 - smoothstep(1.0, 1.9, r))) *
+      (1 + 0.1 * (1 - smoothstep(2, 8, r)));
+    triToward(m.geo, p0, p1, p2, [0, 1, 0], shade(col, k));
+  }
+  // Flagstones: irregular flat polygons, one colour each.
+  const stones = new Rng(`${name}/stones`);
+  const slabTone = mix(STONE_SIDE, P.ochre, 0.22);
+  const flag = (cx: number, cz: number, rx: number, rz: number, k = 1) => {
+    const n = stones.int(5, 7);
+    const rot = stones.range(0, Math.PI * 2);
+    const ring: Vec3[] = Array.from({ length: n }, (_, i) => {
+      const a = (i / n) * Math.PI * 2 + stones.jitter(0.22);
+      const px = Math.cos(a) * rx * stones.range(0.78, 1.05);
+      const pz = Math.sin(a) * rz * stones.range(0.78, 1.05);
+      return [cx + px * Math.cos(rot) - pz * Math.sin(rot), 0.014, cz + px * Math.sin(rot) + pz * Math.cos(rot)];
+    });
+    const r = Math.hypot(cx, cz);
+    const col = shade(mix(slabTone, STONE_TOP, stones.range(0, 0.45)), k * (1 + stones.jitter(0.09)) * (1 - 0.3 * smoothstep(8.5, 14, r)));
+    const c = centroid3(ring);
+    for (let i = 0; i < n; i++) triToward(m.geo, c, ring[i], ring[(i + 1) % n], [0, 1, 0], col);
+  };
+  // apron around the plinth
+  for (let k = 0; k < 9; k++) {
+    const a = ((k + 0.5) / 9) * Math.PI * 2 + stones.jitter(0.08);
+    flag(Math.sin(a) * 1.78, Math.cos(a) * 1.78, 0.5, 0.38, 0.95);
+  }
+  // the approach: from the tunnel (+Z) through the gate to the entry point
+  for (let z = 6.3; z < 13.9; z += 0.92)
+    for (const s of [-1, 1]) flag(s * (0.52 + stones.jitter(0.08)), z + stones.jitter(0.12) + (s > 0 ? 0.4 : 0), 0.47, 0.4);
+  // stepping stones on the seat circles, between the seats
+  for (const [radius, count] of [
+    [3, 8],
+    [5, 12],
+  ] as const)
+    for (let i = 0; i < count; i++)
+      for (const f of [0.36, 0.64]) {
+        const a = ((i + f) / count) * Math.PI * 2 + stones.jitter(0.025);
+        const rr = radius + stones.jitter(0.12);
+        flag(Math.sin(a) * rr, Math.cos(a) * rr, 0.27, 0.21, 0.92);
+      }
+  m.collider = { type: "cylinder", center: [0, -0.25, 0], radius: SHRINE_FLOOR_R, height: 0.5 };
+  m.meta = { space: "shrine", flatRadius: SHRINE_FLAT_R, radius: SHRINE_FLOOR_R };
+  return m;
+}
+
+/* ---------------------------------------------------------------- seats */
+
+const SHRINE_SEAT_TOP = 0.48;
+
+function buildShrineSeat(id: "a" | "b"): Model {
+  const name = `tl_env_shrine_seat_${id}_v01`;
+  const m = new Model(name, {
+    budget: 160,
+    notes:
+      (id === "a"
+        ? "Rough stone block seat with a faded crimson cloth strip over it (inner ring). "
+        : "Rough stone block seat, plain (outer ring). ") +
+      "Flat top at exactly y = 0.48, no backrest. The seated avatar's root stands at anchor 'sit' (0.16 m in front " +
+      "of the block centre) facing +Z, so its calves clear the block's front face. Carries its own dark contact patch.",
+  });
+  const rng = new Rng(name);
+  const b = new MeshBuilder(name);
+  const tone = id === "a" ? SH_STONE : mix(SH_STONE, P.rock, 0.2);
+  const w = id === "a" ? 0.84 : 0.9;
+  const d = id === "a" ? 0.64 : 0.62;
+  const ring = (y: number, kw: number, kd: number, jit: number, n: number): Vec3[] =>
+    Array.from({ length: n }, (_, i) => {
+      const a = ((i + 0.5) / n) * Math.PI * 2 + rng.jitter(0.16);
+      // a rounded rectangle: push the ellipse toward its bounding box
+      const cx = Math.cos(a),
+        cz = Math.sin(a);
+      const sq = 1 / Math.max(Math.abs(cx), Math.abs(cz));
+      const k = lerp(1, sq, 0.55) * (1 + rng.jitter(jit));
+      return [((cx * w) / 2) * kw * k, y, Math.min(((cz * d) / 2) * kd * k, d / 2 + 0.005)];
+    });
+  b.hull(
+    [
+      ...ring(0, 1.04, 1.02, 0.05, 8),
+      ...ring(id === "a" ? 0.2 : 0.27, 1.08, 1.04, 0.06, 7),
+      ...ring(SHRINE_SEAT_TOP, 0.9, 0.9, 0.04, 7),
+    ],
+    { color: rockPaint(rng, tone, 0.26, 0.92) },
+  );
+  // contact patch: the stone has sat here for years
+  const patch: Vec3[] = Array.from({ length: 7 }, (_, i) => {
+    const a = (i / 7) * Math.PI * 2 + rng.jitter(0.2);
+    return [Math.cos(a) * (w / 2 + 0.16) * rng.range(0.9, 1.1), 0.006, Math.sin(a) * (d / 2 + 0.15) * rng.range(0.9, 1.1)];
+  });
+  const pc = centroid3(patch);
+  for (let i = 0; i < 7; i++) triToward(b, pc, patch[i], patch[(i + 1) % 7], [0, 1, 0], shade(P.mud, 0.72));
+  if (id === "a") {
+    // cloth strip laid across the top, hanging down both sides
+    const z0 = -0.2,
+      z1 = 0.13;
+    const y = SHRINE_SEAT_TOP + 0.003;
+    const red = mix(mix(P.crimson, P.crimsonFaded, 0.45), P.crimsonDark, 0.3);
+    const xs = w / 2 - 0.045;
+    shClothQuad(b, [[-xs, y, z0], [-xs, y, z1], [xs, y, z1], [xs, y, z0]], [0, 1, 0], shade(red, 1.05));
+    for (const s of [-1, 1]) {
+      const drop = s > 0 ? 0.3 : 0.24;
+      const out = s * (w / 2 + 0.045);
+      shClothQuad(b, [[s * xs, y, z0], [s * xs, y, z1], [out, y - 0.11, z1 + 0.01], [out, y - 0.11, z0 - 0.01]], [s, 0.5, 0], shade(red, 0.92));
+      shClothQuad(
+        b,
+        [[out, y - 0.11, z0 - 0.01], [out, y - 0.11, z1 + 0.01], [out + s * 0.02, y - drop - 0.05, z1 - 0.02], [out + s * 0.025, y - drop, z0 + 0.03]],
+        [s, 0, 0],
+        s > 0 ? mix(P.worn, P.wornDark, 0.35) : shade(red, 0.82),
+      );
+    }
+  } else {
+    // a pebble kicked against its foot
+    b.rock({ size: [0.17, 0.1, 0.14], points: 7, jitter: 0.2, flat: 0.3, align: "bottom", at: [w / 2 + 0.07, 0, -0.12], rot: [0, 30, 0], color: rockPaint(rng, mix(tone, P.pebble, 0.3), 0.2) });
+  }
+  placeBottomCentre(m, b);
+  const bb = b.bounds()!;
+  // 'sit': where the avatar root goes, relative to the centred mesh (the block centre is 0.16 m behind it)
+  const blockCz = -(bb.min[2] + bb.max[2]) / 2;
+  m.anchor("sit", [r4(-(bb.min[0] + bb.max[0]) / 2), SHRINE_SEAT_TOP, r4(blockCz + 0.16)]);
+  m.meta = { seatHeight: SHRINE_SEAT_TOP, topSize: [r4(w * 0.9), r4(d * 0.9)] };
+  return m;
+}
+
+/* ---------------------------------------------------------------- the idol */
+
+function buildShrineIdol(): Model {
+  const name = "tl_env_shrine_idol_v01";
+  const m = new Model(name, {
+    budget: 2800,
+    notes:
+      "Shrine idol, 3.3 m with its rock plinth (fits the r = 1.2 obstacle): a fan-carved, painted wooden caricature " +
+      "of the champion the cave prays to - heavy straight fringe / bowl hair, thin round wire glasses, slim oval " +
+      "face, calm; white jersey with black raglan shoulders and side panels and red collar piping (worn paint, no " +
+      "logos or text), in the 'silent' pose: right index finger raised to the lips, left arm at the side. The trophy floats above " +
+      "the head as its own model (tl_env_shrine_trophy_v01, anchor 'trophy'). A real crimson cloth cloak (tl_cloth) hangs from the " +
+      "shoulders. Offerings on the plinth and its front ledge: candles (glow), a noodle cup, mugs, flowers, notes.",
+  });
+  const rng = new Rng(name);
+  const b = m.geo;
+  const PL = 0.9; // plinth top
+  const K = 1.3; // figure scale (a 1.75 m fan)
+
+  /* plinth: a boulder with a flat top and a low ledge in front */
+  const ringR = (y: number, r: number, n: number, jit: number): Vec3[] =>
+    Array.from({ length: n }, (_, i) => {
+      const a = ((i + 0.5) / n) * Math.PI * 2 + rng.jitter(0.14);
+      const rr = r * (1 + rng.jitter(jit));
+      return [Math.sin(a) * rr, y, Math.cos(a) * rr];
+    });
+  b.hull([...ringR(0, 1.06, 8, 0.05), ...ringR(0.46, 1.0, 8, 0.06), ...ringR(PL, 0.76, 7, 0.05)], {
+    color: rockPaint(rng, SH_STONE, 0.22),
+  });
+  const LEDGE = 0.36;
+  const ledge: Vec3[] = [];
+  for (let k = 0; k < 5; k++) {
+    const a = (-44 + k * 22 + rng.jitter(3)) * DEG;
+    for (const [r, y] of [
+      [1.15, 0],
+      [1.12, LEDGE - 0.04],
+      [1.06, LEDGE],
+      [0.6, LEDGE],
+      [0.6, 0],
+    ] as const)
+      ledge.push([Math.sin(a) * r, y, Math.cos(a) * r]);
+  }
+  b.hull(ledge, { color: rockPaint(rng, mix(SH_STONE, P.rockLight, 0.25), 0.25) });
+  for (const [a, s] of [
+    [118, 0.42],
+    [-125, 0.5],
+    [165, 0.36],
+  ] as const)
+    b.rock({
+      size: [s, s * 0.62, s * 0.8],
+      points: 9,
+      jitter: 0.25,
+      flat: 0.25,
+      align: "bottom",
+      at: [Math.sin(a * DEG) * 0.98, 0, Math.cos(a * DEG) * 0.98],
+      rot: [0, a, 0],
+      color: rockPaint(rng, mix(SH_STONE, P.rock, 0.2), 0.18),
+    });
+
+  /* the figure (fan proportions, scaled K) */
+  const WOOD_UNDER = mix(P.wood, P.woodLight, 0.4);
+  /** Painted wood: a few facets where the paint has worn through. */
+  const painted = (c: Color, wear = 0.07, vary = 0.045) => () =>
+    shade(rng.chance(wear) ? mix(c, WOOD_UNDER, 0.4) : c, 1 + rng.jitter(vary));
+  const WHITE = mix(P.white, "#F2ECDD", 0.55);
+  const BLACK = "#262220";
+  const RED = P.crimson;
+  const SKIN = mix(P.skinLight, "#F0CDAE", 0.5);
+  const HAIR = "#1D1918";
+  const WIRE = "#0F0D0C";
+  b.group({ at: [0, PL, 0], scale: K }, (g) => {
+    // shoes + slim dark trousers
+    for (const s of [-1, 1]) {
+      g.box({ size: [0.105, 0.075, 0.26], at: [s * 0.085, 0.0375, 0.035], chamfer: 0.014, color: painted("#2E2A28", 0.1), parts: { bottom: P.worn } });
+      shBeam(g, [s * 0.083, 0.07, 0], [s * 0.088, 0.9, 0], 0.118, 0.14, { color: painted("#34302E", 0.08) }, [0, 0, 1], 1.16);
+    }
+    // jersey: white body, black raglan shoulders and side panels
+    const rings: [number, number, number, number, number][] = [
+      // y, w, d, zc, bevel
+      [0.8, 0.33, 0.2, 0, 0.03],
+      [0.93, 0.335, 0.205, 0, 0.03],
+      [1.27, 0.37, 0.212, 0.002, 0.034],
+      [1.342, 0.39, 0.19, 0, 0.04],
+      [1.385, 0.19, 0.135, -0.004, 0.035],
+    ];
+    const white = painted(WHITE, 0.05, 0.035);
+    const black = painted(BLACK, 0.035, 0.05);
+    g.hull(
+      rings.flatMap(([y, w, d, zc, bev]) => shRing(y, w, d, zc, bev)),
+      {
+        color: (f) => (f.normal[1] > 0.45 || Math.abs(f.normal[0]) > 0.4 ? black() : f.normal[1] < -0.5 ? shade(WHITE, 0.7) : white()),
+      },
+    );
+    // raglan plates on the chest and the back (carved relief), from the collar to the armpit
+    for (const s of [-1, 1])
+      for (const f of [1, -1]) {
+        const zs = (y: number) => f * (lerp(0.108, 0.097, clamp((y - 1.27) / 0.072, 0, 1)) + 0.004);
+        const A: Vec3 = [s * 0.058, 1.372, f * 0.079];
+        const B: Vec3 = [s * 0.186, 1.338, zs(1.338)];
+        const C: Vec3 = [s * 0.176, 1.17, zs(1.17)];
+        g.hull([A, B, C, [A[0], A[1], A[2] - f * 0.05], [B[0], B[1], B[2] - f * 0.05], [C[0], C[1], C[2] - f * 0.05]], { color: black });
+      }
+    // red collar piping: band round the neck + a V on the chest
+    g.cylinder({ height: 0.03, radius: 0.088, radiusTop: 0.078, sides: 8, phase: 22.5, at: [0, 1.392, -0.004], scale: [1, 1, 0.82], color: painted(RED, 0.05), caps: "top" });
+    for (const s of [-1, 1]) shBeam(g, [s * 0.07, 1.388, 0.064], [0, 1.318, 0.111], 0.024, 0.016, { color: painted(RED, 0.05) }, [0, 0, 1]);
+    // jersey hem line
+    g.hull([...shRing(0.8, 0.338, 0.208, 0, 0.03), ...shRing(0.818, 0.338, 0.208, 0, 0.03)], { color: painted(BLACK, 0.06) });
+    // arms: black short sleeves, bare forearms. The "silent" pose: the right hand comes up in front of the
+    // mouth with the index finger raised against the lips; the left arm hangs relaxed at the side.
+    const arm = (sh: Vec3, el: Vec3, wr: Vec3, foreUp: Vec3) => {
+      const mid: Vec3 = [lerp(sh[0], el[0], 0.6), lerp(sh[1], el[1], 0.6), lerp(sh[2], el[2], 0.6)];
+      shBeam(g, add(sh, [0, 0.02, 0]), mid, 0.098, 0.108, { color: painted(BLACK, 0, 0.05) }, [0, 0, 1], 0.94);
+      shBeam(g, add(mid, [0, 0.01, 0]), add(el, [0, -0.03, 0]), 0.074, 0.08, { color: painted(SKIN, 0.04, 0.03) }, [0, 0, 1], 0.95);
+      shBeam(g, add(el, [0, -0.012, -0.012]), wr, 0.07, 0.07, { color: painted(SKIN, 0.04, 0.03) }, foreUp, 0.86);
+    };
+    const hand = painted(shade(SKIN, 0.97), 0.04, 0.03);
+    // right arm (the figure's right is -X): elbow by the ribs, forearm up to the chin
+    arm([-0.212, 1.318, 0], [-0.222, 1.09, 0.105], [-0.05, 1.392, 0.2], [0, 0, 1]);
+    g.box({ size: [0.078, 0.088, 0.07], at: [-0.022, 1.438, 0.208], rot: [0, 0, 14], chamfer: 0.012, color: hand });
+    // curled fingers on the fist, thumb tucked across them
+    g.box({ size: [0.064, 0.04, 0.03], at: [-0.03, 1.43, 0.25], rot: [0, 0, 14], chamfer: 0.008, color: painted(shade(SKIN, 0.93), 0.04, 0.03) });
+    g.box({ size: [0.03, 0.055, 0.026], at: [0.016, 1.428, 0.238], rot: [0, 0, -24], chamfer: 0.008, color: hand });
+    // the raised index finger, on the lips (mouth at y 1.51, nose tip z 0.19)
+    shBeam(g, [-0.004, 1.47, 0.214], [0.001, 1.6, 0.203], 0.024, 0.024, { color: painted(SKIN, 0.03, 0.03) }, [0, 0, 1], 0.86);
+    // left arm at the side, hand open by the thigh
+    arm([0.212, 1.318, 0], [0.24, 1.075, -0.008], [0.234, 0.862, 0.036], [0, 0, 1]);
+    g.box({ size: [0.05, 0.11, 0.08], at: [0.234, 0.8, 0.046], rot: [8, 0, 0], chamfer: 0.012, color: hand });
+    // neck
+    g.cylinder({ height: 0.085, radius: 0.052, radiusTop: 0.048, sides: 6, at: [0, 1.43, -0.004], color: painted(shade(SKIN, 0.9), 0.03, 0.03), caps: false });
+
+    /* head (a little oversized, as carved idols are) */
+    g.group({ at: [0, 1.452, 0.004], scale: 1.16 }, (h) => {
+      const skin = painted(SKIN, 0.025, 0.03);
+      // slim oval skull: chin, jaw, cheek, temple, crown
+      const skull: [number, number, number, number, number][] = [
+        [0.0, 0.105, 0.1, 0.05, 0.03],
+        [0.055, 0.184, 0.2, 0.018, 0.05],
+        [0.13, 0.232, 0.252, 0.006, 0.06],
+        [0.235, 0.238, 0.258, 0.002, 0.06],
+        [0.3, 0.19, 0.2, 0, 0.06],
+      ];
+      h.hull(
+        skull.flatMap(([y, w, d, zc, bev]) => shRing(y, w, d, zc, bev)),
+        { color: (f) => (f.normal[1] < -0.4 ? shade(SKIN, 0.82) : skin()) },
+      );
+      const faceZ = (y: number) => {
+        // front plane of the skull at height y
+        for (let i = 0; i + 1 < skull.length; i++)
+          if (y <= skull[i + 1][0]) {
+            const t = clamp((y - skull[i][0]) / (skull[i + 1][0] - skull[i][0]), 0, 1);
+            return lerp(skull[i][3] + skull[i][2] / 2, skull[i + 1][3] + skull[i + 1][2] / 2, t);
+          }
+        return 0.13;
+      };
+      // ears
+      for (const s of [-1, 1]) h.box({ size: [0.024, 0.062, 0.04], at: [s * 0.121, 0.128, -0.004], chamfer: 0.008, color: painted(shade(SKIN, 0.93), 0.03, 0.03) });
+      // nose + calm mouth
+      h.hull(
+        [
+          [-0.011, 0.142, faceZ(0.142) - 0.004],
+          [0.011, 0.142, faceZ(0.142) - 0.004],
+          [-0.021, 0.088, faceZ(0.088) - 0.004],
+          [0.021, 0.088, faceZ(0.088) - 0.004],
+          [0, 0.094, faceZ(0.094) + 0.034],
+          [0, 0.142, faceZ(0.142) + 0.01],
+        ],
+        { color: (f) => (f.normal[1] < -0.3 ? shade(SKIN, 0.78) : shade(SKIN, 0.96)) },
+      );
+      h.box({ size: [0.052, 0.008, 0.008], at: [0, 0.05, faceZ(0.05) + 0.001], color: "#96594E" });
+      // thin ROUND wire glasses: dark rims, pale lenses, small calm eyes behind them
+      const EY = 0.152;
+      const gz = faceZ(EY) + 0.012;
+      for (const s of [-1, 1]) {
+        const cx = s * 0.0615;
+        h.ring({ radius: 0.0525, inner: 0.0422, depth: 0.012, segments: 12, at: [cx, EY, gz], color: WIRE });
+        h.ring({ radius: 0.0422, inner: 0, depth: 0.002, segments: 12, at: [cx, EY, gz - 0.004], color: mix(SKIN, "#FFFFFF", 0.2), parts: { back: SKIN } });
+        h.box({ size: [0.021, 0.015, 0.004], at: [cx - s * 0.003, EY - 0.001, gz - 0.001], color: "#1A1514" });
+        // temple arm back to the ear
+        shBeam(h, [s * 0.112, EY + 0.008, gz - 0.002], [s * 0.126, EY + 0.004, 0.0], 0.009, 0.009, { color: WIRE }, [0, 1, 0]);
+      }
+      h.box({ size: [0.03, 0.01, 0.01], at: [0, EY + 0.012, gz], color: WIRE });
+      // hair: a rounded bowl with a heavy straight fringe down to the brow line
+      const BROW = 0.207;
+      const hair = (f: { normal: Vec3 }) =>
+        shade(HAIR, (f.normal[1] > 0.5 ? 1.22 : f.normal[1] < -0.5 ? 0.8 : f.normal[2] > 0.6 ? 1.1 : 1) * (1 + rng.jitter(0.07)));
+      // rings: y, w, d, zc, bevel (back / sides), bevel of the front corners (small: a wide flat fringe)
+      const bowl: [number, number, number, number, number, number][] = [
+        [BROW, 0.298, 0.312, 0.004, 0.075, 0.034],
+        [0.27, 0.31, 0.326, 0.002, 0.09, 0.05],
+        [0.325, 0.282, 0.3, -0.002, 0.09, 0.07],
+        [0.362, 0.17, 0.19, -0.01, 0.055, 0.055],
+      ];
+      h.hull(
+        bowl.flatMap(([y, w, d, zc, bev, bf]) => shRing(y, w, d, zc, bev, bf)),
+        { color: hair },
+      );
+      // the bowl's sides come down over the top of the ears, the back runs on down the nape
+      h.hull(
+        [
+          ...shRing(BROW + 0.004, 0.298, 0.236, -0.034, 0.07, 0.03),
+          ...shRing(0.142, 0.29, 0.214, -0.04, 0.06, 0.03),
+          ...shRing(0.082, 0.21, 0.1, -0.092, 0.035),
+        ],
+        { color: hair },
+      );
+    });
+
+    /* the cloak: real cloth from the shoulders down the back, ragged hem */
+    const NU = 12,
+      NV = 5;
+    const grid: Vec3[][] = [];
+    const red = mix(mix(P.crimson, P.crimsonFaded, 0.3), P.crimsonDark, 0.42);
+    for (let i = 0; i <= NU; i++) {
+      const u = i / NU;
+      const phi = (-104 + 208 * u) * DEG; // 0 = straight behind
+      const fold = i % 2 ? 1 : -1;
+      const edge = Math.pow(Math.abs(2 * u - 1), 3);
+      const length = 1.14 + rng.jitter(0.13) - 0.34 * edge - 0.12 * u;
+      const yTop = 1.352 + 0.04 * Math.max(0, Math.cos(phi));
+      grid.push([]);
+      for (let j = 0; j <= NV; j++) {
+        const v = j / NV;
+        const rx = 0.292 + 0.115 * v + fold * 0.03 * v;
+        const rz = 0.17 + 0.17 * v + fold * 0.036 * v;
+        const y = yTop - length * v - (j === NV ? rng.range(0, 0.14) : 0);
+        grid[i].push([Math.sin(phi) * rx, y, -Math.cos(phi) * rz - 0.012]);
+      }
+    }
+    const patches = new Set([rng.int(1, NU - 2) * 10 + rng.int(1, 3), rng.int(1, NU - 2) * 10 + rng.int(2, 4), rng.int(2, NU - 3) * 10 + 2]);
+    for (let i = 0; i < NU; i++)
+      for (let j = 0; j < NV; j++) {
+        const q: [Vec3, Vec3, Vec3, Vec3] = [grid[i][j], grid[i + 1][j], grid[i + 1][j + 1], grid[i][j + 1]];
+        const c = centroid3(q);
+        const out = norm([c[0], 0.15, c[2] + 0.012]);
+        const tone = patches.has(i * 10 + j)
+          ? mix(P.worn, P.wornDark, rng.next() * 0.5)
+          : shade(i % 2 ? red : mix(red, P.crimsonDark, 0.4), (1 - 0.16 * (j / NV)) * (1 + rng.jitter(0.06)));
+        if (j === NV - 1 && rng.chance(0.22)) continue; // torn out of the hem
+        shClothQuad(g, q, out, tone, j >= NV - 2 && rng.chance(0.35));
+      }
+    // mantle: from the cloak's top edge in over the shoulders to the collar
+    for (let i = 0; i < NU; i++) {
+      const neck = (k: number): Vec3 => {
+        const phi = (-104 + (208 * k) / NU) * DEG;
+        return [Math.sin(phi) * 0.1, 1.408, -Math.cos(phi) * 0.088 - 0.006];
+      };
+      shClothQuad(g, [grid[i][0], grid[i + 1][0], neck(i + 1), neck(i)], [0, 1, 0], shade(i % 2 ? red : mix(red, P.crimsonDark, 0.3), 1.04 + rng.jitter(0.04)));
+    }
+  });
+
+  /* offerings */
+  const top = PL;
+  const led = LEDGE;
+  // candles on the plinth by the feet and on the ledge
+  const candles: [number, number, number, number][] = [
+    // x, y, z, height
+    [-0.42, top, 0.44, 0.2],
+    [-0.31, top, 0.55, 0.12],
+    [-0.5, top, 0.3, 0.08],
+    [0.4, top, 0.46, 0.16],
+    [0.5, top, 0.33, 0.24],
+    [0.29, top, 0.58, 0.07],
+    [-0.5, led, 0.88, 0.17],
+    [-0.36, led, 0.97, 0.09],
+    [-0.62, led, 0.78, 0.07],
+    [0.56, led, 0.83, 0.13],
+    [0.44, led, 0.95, 0.2],
+    [0.06, led, 1.02, 0.06],
+    [-0.98, 0, 0.62, 0.15],
+    [-1.06, 0, 0.47, 0.08],
+    [1.0, 0, 0.6, 0.11],
+  ];
+  for (const [x, y, z, hgt] of candles) shCandle(b, rng, [x, y, z], hgt, 0.026, true);
+  // noodle cup with chopsticks (the fans' supper)
+  {
+    const at: Vec3 = [0.1, top, 0.56];
+    b.cylinder({ height: 0.115, radiusBottom: 0.036, radiusTop: 0.052, sides: 8, at: [at[0], at[1] + 0.0575, at[2]], color: P.white, parts: { top: mix(P.cardboard, P.torch, 0.3) }, vary: 0.04 });
+    b.cylinder({ height: 0.034, radiusBottom: 0.0425, radiusTop: 0.047, sides: 8, at: [at[0], at[1] + 0.066, at[2]], color: P.crimson, caps: false });
+    for (const dx of [-0.012, 0.012])
+      shBeam(b, [at[0] + dx, at[1] + 0.1, at[2]], [at[0] + dx * 2.2 + 0.05, at[1] + 0.25, at[2] - 0.05], 0.007, 0.007, { color: P.woodLight }, [0, 0, 1]);
+  }
+  // mugs on the ledge
+  for (const [x, z, c, yaw] of [
+    [-0.12, 0.93, P.white, 30],
+    [0.22, 0.86, P.crimson, -50],
+  ] as const) {
+    b.cylinder({ height: 0.095, radius: 0.042, sides: 8, at: [x, led + 0.0475, z], color: c, parts: { top: shade(P.woodDark, 0.6) }, vary: 0.04 });
+    b.box({ size: [0.016, 0.05, 0.03], at: [x + Math.cos(yaw * DEG) * 0.052, led + 0.05, z + Math.sin(yaw * DEG) * 0.052], rot: [0, -yaw, 0], color: shade(c, 0.92) });
+  }
+  // a tin of cave flowers
+  {
+    const at: Vec3 = [-0.24, top, 0.62];
+    b.cylinder({ height: 0.12, radius: 0.046, sides: 7, at: [at[0], at[1] + 0.06, at[2]], color: mix(P.rust, P.metalDark, 0.35), parts: { top: P.mud }, vary: 0.06 });
+    const blooms: Color[] = [P.white, "#E3C766", mix(P.crimsonFaded, P.worn, 0.3), P.white, "#E3C766"];
+    blooms.forEach((c, i) => {
+      const a = (i / blooms.length) * Math.PI * 2 + 0.4;
+      const tip: Vec3 = [at[0] + Math.cos(a) * 0.075, at[1] + 0.26 + (i % 2) * 0.05, at[2] + Math.sin(a) * 0.075];
+      shBeam(b, [at[0], at[1] + 0.11, at[2]], tip, 0.007, 0.007, { color: "#5D7350" }, [0, 0, 1]);
+      b.rock({ size: [0.062, 0.045, 0.062], points: 7, jitter: 0.15, at: tip, color: c, vary: 0.06 });
+    });
+  }
+  // folded notes weighed down on the ledge and at the foot
+  for (const [x, y, z, yaw] of [
+    [0.36, led, 1.0, 20],
+    [-0.02, led, 0.82, -35],
+    [0.75, led, 0.66, 60],
+    [-0.8, 0, 0.92, 10],
+    [0.7, 0, 0.98, -20],
+  ] as const)
+    b.box({ size: [0.13, 0.006, 0.095], at: [x, y + 0.004, z], rot: [0, yaw, 0], color: SH_PAPER, parts: { top: mix(SH_PAPER, P.worn, 0.3) }, vary: 0.05 });
+  // a folded scarf left on the ledge
+  b.box({ size: [0.22, 0.045, 0.13], at: [-0.33, led + 0.0225, 0.78], rot: [0, 24, 0], chamfer: 0.012, color: SH_CRIMSONS[0], parts: { top: mix(P.crimson, P.crimsonFaded, 0.5) }, vary: 0.05 });
+  b.box({ size: [0.225, 0.012, 0.03], at: [-0.33, led + 0.047, 0.78], rot: [0, 24, 0], color: P.worn });
+
+  m.anchor("head", [0, r4(PL + K * (1.452 + 0.16 * 1.16)), 0.05]);
+  m.anchor("plinth_top", [0, PL, 0]);
+  // where the floating trophy's base hovers (tl_env_shrine_trophy_v01): 0.42 m above the hair
+  m.anchor("trophy", [0, SHRINE_TROPHY_Y, 0]);
+  m.light({ name: "candles", at: [0, 0.82, 1.05], color: "#FFB65C", intensity: 1.3, range: 4.5 });
+  m.collider = { type: "cylinder", center: [0, 1.6, 0], radius: 1.16, height: 3.2 };
+  m.meta = { plinthHeight: PL, figureScale: K, obstacleRadius: 1.2 };
+  return m;
+}
+
+/* ---------------------------------------------------------------- the floating trophy */
+
+/** Height (m, idol space) at which the trophy's base hovers above the idol's head (hair top ~3.33 m). */
+const SHRINE_TROPHY_Y = 3.75;
+
+function buildShrineTrophy(): Model {
+  const name = "tl_env_shrine_trophy_v01";
+  const m = new Model(name, {
+    budget: 700,
+    notes:
+      "The championship trophy that floats above the shrine idol: a generic low-poly cup, 0.96 m tall - stepped base, " +
+      "slim stem with a knot, a wide flaring bowl and two tall looping handles (no logos, plates or text). Every face is " +
+      "emissive (tl_glow, pale silver-blue with warm gold bands), shaded per facet so the form reads without light. The " +
+      "runtime spins it about Y, bobs it and puts a pulsing omni at 'light_anchor'. Pivot: centre of the base.",
+  });
+  const b = m.geo;
+  const SILVER: Color = "#D9E6F5";
+  const BLUE: Color = "#9CC3F0";
+  const GOLD: Color = "#F6D995";
+  const GLOW = 1.5;
+  /** Unlit facets: brighter on top and toward +Z / +X, so the cup keeps its shape while it turns. */
+  const lit = (c: Color) => (f: { normal: Vec3 }) => shade(c, clamp(0.74 + 0.2 * f.normal[1] + 0.1 * f.normal[2] + 0.06 * f.normal[0], 0.5, 1.08));
+  const cyl = (y0: number, y1: number, r0: number, r1: number, c: Color, sides = 10, caps: boolean | "top" | "bottom" = true) =>
+    b.cylinder({ height: y1 - y0, radiusBottom: r0, radiusTop: r1, sides, at: [0, (y0 + y1) / 2, 0], color: lit(c), mat: "glow", glow: GLOW, caps });
+  // base: two steps and a collar
+  cyl(0, 0.07, 0.2, 0.185, SILVER);
+  cyl(0.07, 0.12, 0.15, 0.135, GOLD);
+  cyl(0.12, 0.2, 0.105, 0.06, SILVER);
+  // stem with a knot
+  cyl(0.2, 0.34, 0.04, 0.034, BLUE, 8, false);
+  cyl(0.34, 0.37, 0.034, 0.075, GOLD, 8);
+  cyl(0.37, 0.4, 0.075, 0.034, GOLD, 8);
+  cyl(0.4, 0.48, 0.034, 0.05, BLUE, 8, false);
+  // bowl: flares out to a wide rim, gold band under the lip
+  cyl(0.48, 0.6, 0.05, 0.21, SILVER, 12, "bottom");
+  cyl(0.6, 0.78, 0.21, 0.3, SILVER, 12, false);
+  cyl(0.78, 0.83, 0.3, 0.325, GOLD, 12, false);
+  cyl(0.83, 0.86, 0.325, 0.335, SILVER, 12, false);
+  // the inside of the bowl (seen from above and through the open rim)
+  cyl(0.845, 0.86, 0.06, 0.325, BLUE, 12, "top");
+  // two looping handles: out from the rim, up over it and down to the stem's knot
+  for (const s of [-1, 1]) {
+    const pts: Vec3[] = [
+      [s * 0.3, 0.8, 0],
+      [s * 0.43, 0.9, 0],
+      [s * 0.5, 0.82, 0],
+      [s * 0.49, 0.66, 0],
+      [s * 0.4, 0.52, 0],
+      [s * 0.25, 0.44, 0],
+      [s * 0.07, 0.385, 0],
+    ];
+    for (let i = 0; i + 1 < pts.length; i++)
+      shBeam(b, pts[i], pts[i + 1], 0.05, 0.034, { color: lit(i % 2 ? BLUE : SILVER), mat: "glow", glow: GLOW }, [0, 0, 1], 0.94);
+  }
+  m.anchor("light_anchor", [0, 0.62, 0]);
+  m.light({ name: "trophy", at: [0, 0.62, 0], color: "#CFE2FF", intensity: 1.6, range: 7 });
+  m.meta = { height: 0.96, hoverAt: SHRINE_TROPHY_Y, spin: "about Y, runtime" };
+  return m;
+}
+
+/* ---------------------------------------------------------------- gate, banner, rope */
+
+const SHRINE_GATE_POST_X = 1.55;
+
+function buildShrineGate(): Model {
+  const name = "tl_env_shrine_gate_v01";
+  const m = new Model(name, {
+    budget: 700,
+    notes:
+      "Rough timber gate (two leaning posts, a long top beam, a tie beam) with a paper-strip rope and rags knotted " +
+      "to the posts; clear opening 2.8 m wide, 2.7 m under the rope. Faces +Z. It marks the shrine's way back to " +
+      "the cave, in front of the tunnel mouth on the +Z side. Lanterns hang at anchors 'lantern_l' / 'lantern_r'.",
+  });
+  const rng = new Rng(name);
+  const b = new MeshBuilder(name);
+  const postH = 3.55;
+  const X = SHRINE_GATE_POST_X;
+  for (const s of [1, -1]) {
+    b.plank({ size: [postH, 0.24, 0.25], jitter: 0.08, at: [s * (X + 0.04), postH / 2, 0], rot: [0, rng.jitter(3), 90 + s * 2.2], ...shWood(rng.pick(SH_WOODS)) });
+    b.rock({ size: [0.62, 0.36, 0.56], points: 10, jitter: 0.25, flat: 0.25, align: "bottom", at: [s * (X + 0.12), 0, 0.05], rot: [0, rng.range(0, 90), 0], color: rockPaint(rng, SH_STONE, 0.2) });
+    b.rock({ size: [0.34, 0.22, 0.3], points: 8, jitter: 0.25, flat: 0.25, align: "bottom", at: [s * (X - 0.3), 0, -0.12], rot: [0, rng.range(0, 90), 0], color: rockPaint(rng, mix(SH_STONE, P.rock, 0.25), 0.2) });
+    // wedge under the top beam
+    b.wedge({ size: [0.24, 0.1, 0.2], at: [s * (X + 0.2), postH + 0.03, 0.02], rot: [0, s * 90, 0], color: P.woodDark });
+  }
+  const topY = postH + 0.19;
+  b.plank({ size: [4.5, 0.27, 0.3], jitter: 0.07, at: [0, topY, 0], rot: [0, 0, rng.jitter(1.2)], ...shWood(SH_WOODS[1]) });
+  const tieY = 3.06;
+  b.plank({ size: [3.75, 0.16, 0.19], jitter: 0.08, at: [0, tieY, 0.01], rot: [0, 0, rng.jitter(1)], ...shWood(SH_WOODS[2]) });
+  // short strut between the beams (the tablet post of a torii, left blank)
+  b.plank({ size: [0.36, 0.13, 0.15], jitter: 0.05, at: [0, (topY + tieY) / 2 - 0.02, 0.01], rot: [0, 0, 90], ...shWood(SH_WOODS[0]) });
+  // rope with paper strips under the tie beam
+  shGarland(b, rng, X - 0.1, 2.97, 0.17, 0.026, 0.1, 0.4);
+  // rags knotted round the posts
+  for (const s of [1, -1]) {
+    b.cylinder({ height: 0.1, radius: 0.15, sides: 6, at: [s * (X + 0.02), 1.75, 0], color: SH_ROPE, vary: 0.06 });
+    shRag(b, rng, [s * (X - 0.02), 1.72, 0.13], 0.5, 0.11, rng.pick(SH_CRIMSONS));
+    shRag(b, rng, [s * (X + 0.1), 1.72, 0.12], 0.36, 0.09, mix(P.worn, P.wornDark, 0.4));
+  }
+  // lantern cords from the beam ends
+  const lx = 2.02;
+  for (const s of [1, -1]) b.tube([[s * lx, topY - 0.12, 0.02], [s * lx, topY - 0.36, 0.02]], { radius: 0.008, sides: 4, color: SH_ROPE });
+  placeBottomCentre(m, b);
+  const bb = b.bounds()!;
+  const dx = -(bb.min[0] + bb.max[0]) / 2;
+  const dz = -(bb.min[2] + bb.max[2]) / 2;
+  m.anchor("lantern_l", [r4(lx + dx), r4(topY - 0.36), r4(0.02 + dz)]);
+  m.anchor("lantern_r", [r4(-lx + dx), r4(topY - 0.36), r4(0.02 + dz)]);
+  m.anchor("post_l", [r4(X + dx), 0, r4(dz)]);
+  m.anchor("post_r", [r4(-X + dx), 0, r4(dz)]);
+  m.meta = {
+    clearWidth: r4(2 * (X - 0.12)),
+    clearHeight: 2.73,
+    postColliders: [
+      { type: "cylinder", center: [X, postH / 2, 0], radius: 0.16, height: postH },
+      { type: "cylinder", center: [-X, postH / 2, 0], radius: 0.16, height: postH },
+    ],
+  };
+  return m;
+}
+
+function buildShrineBanner(): Model {
+  const name = "tl_env_shrine_banner_v01";
+  const m = new Model(name, {
+    budget: 320,
+    notes:
+      "Banner pole 4.3 m: a leaning timber pole with a cross arm and a long tattered crimson cloth (worn-white " +
+      "patches, no emblem), base rocks. The cloth faces +Z. The rim rope ties on at anchor 'tie' (1.12 m).",
+  });
+  const rng = new Rng(name);
+  const b = new MeshBuilder(name);
+  const H = 4.3;
+  const px = -0.52;
+  b.plank({ size: [H, 0.13, 0.14], jitter: 0.08, at: [px, H / 2, 0], rot: [0, 3, 90 - 1.5], ...shWood(SH_WOODS[1]) });
+  const armY = H - 0.32;
+  b.plank({ size: [1.3, 0.085, 0.095], jitter: 0.1, at: [px + 0.5, armY, 0.02], rot: [0, 0, -2], ...shWood(SH_WOODS[2]) });
+  // lashing where the arm crosses the pole
+  b.cylinder({ height: 0.13, radius: 0.105, sides: 6, at: [px, armY, 0.01], color: SH_ROPE, vary: 0.06 });
+  // strut
+  shBeam(b, [px + 0.02, armY - 0.42, 0.02], [px + 0.42, armY - 0.03, 0.03], 0.05, 0.05, shWood(SH_WOODS[0]), [0, 0, 1]);
+  const cw = 0.92,
+    cl = 2.55;
+  const cx = px + 0.62;
+  b.cloth({
+    size: [cw, cl],
+    seg: [3, 8],
+    noise: 0.014,
+    tear: 0.6,
+    tearEdges: "+z",
+    displace: (x, _z, _u, v) => 0.05 * Math.sin(v * 6.5 + 0.7) * (0.4 + v) + 0.03 * (x / cw),
+    at: [cx, armY - 0.06 - cl / 2, 0.075],
+    rot: [90, 0, 0],
+    // one colour fading toward the hem, two off-centre repairs (a pale one low on the pole side, a
+    // dark one high on the far side): no stripes, nothing that reads as an emblem
+    color: (f) => {
+      const u = f.center[0] / cw + 0.5,
+        v = f.center[2] / cl + 0.5;
+      if (u < 0.34 && v > 0.5 && v < 0.76) return mix(P.worn, P.wornDark, 0.4);
+      if (u > 0.66 && v > 0.12 && v < 0.26) return mix(P.crimsonDark, P.black, 0.3);
+      return mix(mix(P.crimson, P.crimsonDark, 0.3), P.crimsonFaded, clamp(0.15 + 0.5 * v, 0, 1));
+    },
+    vary: 0.07,
+  });
+  // ties: top corners to the arm, a cord from the pole to the cloth's edge
+  for (const dx of [-cw / 2 + 0.04, cw / 2 - 0.04])
+    b.tube([[cx + dx, armY + 0.05, 0.03], [cx + dx, armY - 0.07, 0.078]], { radius: 0.009, sides: 4, color: SH_ROPE });
+  b.tube([[px + 0.03, armY - 1.5, 0.03], [cx - cw / 2 + 0.03, armY - 1.62, 0.08]], { radius: 0.007, sides: 4, color: SH_ROPE });
+  // base rocks
+  b.rock({ size: [0.6, 0.38, 0.52], points: 10, jitter: 0.25, flat: 0.25, align: "bottom", at: [px + 0.06, 0, 0.04], rot: [0, 25, 0], color: rockPaint(rng, SH_STONE, 0.2) });
+  b.rock({ size: [0.36, 0.22, 0.3], points: 8, jitter: 0.25, flat: 0.25, align: "bottom", at: [px + 0.42, 0, -0.14], rot: [0, 70, 0], color: rockPaint(rng, mix(SH_STONE, P.rock, 0.3), 0.2) });
+  // rope lashing at tie height
+  b.cylinder({ height: 0.09, radius: 0.09, sides: 6, at: [px, SHRINE_TIE_Y, 0], color: SH_ROPE, vary: 0.06 });
+  placeBottomCentre(m, b);
+  const bb = b.bounds()!;
+  const dx = -(bb.min[0] + bb.max[0]) / 2;
+  const dz = -(bb.min[2] + bb.max[2]) / 2;
+  m.anchor("tie", [r4(px + dx), SHRINE_TIE_Y, r4(dz)]);
+  m.anchor("pole", [r4(px + dx), 0, r4(dz)]);
+  m.meta = { poleCollider: { type: "cylinder", center: [r4(px + dx), H / 2, r4(dz)], radius: 0.1, height: H } };
+  return m;
+}
+
+function buildShrinePost(): Model {
+  const name = "tl_env_shrine_post_v01";
+  const m = new Model(name, {
+    budget: 160,
+    notes:
+      "Rope post of the shrine rim, 1.45 m: a rough timber post wedged between two rocks, rope lashing and rags " +
+      "at 1.12 m (anchor 'tie'). Two of them leave the opening of the rope circle on the approach.",
+  });
+  const rng = new Rng(name);
+  const b = new MeshBuilder(name);
+  const H = 1.45;
+  b.plank({ size: [H, 0.15, 0.16], jitter: 0.1, at: [0, H / 2, 0], rot: [0, 4, 90 + 2.5], ...shWood(SH_WOODS[0]) });
+  b.cylinder({ height: 0.1, radius: 0.105, sides: 6, at: [0.012, SHRINE_TIE_Y, 0], color: SH_ROPE, vary: 0.06 });
+  shRag(b, rng, [-0.03, SHRINE_TIE_Y - 0.03, 0.09], 0.42, 0.1, SH_CRIMSONS[1]);
+  shRag(b, rng, [0.07, SHRINE_TIE_Y - 0.03, 0.085], 0.28, 0.08, mix(P.worn, P.wornDark, 0.4));
+  shPaperStrip(b, rng, [0.0, SHRINE_TIE_Y - 0.06, -0.1], 0.07, 0.1, 3);
+  b.rock({ size: [0.5, 0.3, 0.44], points: 10, jitter: 0.25, flat: 0.25, align: "bottom", at: [0.08, 0, 0.05], rot: [0, 40, 0], color: rockPaint(rng, SH_STONE, 0.2) });
+  b.rock({ size: [0.3, 0.19, 0.26], points: 8, jitter: 0.25, flat: 0.25, align: "bottom", at: [-0.2, 0, -0.1], rot: [0, 10, 0], color: rockPaint(rng, mix(SH_STONE, P.rock, 0.3), 0.2) });
+  placeBottomCentre(m, b);
+  const bb = b.bounds()!;
+  const dx = -(bb.min[0] + bb.max[0]) / 2;
+  const dz = -(bb.min[2] + bb.max[2]) / 2;
+  m.anchor("tie", [r4(dx + 0.012), SHRINE_TIE_Y, r4(dz)]);
+  m.anchor("pole", [r4(dx), 0, r4(dz)]);
+  return m;
+}
+
+/** Chord between two rim posts 30 degrees apart on the r = 8.9 circle. */
+const SHRINE_ROPE_SPAN = 2 * 8.9 * Math.sin(15 * DEG);
+
+function buildShrineRope(): Model {
+  const name = "tl_env_shrine_rope_v01";
+  const m = new Model(name, {
+    budget: 260,
+    notes:
+      "Rim rope of the shrine: 4.61 m span between two posts (ends at y = 1.12 m, anchors 'end_l' / 'end_r'), " +
+      "sagging 0.3 m, with paper strips and faded rags: a low cordon that marks the edge of the walkable circle " +
+      "and stays under a follow camera's view. Cosmetic, no collider.",
+  });
+  const rng = new Rng(name);
+  const half = SHRINE_ROPE_SPAN / 2;
+  const yAt = shGarland(m.geo, rng, half, SHRINE_TIE_Y, 0.3, 0.02);
+  m.anchor("end_l", [r4(half), SHRINE_TIE_Y, 0]);
+  m.anchor("end_r", [r4(-half), SHRINE_TIE_Y, 0]);
+  m.meta = { span: r4(SHRINE_ROPE_SPAN), endHeight: SHRINE_TIE_Y, lowest: r4(yAt(0)) };
+  return m;
+}
+
+/* ---------------------------------------------------------------- candles */
+
+function buildShrineCandles(): Model {
+  const name = "tl_env_shrine_candles_v01";
+  const m = new Model(name, {
+    budget: 260,
+    notes: "A flat stone with five wax candles (unlit glow flames) and a note. Light anchor 'light'. Cosmetic.",
+  });
+  const rng = new Rng(name);
+  const b = new MeshBuilder(name);
+  b.hull(slabPoints(rng, 0.62, 0.13, 0.46), { color: rockPaint(rng, SH_STONE, 0.24) });
+  const top = 0.125;
+  for (const [x, z, hgt] of [
+    [-0.14, 0.02, 0.21],
+    [0.02, -0.07, 0.13],
+    [0.13, 0.05, 0.17],
+    [-0.03, 0.1, 0.07],
+    [0.19, -0.08, 0.06],
+  ] as const)
+    shCandle(b, rng, [x, top, z], hgt, 0.025, true);
+  b.box({ size: [0.12, 0.006, 0.085], at: [-0.2, top + 0.008, -0.1], rot: [0, 25, 4], color: SH_PAPER, vary: 0.05 });
+  placeBottomCentre(m, b);
+  m.anchor("light", [0, 0.42, 0]);
+  m.light({ name: "candles", at: [0, 0.42, 0], color: "#FFB65C", intensity: 0.9, range: 3.2 });
+  return m;
+}
+
+/* ---------------------------------------------------------------- the door in the cave */
+
+function buildShrineDoor(): Model {
+  const name = "tl_env_shrine_door_v01";
+  const m = new Model(name, {
+    budget: 900,
+    notes:
+      "Cave-side door of the shrine. Place at the tunnel frame, cave (0, 0, -18.35) rotY 0 (tl_env_tunnel_frame_v01 " +
+      "stays as the porch): a rough plank double door recessed in the tunnel mouth 1 m behind the frame (z = -1.03; " +
+      "the right leaf stands half open inward, a faded cloth is pinned to the closed leaf), a two-plank name board " +
+      "hung by ropes from the frame's lintel (anchor 'sign' = the board's face, 2.5 x 0.8 m), two lantern brackets " +
+      "on the posts (anchors 'lantern_l' / 'lantern_r'). Authored around the frame's pivot, so its bounds are not " +
+      "centred (expected pivot warning).",
+  });
+  const rng = new Rng(name);
+  const b = m.geo;
+  const DZ = TUN.mouthZ - (TUN.mouthZ + 0.95) - 0.08; // door plane behind the frame: -1.03
+  const FY = TUN.floorY + 0.015;
+  const leafW = TUN.halfW + 0.02;
+  const leafH = TUN.shoulder - 0.02;
+  /** A plank leaf hinged at x = 0, reaching dir * x, its face toward +Z. */
+  const leaf = (seed: string, dir: 1 | -1): MeshBuilder => {
+    const lb = new MeshBuilder(`${name}/${seed}`);
+    const lr = new Rng(`${name}/${seed}/shape`);
+    const n = 6;
+    const pw = leafW / n;
+    for (let i = 0; i < n; i++) {
+      const hgt = leafH - lr.range(0, 0.09);
+      lb.plank({
+        size: [hgt, 0.05, pw - 0.012],
+        jitter: 0.05,
+        at: [dir * (i + 0.5) * pw, hgt / 2, 0],
+        rot: [90, 0, 90],
+        ...shWood(shade(lr.pick(SH_WOODS), 0.92), 0.07),
+      });
+    }
+    for (const y of [0.42, 1.5, 2.52])
+      lb.plank({ size: [leafW - 0.1, 0.045, 0.15], jitter: 0.06, at: [(dir * leafW) / 2, y, 0.047], rot: [90, 0, lr.jitter(1)], ...shWood(shade(SH_WOODS[2], 0.85)) });
+    shBeam(lb, [dir * 0.12, 0.5, 0.047], [dir * (leafW - 0.12), 1.42, 0.047], 0.13, 0.04, shWood(shade(SH_WOODS[2], 0.8)), [0, 0, 1]);
+    // iron pull ring near the free edge
+    lb.ring({ radius: 0.075, inner: 0.052, depth: 0.018, segments: 8, at: [dir * (leafW - 0.2), 1.18, 0.085], color: P.metalDark, vary: 0.05 });
+    return lb;
+  };
+  // left leaf (x from -halfW to 0): closed, a little crooked
+  b.add(leaf("left", 1), { at: [-leafW, FY, DZ], rot: [0, -3, 0] });
+  // right leaf: hinged at +halfW, standing half open into the tunnel
+  b.add(leaf("right", -1), { at: [leafW, FY, DZ - 0.05], rot: [0, -46, 0] });
+  // transom boards closing the pentagon above the leaves
+  b.hull(
+    [
+      [-TUN.halfW - 0.1, TUN.shoulder - 0.12, DZ - 0.07],
+      [TUN.halfW + 0.1, TUN.shoulder - 0.12, DZ - 0.07],
+      [0, TUN.apex + 0.12, DZ - 0.07],
+      [-TUN.halfW - 0.1, TUN.shoulder - 0.12, DZ - 0.02],
+      [TUN.halfW + 0.1, TUN.shoulder - 0.12, DZ - 0.02],
+      [0, TUN.apex + 0.12, DZ - 0.02],
+    ],
+    { color: shade(SH_WOODS[2], 0.62), vary: 0.05 },
+  );
+  // a faded cloth pinned to the closed leaf, paper charms on both
+  b.cloth({
+    size: [0.82, 1.28],
+    seg: [3, 5],
+    noise: 0.01,
+    tear: 0.5,
+    tearEdges: "+z",
+    patches: 1,
+    patchColor: [mix(P.worn, P.wornDark, 0.45)],
+    displace: (_x, _z, _u, v) => 0.02 * Math.sin(v * 5),
+    at: [-0.86, FY + 1.86 - 0.64, DZ + 0.1],
+    rot: [90, 0, 0],
+    color: mix(P.crimson, P.crimsonDark, 0.3),
+    vary: 0.07,
+  });
+  for (const [x, y] of [
+    [-1.5, 1.72],
+    [-0.28, 1.36],
+    [-1.42, 1.02],
+  ] as const)
+    b.box({ size: [0.1, 0.28, 0.006], at: [x, y, DZ + 0.085], rot: [0, 0, rng.jitter(7)], color: SH_PAPER, vary: 0.06 });
+
+  /* the name board, hung from the frame's lintel */
+  const BW = 2.5,
+    BH = 0.8,
+    BY = 2.33,
+    BZ = 0.23;
+  for (const s of [-1, 1])
+    b.plank({ size: [BW + (s > 0 ? 0.06 : -0.04), 0.05, BH / 2 - 0.008], jitter: 0.05, at: [rng.jitter(0.02), BY + (s * BH) / 4, BZ], rot: [90, 0, rng.jitter(0.4)], ...shWood(mix(SH_WOODS[1], P.woodLight, 0.25)) });
+  for (const x of [-0.82, 0.86]) b.plank({ size: [BH - 0.08, 0.04, 0.1], jitter: 0.06, at: [x, BY, BZ - 0.045], rot: [90, 0, 90], ...shWood(SH_WOODS[2]) });
+  const lintelTop = 3.085;
+  for (const x of [-0.98, 1.0]) {
+    b.tube(
+      [
+        [x, BY + BH / 2 - 0.06, BZ + 0.03],
+        [x, lintelTop - 0.03, 0.2],
+        [x, lintelTop + 0.012, 0.1],
+        [x, lintelTop + 0.012, -0.1],
+        [x, lintelTop - 0.06, -0.19],
+      ],
+      { radius: 0.014, sides: 4, color: SH_ROPE, vary: 0.05 },
+    );
+    b.cylinder({ height: 0.03, radius: 0.03, sides: 6, at: [x, BY + BH / 2 - 0.07, BZ + 0.036], rot: [90, 0, 0], color: P.metalDark });
+  }
+
+  /* lantern brackets on the outer face of the posts */
+  const hook: Vec3 = [2.03, 2.24, 0.16];
+  for (const s of [1, -1]) {
+    shBeam(b, [s * 1.62, 2.48, 0.03], [s * (hook[0] + 0.05), 2.42, hook[2]], 0.065, 0.075, shWood(SH_WOODS[0]), [0, 1, 0]);
+    shBeam(b, [s * 1.66, 2.08, 0.03], [s * (hook[0] - 0.1), 2.4, hook[2] - 0.03], 0.045, 0.045, shWood(SH_WOODS[2]), [0, 1, 0]);
+    b.tube([[s * hook[0], 2.4, hook[2]], [s * hook[0], hook[1], hook[2]]], { radius: 0.007, sides: 4, color: SH_ROPE });
+    // rags knotted to the bracket
+    shRag(b, rng, [s * 1.82, 2.4, 0.11], 0.42, 0.09, rng.pick(SH_CRIMSONS));
+  }
+  m.anchor("sign", [0, BY, r4(BZ + 0.032)]);
+  m.anchor("lantern_l", [hook[0], hook[1], hook[2]]);
+  m.anchor("lantern_r", [-hook[0], hook[1], hook[2]]);
+  m.anchor("door_gap", [0.45, 1.5, r4(DZ - 0.6)]);
+  m.meta = { place: { at: [0, 0, r4(TUN.mouthZ + 0.95)], rotY: 0 }, signSize: [BW, BH], doorPlaneZ: r4(DZ) };
+  return m;
+}
+
+/* =========================================================================================
  * Group entry
  * ========================================================================================= */
 
@@ -1458,6 +2516,17 @@ export default function build(): Model[] {
     buildStone("d"),
     buildPuddle(),
     buildTunnelFrame(),
+    buildShrineFloor(),
+    buildShrineSeat("a"),
+    buildShrineSeat("b"),
+    buildShrineIdol(),
+    buildShrineTrophy(),
+    buildShrineGate(),
+    buildShrineBanner(),
+    buildShrinePost(),
+    buildShrineRope(),
+    buildShrineCandles(),
+    buildShrineDoor(),
   ];
 }
 

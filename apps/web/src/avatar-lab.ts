@@ -14,9 +14,23 @@
  *                    (yaw 180 looks at the fronts); face=<deg> turns the avatars (90 = profile,
  *                    facing screen right), speed=<m/s> walks them in place, emote=wave|laugh|cheer|mix
  *                    (at t = 0), x=<m> pans the camera, gap=<m> spacing; seed=<n> + stagger=<s>
- *                    make a filmstrip (identical copies, copy i runs i * stagger s ahead)
+ *                    make a filmstrip (identical copies, copy i runs i * stagger s ahead);
+ *                    turn=<deg> turns copy i by i * turn more (turntable: pick=1,1,1,1&turn=90)
  *   wall=1           park the followed avatar at r = 16 (angle=<deg>, theta from +X toward -Z),
  *                    facing outward, camera behind it (yaw=<deg> overrides) to check containment
+ *   rank=<1-5>       rank look of every avatar (2 oxygen trolley, 3 crutches, 4 wheelchair, 5 bed);
+ *   ranks=all | 2,4  one rank per avatar, cycling 1..5 (or the given list)
+ *   cosmetic=<id>    shop look of every avatar (cave-glasses, cave-keyboard, cave-ragged-shorts,
+ *                    cave-tshirt, cave-tank-top, cave-jersey); cosmetic=all cycles them per avatar,
+ *                    cosmetic=a,b,none cycles a list
+ *   late=<s>         apply rank / cosmetic that many seconds into the run instead of at spawn
+ *   gearwait=0       do not wait for the gear GLBs: setProgression runs before they are loaded
+ *   churn=<n>        robustness: n rounds of random rank / look / shrine-seat changes on every
+ *                    avatar before the final look; __info.churn compares the avatars' node count
+ *                    with freshly built twins (a leak shows as a difference)
+ *   batch=1          put the avatars in one dynamic batch group with shared materials, like the
+ *                    game does for other players (gear must follow); fade=<0..1> gives avatar
+ *                    `follow` (lineup: every avatar) the game's dithered self-fade at that opacity
  *   t=<s>            simulate t seconds in fixed 60 Hz steps, then freeze (deterministic shots)
  *   stats=1          overlay: fps, frame ms, draw calls, avatar update ms
  *   bench=<frames>   time that many avatar update frames up front (reported in __info)
@@ -29,6 +43,7 @@
  */
 import * as pc from "playcanvas";
 import { AVATAR_VARIANTS, createAvatar, preloadAvatars, type Avatar, type AvatarEmote } from "./avatar.js";
+import { COSMETIC_IDS, preloadGear } from "./avatarProgression.js";
 import { createFollowCamera, type FollowCamera } from "./camera.js";
 import { instantiateModel, loadModelContainer } from "./models.js";
 
@@ -224,7 +239,7 @@ function setupBots() {
     const face = num("face", 0);
     const gap = num("gap", 0.95);
     list.forEach((vi, i) => {
-      const b = spawn(i, "lineup", AVATAR_VARIANTS[vi], (i - (list.length - 1) / 2) * gap, 5, face);
+      const b = spawn(i, "lineup", AVATAR_VARIANTS[vi], (i - (list.length - 1) / 2) * gap, 5, face + i * num("turn", 0));
       b.speed = num("speed", 0);
     });
     const e = q.get("emote");
@@ -258,6 +273,106 @@ function setupBots() {
     b.z = -Math.sin(a) * 16;
     b.yaw = Math.atan2(b.x, b.z) / DEG; // facing outward
     b.speed = 0;
+  }
+}
+
+/* ------------------------------------------------------------------ rank looks */
+
+function rankOf(i: number): number {
+  const list = q.get("ranks");
+  if (list === "all") return 1 + (i % 5);
+  if (list) {
+    const ranks = list.split(",").map((s) => Number(s.trim())).filter((n) => Number.isInteger(n) && n >= 1 && n <= 5);
+    if (ranks.length) return ranks[i % ranks.length];
+  }
+  return Math.max(1, Math.min(5, Math.round(num("rank", 1))));
+}
+function cosmeticOf(i: number): string | null {
+  const c = q.get("cosmetic");
+  if (c === "all") return COSMETIC_IDS[i % COSMETIC_IDS.length];
+  if (!c) return null;
+  const list = c.split(",").map((s) => s.trim());
+  const id = list[i % list.length];
+  return id && id !== "none" ? id : null;
+}
+function applyLooks() {
+  bots.forEach((b, i) => b.a.setProgression(rankOf(i), cosmeticOf(i)));
+}
+
+/** Random look / seat changes on every avatar, then back to standing (see churn= in the header). */
+function runChurn(rounds: number): { rounds: number } | null {
+  if (rounds <= 0) return null;
+  let s = 12345;
+  const rnd = (n: number) => {
+    s = (Math.imul(s, 1103515245) + 12345) >>> 0;
+    return (s >>> 8) % n;
+  };
+  const looks = [null, ...COSMETIC_IDS, "fan-cap-red", "bogus"];
+  for (let r = 0; r < rounds; r++)
+    for (const b of bots) {
+      b.a.setProgression(1 + rnd(5), looks[rnd(looks.length)]);
+      if (rnd(3) === 0) b.a.setProgression(1 + rnd(5), looks[rnd(looks.length)]); // twice in a frame
+      b.a.setShrinePose(rnd(6) === 0, rnd(2) ? "pray" : null, r / 10);
+      if (rnd(8) === 0) b.a.emote(EMOTES[rnd(3)]);
+      b.a.update(1 / 60, rnd(2) ? 3 : 0);
+    }
+  for (const b of bots) b.a.setShrinePose(false, null, 0);
+  return { rounds };
+}
+const countNodes = (e: pc.GraphNode): number => e.children.reduce((n, c) => n + countNodes(c), 1);
+/** After the final looks: every avatar against a fresh twin with the same look; the twins are destroyed. */
+function churnCheck() {
+  let nodes = 0,
+    fresh = 0,
+    twinsGone = true;
+  bots.forEach((b, i) => {
+    const twin = createAvatar(app, { variant: b.variant, seed: 1 });
+    twin.setProgression(rankOf(i), cosmeticOf(i));
+    twin.update(0, 0);
+    fresh += countNodes(twin.entity);
+    nodes += countNodes(b.a.entity);
+    twin.destroy();
+    twin.setProgression(5, "cave-jersey"); // after destroy: must be ignored
+    twin.update(0.016, 1);
+    if (app.root.children.includes(twin.entity)) twinsGone = false;
+  });
+  return { nodes, fresh, twinsGone };
+}
+
+/** What main.ts does for other players: shared tl_matte / tl_cloth materials + one dynamic batch group. */
+const sharedMaterials = new Map<string, pc.Material>();
+function batchLikeGame(a: Avatar) {
+  const group = app.batcher.getGroupByName("tl_avatars") ?? app.batcher.addGroup("tl_avatars", true, 100);
+  for (const r of a.entity.findComponents("render") as pc.RenderComponent[]) {
+    for (const mi of r.meshInstances) {
+      const m = mi.material;
+      if (!m || (m.name !== "tl_matte" && m.name !== "tl_cloth")) continue;
+      const shared = sharedMaterials.get(m.name);
+      if (shared) mi.material = shared;
+      else sharedMaterials.set(m.name, m);
+    }
+    r.batchGroupId = group.id;
+  }
+}
+/** What main.ts does for the player's own avatar: dithered clones at an opacity, not batched while faded. */
+const fadeMaterials = new Map<string, pc.StandardMaterial>();
+function fadeLikeGame(a: Avatar, opacity: number) {
+  for (const r of a.entity.findComponents("render") as pc.RenderComponent[]) {
+    for (const mi of r.meshInstances) {
+      const m = mi.material;
+      if (!(m instanceof pc.StandardMaterial) || m.name.startsWith("tl_glow")) continue;
+      let own = fadeMaterials.get(m.name);
+      if (!own) {
+        own = m.clone();
+        own.opacityDither = pc.DITHER_BAYER8;
+        own.opacityShadowDither = pc.DITHER_BAYER8;
+        own.opacity = opacity;
+        own.update();
+        fadeMaterials.set(m.name, own);
+      }
+      mi.material = own;
+    }
+    r.batchGroupId = -1;
   }
 }
 
@@ -334,8 +449,13 @@ let frameAvg = 1 / 60;
 const doProbe = flag("probe", false);
 
 let simTime = 0;
+let looksAt = -1;
 function step(dt: number) {
   simTime += dt;
+  if (looksAt >= 0 && simTime >= looksAt) {
+    looksAt = -1;
+    applyLooks();
+  }
   for (const b of bots) {
     moveBot(b, dt);
     b.a.entity.setPosition(b.x, 0, b.z);
@@ -384,12 +504,28 @@ function drawTags() {
 
 async function main() {
   await Promise.all([loadCave(), preloadAvatars(app)]);
+  if (flag("gearwait", true)) {
+    const gearOk = await preloadGear(app);
+    if (!gearOk) reportError("rank gear failed to load");
+  }
   setupBots();
+  if (flag("batch", false)) for (const b of bots) batchLikeGame(b.a);
+  if (q.get("fade") !== null) {
+    const o = Math.max(0, Math.min(1, num("fade", 1)));
+    const fi = Math.max(0, Math.min(bots.length - 1, Math.round(num("follow", 0))));
+    bots.forEach((b, i) => {
+      if (lineup || i === fi) fadeLikeGame(b.a, o);
+    });
+  }
+  const churn = runChurn(Math.round(num("churn", 0)));
+  if (q.get("late") !== null) looksAt = Math.max(0, num("late", 0));
+  else applyLooks();
   if (flag("tags", true))
     bots.forEach((b, i) => {
       const d = document.createElement("div");
       d.className = "tag";
-      d.textContent = `${i} ${b.variant.replace(/^tl_char_fan_|_v01$/g, "")}`;
+      const look = [rankOf(i) > 1 ? `r${rankOf(i)}` : "", (cosmeticOf(i) ?? "").replace(/^cave-/, "")].filter(Boolean).join(" ");
+      d.textContent = `${i} ${b.variant.replace(/^tl_char_(fan_)?|_v01$/g, "")}${look ? ` · ${look}` : ""}`;
       tagsEl.appendChild(d);
       b.tag = d;
     });
@@ -491,6 +627,7 @@ async function main() {
         view: lineup ? "lineup" : followed?.kind === "wall" ? "wall" : "follow",
         updateMsAvg: +(sumUpd / Math.max(1, nUpd)).toFixed(4),
         bench,
+        churn: churn ? { ...churn, ...churnCheck() } : null,
         drawCalls: app.stats.drawCalls.total,
         camera: {
           pos: [p.x, p.y, p.z].map((v) => +v.toFixed(3)),

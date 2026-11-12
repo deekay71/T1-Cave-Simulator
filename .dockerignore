@@ -5,3 +5,9 @@ reports
 apps/web/dist
 dist
 .dev-keys
+
+.env.*
+!.env.example
+.renders
+*.log
+.DS_Store

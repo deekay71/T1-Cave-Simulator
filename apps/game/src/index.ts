@@ -3,7 +3,7 @@ import { Server } from '@colyseus/core';
 import { WebSocketTransport } from '@colyseus/ws-transport';
 import { RedisPresence } from '@colyseus/redis-presence';
 import { RedisDriver } from '@colyseus/redis-driver';
-import { HubRoom } from './HubRoom.js';
+import { HubRoom, liveSnapshot } from './HubRoom.js';
 import { colyseusLogger, log, registry } from './telemetry.js';
 
 if (process.env.NODE_ENV === 'production' && !process.env.REDIS_URL) throw new Error('REDIS_URL required');
@@ -26,6 +26,8 @@ server.define('hub_v1', HubRoom);
 const admin = createServer((req, res) => {
   if (req.url === '/health/live') return void res.writeHead(200).end('ok');
   if (req.url === '/health/ready') return void res.writeHead(phase === 'running' ? 200 : 503).end(phase);
+  // Người chơi đang online cho trang quản trị (API /v1/admin/live hỏi qua đây). Cổng này không public.
+  if (req.url === '/live') return void res.writeHead(200, { 'Content-Type': 'application/json' }).end(JSON.stringify(liveSnapshot()));
   if (req.url === '/metrics') {
     registry.metrics().then(
       (body) => res.writeHead(200, { 'Content-Type': registry.contentType }).end(body),
@@ -41,7 +43,7 @@ for (const signal of ['SIGINT', 'SIGTERM'] as const) {
   process.once(signal, () => { phase = 'draining'; log.info({ signal }, 'draining'); });
 }
 
-await server.listen(port, '0.0.0.0');
-admin.listen(adminPort, '0.0.0.0');
+await server.listen(port, process.env.GAME_HOST || '0.0.0.0');
+admin.listen(adminPort, process.env.ADMIN_HOST || '0.0.0.0');
 phase = 'running';
 log.info({ port, adminPort, redis: Boolean(redis) }, 'Tê Liệt game listening');

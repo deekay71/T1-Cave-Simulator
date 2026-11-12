@@ -7,3 +7,14 @@ dist/
 reports/
 .dev-keys/
 .renders/
+*.log
+.DS_Store
+.local-host/
+# Audio do người host tự cung cấp (bình luận có bản quyền): không đưa lên repo.
+apps/web/public/audio/*
+!apps/web/public/audio/README.md
+# Nội dung admin lưu bằng tệp khi không có Postgres.
+.data/
+# Video chiếu trên màn hình lớn do người host tự đưa vào (clip phát sóng có bản quyền): không đưa lên repo.
+apps/web/public/videos/*
+!apps/web/public/videos/README.md

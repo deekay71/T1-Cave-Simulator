@@ -1,6 +1,11 @@
-// Bot chơi thử: N fan lang thang trong hang (đi, rẽ, dừng ngắm thứ gì đó, thỉnh thoảng emote, hiếm
+// Bot chơi thử: N fan lang thang khắp năm hang (đi, rẽ, dừng ngắm thứ gì đó, thỉnh thoảng emote, hiếm
 // khi chat) để hang có người khi chụp ảnh hoặc chơi thử. Không phải load test (xem scripts/spike.ts).
 // Bot tự ký vé bằng khóa dev (hoặc TICKET_PRIVATE_JWK) như spike, không gọi API.
+//
+// Đường đi: đồ thị điểm mốc (vòng quanh lửa trại, các lối ra miệng hầm, tim từng đường hầm, lòng
+// từng hang nhỏ) nối bằng những đoạn thẳng không cắt vật cản; bot tìm đường ngắn nhất qua đồ thị
+// (hang lớn ↔ hầm ↔ hang nhỏ) thay vì đi thẳng trong một đĩa. Khi dừng, in số lượt ghé từng hang
+// (visits), thời gian có mặt (seconds) và số lần kẹt (stuck: 1,8 s không tiến thêm được).
 //
 //   npm run bots                                    # 8 bot vào ws://127.0.0.1:2800, chạy tới Ctrl+C
 //   BOTS=10 DURATION_SECONDS=600 npm run bots       # 10 bot trong 10 phút
@@ -12,12 +17,22 @@ import { createTicketIssuer, loadPrivateJwk } from "@te-liet/auth";
 import {
   AXIS_MAX,
   CLOSE_SIGNED_IN_ELSEWHERE,
+  findPath,
   frameToCave,
+  NAV_EDGES,
+  NAV_NODES,
+  navClearOf,
+  HUB_CAVES,
   HUB_LANDMARKS,
   HUB_LAYOUT,
+  HUB_ROOMS,
+  HUB_WALKWAYS,
   HUB_ZONES,
+  inRooms,
   MoveInput,
+  SIDE_CAVE_RADIUS,
   TICK_RATE,
+  type SideCave,
 } from "@te-liet/shared";
 
 function fail(msg: string): never {
@@ -98,7 +113,33 @@ interface Poi {
   linger: [number, number];
 }
 const FIRE: P = { x: 0, z: 0 };
-const POIS: Poi[] = [
+/** Hang chứa điểm (x, z): "main" hoặc id hang nhỏ (đường hầm tính cho hang nhỏ nó dẫn tới). */
+type Region = "main" | SideCave["id"];
+const REGIONS: Region[] = ["main", ...HUB_CAVES.map((c) => c.id)];
+function regionOf(p: P): Region {
+  for (const c of HUB_CAVES)
+    if (Math.hypot(p.x - c.x, p.z - c.z) <= SIDE_CAVE_RADIUS + 0.3) return c.id;
+  if (Math.hypot(p.x, p.z) <= HUB_LAYOUT.radius) return "main";
+  let best: Region = "main",
+    bestD = Infinity;
+  for (const c of HUB_CAVES) {
+    const d = Math.hypot(p.x - c.tunnel.x, p.z - c.tunnel.z);
+    if (d < bestD) {
+      bestD = d;
+      best = c.id;
+    }
+  }
+  return best;
+}
+/** Điểm trên tim hầm của hang c, cách gốc t m (dịch ngang `lat` m). */
+const onAxis = (c: SideCave, t: number, lat = 0): P => {
+  const d = Math.hypot(c.x, c.z),
+    ux = c.x / d,
+    uz = c.z / d;
+  return { x: ux * t - uz * lat, z: uz * t + ux * lat };
+};
+const landmark = (id: string) => HUB_LANDMARKS.find((l) => l.id === id)!;
+const MAIN_POIS: Poi[] = [
   // quanh lửa trại: phía +Z để trống cho người mới tới, hai bên giữa các ghế
   { at: { x: 0, z: 4.4 }, spread: 1.4, look: FIRE, weight: 3, linger: [5, 14] },
   {
@@ -115,51 +156,73 @@ const POIS: Poi[] = [
     weight: 1,
     linger: [4, 10],
   },
-  // ba điểm tương tác: đứng trên vành 0,9–1,6 m quanh chỗ người chơi đứng xem (vẫn trong 3 m của
-  // nút E), không chiếm đúng điểm đó; nhìn vào đồ vật
-  ...HUB_LANDMARKS.map((l): Poi => ({
-    at: { x: l.x, z: l.z },
+  // điểm tương tác của hang lớn (điểm danh, góc thâm niên, cửa điện thờ): đứng trên vành 0,9–1,6 m
+  // quanh chỗ người chơi đứng xem (vẫn trong tầm nút E), không chiếm đúng điểm đó; nhìn vào đồ vật
+  ...(["checkin", "rest", "altar"] as const).map((id): Poi => ({
+    at: landmark(id),
     spread: 1.6,
     ring: [0.9, 1.6],
-    look: HUB_ZONES[l.id],
+    look: HUB_ZONES[id],
     weight: 2,
     linger: [3, 9],
   })),
-  {
-    at: frameToCave(HUB_ZONES.quiz, 0, 3.2),
+  // các góc sinh hoạt chung: đứng trước mặt vùng (trục +Z của khung vùng), nhìn vào nó
+  ...(
+    [
+      ["crateCorner", 2.6, 1.5],
+      ["living", 3.2, 1.5],
+      ["water", 3.6, 1],
+      ["tea", 3, 1.5],
+      ["crates", 3.2, 1.2],
+      ["rug", 2.8, 1.2],
+    ] as const
+  ).map(([zone, dist, weight]): Poi => ({
+    at: frameToCave(HUB_ZONES[zone], 0, dist),
     spread: 1,
-    look: HUB_ZONES.quiz,
-    weight: 1.5,
-    linger: [3, 8],
-  },
-  {
-    at: frameToCave(HUB_ZONES.living, 0, 3),
-    spread: 1,
-    look: HUB_ZONES.living,
-    weight: 1.5,
+    look: HUB_ZONES[zone],
+    weight,
     linger: [3, 9],
-  },
-  {
-    at: frameToCave(HUB_ZONES.water, 0, 3),
-    spread: 1.2,
-    look: HUB_ZONES.water,
-    weight: 1,
-    linger: [3, 7],
-  },
-  {
-    at: { x: 0, z: -13 },
-    spread: 1.2,
-    look: { x: 0, z: -18.4 },
-    weight: 1,
-    linger: [2, 6],
-  },
+  })),
   { at: { x: 0, z: 9.5 }, spread: 2.2, look: FIRE, weight: 1, linger: [2, 6] },
 ];
-const POI_WEIGHT = POIS.reduce((s, p) => s + p.weight, 0);
+/** Trong mỗi hang nhỏ: trước sạp (vành quanh chỗ đứng xem), giữa hang, và gần miệng hang. */
+const sidePois = (c: SideCave): Poi[] => {
+  const stall = HUB_ZONES[c.stall];
+  const d = Math.hypot(c.x, c.z);
+  return [
+    {
+      at: landmark(c.stall),
+      spread: 1.7,
+      ring: [0.8, 1.7],
+      look: stall,
+      weight: 4,
+      linger: [4, 12],
+    },
+    { at: { x: c.x, z: c.z }, spread: 2.2, look: stall, weight: 2, linger: [3, 8] },
+    { at: onAxis(c, d - 4.2), spread: 1.3, look: stall, weight: 1, linger: [2, 5] },
+  ];
+};
+const POIS: Record<Region, Poi[]> = Object.fromEntries([
+  ["main", MAIN_POIS],
+  ...HUB_CAVES.map((c) => [c.id, sidePois(c)] as const),
+]) as Record<Region, Poi[]>;
+/** Bot chọn hang trước rồi mới chọn chỗ: hang lớn đông nhất, mỗi hang nhỏ ~1/8 số lượt. */
+const REGION_WEIGHT: Record<Region, number> = {
+  main: 4,
+  ne_back: 1,
+  nw_back: 1,
+  nw_front: 1,
+  ne_front: 1,
+};
 
 const rand = (a: number, b: number) => a + Math.random() * (b - a);
 const pick = <T>(list: readonly T[]): T =>
   list[Math.floor(Math.random() * list.length)];
+function weighted<T>(items: readonly T[], weight: (item: T) => number): T {
+  let w = Math.random() * items.reduce((s, i) => s + weight(i), 0);
+  for (const i of items) if ((w -= weight(i)) <= 0) return i;
+  return items[items.length - 1];
+}
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const describe = (err: unknown) =>
   err instanceof Error ? err.message : String(err);
@@ -168,28 +231,18 @@ const wrapPi = (a: number) => {
   return w - Math.PI;
 };
 
-/* ------------------------------------------------------------------ đường đi */
+/* ------------------------------------------------------------------ đường đi (packages/shared/src/nav.ts) */
 
-const { obstacles, radius } = HUB_LAYOUT;
-/** Điểm đứng được, cách vật cản thêm `margin` m (collider đã gồm thân người). */
-const clearOf = (x: number, z: number, margin: number) =>
-  Math.hypot(x, z) <= radius - 1 &&
-  obstacles.every((o) => Math.hypot(x - o.x, z - o.z) >= o.r + margin);
-/** Đi thẳng từ a tới b không cắt vật cản nào. */
-function clearPath(a: P, b: P): boolean {
-  const len = Math.hypot(b.x - a.x, b.z - a.z);
-  const n = Math.max(1, Math.ceil(len / 0.25));
-  for (let i = 1; i <= n; i++) {
-    const t = i / n;
-    if (!clearOf(a.x + (b.x - a.x) * t, a.z + (b.z - a.z) * t, 0.1))
-      return false;
-  }
-  return true;
-}
+const NODES = NAV_NODES,
+  EDGES = NAV_EDGES,
+  clearOf = navClearOf;
 
 interface Target extends P {
   look: P | null;
   linger: [number, number];
+  /** Các điểm còn phải đi qua; điểm cuối là chính đích. */
+  path: P[];
+  region: Region;
 }
 interface Bot {
   readonly id: string;
@@ -224,22 +277,18 @@ function occupied(b: Bot, x: number, z: number): boolean {
 }
 
 /**
- * Chọn đích: thường là một chỗ thú vị, đôi khi bất kỳ; đi thẳng tới được, không trùng đích của
- * bot khác, không đứng đè lên người đang đứng đó.
+ * Chọn đích: chọn hang trước (hang lớn nhiều lượt nhất), rồi thường là một chỗ thú vị trong hang đó,
+ * đôi khi bất kỳ; phải có đường tới (findPath), không trùng đích của bot khác, không đứng đè lên
+ * người đang đứng đó.
  */
 function pickTarget(b: Bot, from: P): Target | null {
-  for (let i = 0; i < 60; i++) {
+  for (let i = 0; i < 40; i++) {
+    const region = weighted(REGIONS, (r) => REGION_WEIGHT[r]);
     let x: number, z: number;
     let look: P | null = null;
     let linger: [number, number] = [1.5, 5];
-    if (Math.random() < 0.7) {
-      let w = Math.random() * POI_WEIGHT;
-      let poi = POIS[0];
-      for (const p of POIS)
-        if ((w -= p.weight) <= 0) {
-          poi = p;
-          break;
-        }
+    if (Math.random() < 0.75) {
+      const poi = weighted(POIS[region], (p) => p.weight);
       const [r0, r1] = poi.ring ?? [0, poi.spread];
       const a = rand(0, 2 * Math.PI),
         r = Math.sqrt(r0 * r0 + Math.random() * (r1 * r1 - r0 * r0)); // đều theo diện tích
@@ -248,10 +297,11 @@ function pickTarget(b: Bot, from: P): Target | null {
       look = poi.look;
       linger = poi.linger;
     } else {
+      const cave = HUB_CAVES.find((c) => c.id === region);
       const a = rand(0, 2 * Math.PI),
-        r = rand(3, 13);
-      x = Math.cos(a) * r;
-      z = Math.sin(a) * r;
+        r = cave ? rand(0.5, 5.8) : rand(3, 18);
+      x = (cave?.x ?? 0) + Math.cos(a) * r;
+      z = (cave?.z ?? 0) + Math.sin(a) * r;
     }
     if (!clearOf(x, z, 0.35)) continue;
     if (Math.hypot(x - from.x, z - from.z) < 2.5) continue;
@@ -265,8 +315,9 @@ function pickTarget(b: Bot, from: P): Target | null {
     )
       continue;
     if (occupied(b, x, z)) continue;
-    if (i < 45 && !clearPath(from, { x, z })) continue;
-    return { x, z, look, linger };
+    const path = findPath(from, { x, z });
+    if (!path) continue;
+    return { x, z, look, linger, path, region };
   }
   return null;
 }
@@ -277,7 +328,12 @@ const DT = 1 / TICK_RATE;
 /** Tốc độ rẽ khi đang đi (rad/s): đường đi cong nhẹ, không gãy góc. */
 const TURN = 3.2;
 const ARRIVE = 0.7;
-const stats = { joins: 0, drops: 0, failures: 0, legs: 0, emotes: 0, chats: 0 };
+const stats = { joins: 0, drops: 0, failures: 0, legs: 0, emotes: 0, chats: 0, stuck: 0 };
+/** Số lượt bot tới đích trong từng hang và tổng thời gian (giây-bot) có mặt ở đó. */
+const visits = Object.fromEntries(REGIONS.map((r) => [r, 0])) as Record<Region, number>;
+const seconds = Object.fromEntries(REGIONS.map((r) => [r, 0])) as Record<Region, number>;
+/** Điểm mốc trung gian coi như đã tới khi cách dưới chừng này (m). */
+const PASS = 0.9;
 
 function emote(b: Bot) {
   b.room?.send("emote", pick(EMOTES));
@@ -294,8 +350,9 @@ function startWalk(b: Bot, from: P, now: number) {
   if (!t) return rest(b, now, [1, 3]);
   b.target = t;
   b.mode = "walk";
-  b.heading = Math.atan2(t.x - from.x, t.z - from.z); // xuất phát nhìn thẳng về đích
-  b.best = Math.hypot(t.x - from.x, t.z - from.z);
+  const first = t.path[0];
+  b.heading = Math.atan2(first.x - from.x, first.z - from.z); // xuất phát nhìn thẳng về điểm đầu
+  b.best = Math.hypot(first.x - from.x, first.z - from.z);
   b.bestAt = now;
   b.wobble = rand(0, 2 * Math.PI);
   b.emoteAt = Math.random() < 0.04 ? now + rand(800, 2500) : Infinity;
@@ -310,27 +367,45 @@ function decide(b: Bot, pos: P, now: number): number | null {
   }
   const t = b.target;
   if (b.mode === "walk" && t) {
-    const dx = t.x - pos.x,
-      dz = t.z - pos.z,
+    // qua điểm mốc trung gian: chuyển sang điểm kế (điểm cuối của path là đích)
+    while (
+      t.path.length > 1 &&
+      Math.hypot(t.path[0].x - pos.x, t.path[0].z - pos.z) < PASS
+    ) {
+      t.path.shift();
+      b.best = Math.hypot(t.path[0].x - pos.x, t.path[0].z - pos.z);
+      b.bestAt = now;
+    }
+    const via = t.path[0];
+    const dx = via.x - pos.x,
+      dz = via.z - pos.z,
       d = Math.hypot(dx, dz);
     if (now >= b.emoteAt) {
       b.emoteAt = Infinity;
       emote(b);
     }
-    if (d < ARRIVE) {
+    if (t.path.length === 1 && d < ARRIVE) {
       // tới nơi: một bước nhỏ về phía thứ đang xem để quay mặt, rồi đứng
       b.mode = "face";
       b.faceTicks = t.look ? 1 : 0;
+      visits[regionOf(pos)]++;
     } else {
       if (d < b.best - 0.25) {
         b.best = d;
         b.bestAt = now;
       } else if (now - b.bestAt > 1800) {
+        stats.stuck++;
+        console.log(
+          `bots: ${b.name} kẹt ở (${pos.x.toFixed(2)}, ${pos.z.toFixed(2)}) khi tới (${via.x.toFixed(2)}, ${via.z.toFixed(2)})`,
+        );
         rest(b, now, [0.3, 1]); // kẹt sau vật cản: đứng một chút rồi chọn đích khác
         return null;
       }
+      // trong hầm và giữa các điểm mốc gần nhau thì đi thẳng hơn (lượn ít)
       const meander =
-        0.28 * Math.sin((now / 1000) * 0.9 + b.wobble) * Math.min(1, d / 4);
+        (t.path.length > 1 ? 0.12 : 0.28) *
+        Math.sin((now / 1000) * 0.9 + b.wobble) *
+        Math.min(1, d / 4);
       const want = Math.atan2(dx, dz) + meander;
       const turn = wrapPi(want - b.heading),
         max = TURN * DT;
@@ -365,6 +440,7 @@ function step(b: Bot, now: number) {
   const { room, input } = b;
   const me = room?.state?.players?.get(room.sessionId);
   if (!room || !input || !me) return;
+  seconds[regionOf(me)] += DT;
   const dir = decide(b, { x: me.x, z: me.z }, now);
   // như client: đứng yên thì chỉ gửi 5 bước đuôi và 1 bước mỗi giây
   if (dir === null) {
@@ -416,8 +492,8 @@ async function connect(b: Bot): Promise<void> {
       await room.leave();
       return;
     }
-    room.onMessage("chat", () => {});
-    room.onMessage("emote", () => {});
+    for (const type of ["chat", "emote", "notice", "shrineState", "altarState", "altarComplete"])
+      room.onMessage(type, () => {});
     b.room = room;
     b.input = room.input({ type: MoveInput });
     b.target = null;
@@ -462,8 +538,11 @@ async function stop(reason: string) {
       b.room ? Promise.race([b.room.leave(), sleep(3000)]) : undefined,
     ),
   );
+  const round = (o: Record<string, number>) =>
+    Object.fromEntries(Object.entries(o).map(([k, v]) => [k, Math.round(v)]));
   console.log(
-    `bots: dừng (${reason}) ` + JSON.stringify({ bots: count, ...stats }),
+    `bots: dừng (${reason}) ` +
+      JSON.stringify({ bots: count, ...stats, visits, seconds: round(seconds) }),
   );
   process.exit(0);
 }
@@ -472,6 +551,9 @@ process.on("SIGTERM", () => void stop("SIGTERM"));
 if (duration > 0)
   setTimeout(() => void stop(`hết ${duration} s`), duration * 1000);
 
+console.log(
+  `bots: ${NODES.length} điểm mốc, ${EDGES.reduce((n, e) => n + e.length, 0) / 2} cạnh nối năm hang`,
+);
 console.log(
   `bots: ${count} bot → ${endpoint}` +
     (duration > 0 ? ` trong ${duration} s` : " (Ctrl+C để dừng)"),

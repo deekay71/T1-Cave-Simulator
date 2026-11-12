@@ -2,19 +2,26 @@ import { z } from "zod";
 import { schema, t, type SchemaType } from "@colyseus/schema";
 import {
   HUB_RADIUS,
+  HUB_ROOMS,
   HUB_SPAWN,
   hubObstacles,
   type Obstacle,
 } from "./layout.js";
+import { clampToRooms, inRooms, type Room } from "./rooms.js";
 
 export * from "./layout.js";
+export * from "./rooms.js";
+export * from "./nav.js";
+export * from "./seats.js";
+export * from "./content.js";
+export * from "./accounts.js";
 
 /** Số ghế tối đa của một room hub. */
 export const ROOM_CAPACITY = 60;
 /** Nhịp mô phỏng cố định (Hz). Server quảng bá nhịp này cho client qua handshake. */
 export const TICK_RATE = 20;
 /** Chu kỳ gửi patch state (ms). */
-export const PATCH_MS = 100;
+export const PATCH_MS = 50;
 /** Tốc độ đi (m/s). */
 export const MOVE_SPEED = 4;
 /** Trục input lượng tử hóa vào int8: WASD là ±127, joystick là giá trị trung gian. */
@@ -22,12 +29,12 @@ export const AXIS_MAX = 127;
 /** Mã đóng kết nối khi cùng tài khoản vừa vào ở phiên khác (4000–4099 do Colyseus dùng). */
 export const CLOSE_SIGNED_IN_ELSEWHERE = 4100;
 
-/**
- * Bố cục hub suy ra từ bảng đặt model (layout.ts): client dựng cảnh từ HUB_PLACEMENTS, server và
- * client va chạm với đúng các vật cản này.
- */
-export const HUB_LAYOUT: {
-  /** Biên vùng đi được (m): vách/gờ gần nhất cách tâm 16,6 m. */
+/** Bố cục va chạm: vùng đi được + vật cản tròn + điểm xuất hiện. */
+export interface Layout {
+  /**
+   * Bán kính đĩa đi được quanh gốc (m). Với bố cục có `rooms` đây là bán kính hang lớn (phòng đầu
+   * tiên); không có `rooms` thì đĩa này là toàn bộ vùng đi được (đảo điện thờ, test).
+   */
   readonly radius: number;
   /** Vật cản tròn trên mặt phẳng XZ; obstacles[0] là vòng đá lửa trại ở tâm. */
   readonly obstacles: readonly Obstacle[];
@@ -37,27 +44,39 @@ export const HUB_LAYOUT: {
     readonly z: number;
     readonly spread: number;
   };
-} = {
+  /** Vùng đi được là hợp các phòng tròn này (hang lớn, hang nhỏ, đường hầm); xem rooms.ts. */
+  readonly rooms?: readonly Room[];
+}
+
+/**
+ * Bố cục hub suy ra từ bảng đặt model (layout.ts): client dựng cảnh từ HUB_PLACEMENTS, server và
+ * client va chạm với đúng các vật cản này, trong hợp các phòng HUB_ROOMS (hang lớn bán kính 20 m,
+ * bốn hang nhỏ bán kính 7 m và bốn đường hầm nối).
+ */
+export const HUB_LAYOUT: Layout = {
   radius: HUB_RADIUS,
   obstacles: hubObstacles(),
   spawn: HUB_SPAWN,
+  rooms: HUB_ROOMS,
 };
-export type Layout = typeof HUB_LAYOUT;
 
 /**
- * Dấu vân tay 8 ký tự hex của một bố cục (bán kính + vật cản, đã làm tròn 1 mm): client và server
- * so với nhau để biết đang va chạm theo cùng một bảng (một tab mở từ trước lần deploy đổi bố cục sẽ
- * dự đoán lệch). FNV-1a trên chuỗi số, tất định ở mọi engine.
+ * Dấu vân tay 8 ký tự hex của một bố cục (bán kính + vật cản + các phòng, đã làm tròn 1 mm): client
+ * và server so với nhau để biết đang va chạm theo cùng một bảng (một tab mở từ trước lần deploy đổi
+ * bố cục sẽ dự đoán lệch). FNV-1a trên chuỗi số, tất định ở mọi engine.
  */
 export function layoutHash(
-  layout: Pick<Layout, "radius" | "obstacles">,
+  layout: Pick<Layout, "radius" | "obstacles" | "rooms">,
 ): string {
-  const text = [
+  const num = (v: number) => v.toFixed(3);
+  let text = [
     layout.radius,
     ...layout.obstacles.flatMap((o) => [o.x, o.z, o.r]),
   ]
-    .map((v) => v.toFixed(3))
+    .map(num)
     .join(",");
+  if (layout.rooms)
+    text += "|" + layout.rooms.flatMap((o) => [o.x, o.z, o.r]).map(num).join(",");
   let h = 0x811c9dc5;
   for (let i = 0; i < text.length; i++) {
     h ^= text.charCodeAt(i);
@@ -87,10 +106,14 @@ const inside = (x: number, z: number, o: Obstacle) =>
   Math.sqrt((x - o.x) * (x - o.x) + (z - o.z) * (z - o.z)) < o.r - SKIN;
 const insideAny = (x: number, z: number, obstacles: readonly Obstacle[]) =>
   obstacles.some((o) => inside(x, z, o));
-/** Điểm đứng được: trong bán kính đi được và ngoài mọi vật cản. */
+/** Trong vùng đi được: hợp các phòng nếu bố cục có `rooms`, không thì đĩa gốc bán kính `radius`. */
+const inBounds = (x: number, z: number, layout: Layout) =>
+  layout.rooms
+    ? inRooms(x, z, layout.rooms, SKIN)
+    : Math.sqrt(x * x + z * z) <= layout.radius + SKIN;
+/** Điểm đứng được: trong vùng đi được và ngoài mọi vật cản. */
 const isFree = (x: number, z: number, layout: Layout) =>
-  Math.sqrt(x * x + z * z) <= layout.radius + SKIN &&
-  !insideAny(x, z, layout.obstacles);
+  inBounds(x, z, layout) && !insideAny(x, z, layout.obstacles);
 
 /** Đẩy p ra khỏi từng vật cản đang chứa nó, theo hướng từ tâm vật cản. Trả về true nếu có dịch chuyển. */
 function pushOut(p: Position, obstacles: readonly Obstacle[]): boolean {
@@ -140,9 +163,11 @@ const NEAR_REACH = 1;
 
 /**
  * Điểm đứng được gần (x, z) nhất, chỉ xét các đường biên đi qua trong vòng `reach` m quanh điểm:
- * hình chiếu xuyên tâm lên từng vòng vật cản và lên biên hang, giao điểm của hai vòng vật cản, giao
- * điểm của vật cản với biên hang. Điểm trống gần nhất luôn là một trong các ứng viên đó; nếu nó cách
- * (x, z) không quá `reach` thì mọi đường biên đi qua nó đều đã được xét, nên kết quả là đúng.
+ * hình chiếu xuyên tâm lên từng vòng vật cản và lên biên từng phòng, giao điểm của hai vòng vật cản,
+ * giao điểm của vật cản với biên phòng. Điểm trống gần nhất luôn là một trong các ứng viên đó (góc
+ * giữa hai phòng là góc lõm của vùng đi được nên không bao giờ là điểm gần nhất); nếu nó cách (x, z)
+ * không quá `reach` thì mọi đường biên đi qua nó đều đã được xét, nên kết quả là đúng. isFree lọc
+ * các ứng viên nằm ngoài hợp các phòng hoặc trong vật cản khác.
  */
 function nearestFreeWithin(
   x: number,
@@ -150,14 +175,12 @@ function nearestFreeWithin(
   layout: Layout,
   reach: number,
 ): Position | null {
-  const { obstacles, radius } = layout;
+  const { obstacles } = layout;
   const near: Obstacle[] = [];
   for (const o of obstacles) {
     const d = Math.sqrt((x - o.x) * (x - o.x) + (z - o.z) * (z - o.z));
     if (Math.abs(d - o.r) <= reach) near.push(o);
   }
-  const dc = Math.sqrt(x * x + z * z);
-  const edge = Math.abs(dc - radius) <= reach;
   let best: Position | null = null,
     bestD = reach === Infinity ? Infinity : reach * reach;
   const consider = (px: number, pz: number) => {
@@ -174,9 +197,17 @@ function nearestFreeWithin(
     if (d === 0) consider(o.x, o.z - o.r);
     else consider(o.x + (ox / d) * o.r, o.z + (oz / d) * o.r);
   }
-  if (edge) {
-    if (dc === 0) consider(0, -radius);
-    else consider((x / dc) * radius, (z / dc) * radius);
+  // Biên vùng đi được: từng phòng có biên đi qua trong tầm (bố cục một đĩa: chính đĩa đó).
+  const walls = layout.rooms ?? [{ x: 0, z: 0, r: layout.radius }];
+  const edges: { x: number; z: number; r: number }[] = [];
+  for (const w of walls) {
+    const wx = x - w.x,
+      wz = z - w.z,
+      dc = Math.sqrt(wx * wx + wz * wz);
+    if (!(Math.abs(dc - w.r) <= reach)) continue;
+    edges.push(w);
+    if (dc === 0) consider(w.x, w.z - w.r);
+    else consider(w.x + (wx / dc) * w.r, w.z + (wz / dc) * w.r);
   }
   for (let i = 0; i < near.length; i++) {
     const a = near[i];
@@ -184,7 +215,7 @@ function nearestFreeWithin(
       const b = near[j];
       crossings(a.x, a.z, a.r, b.x, b.z, b.r, consider);
     }
-    if (edge) crossings(0, 0, radius, a.x, a.z, a.r, consider);
+    for (const w of edges) crossings(w.x, w.z, w.r, a.x, a.z, a.r, consider);
   }
   return best;
 }
@@ -204,8 +235,9 @@ function nearestFree(x: number, z: number, layout: Layout): Position | null {
 /**
  * Giữ một điểm trong vùng đi được và ngoài các vật cản. Vật cản chồng nhau có thể đẩy điểm sang
  * nhau, nên lặp tới khi đứng yên (tối đa 4 lượt; chưa hội tụ thì lấy điểm trống gần nhất), rồi kẹp
- * vào bán kính, rồi đẩy thêm một lượt; điểm vẫn chưa hợp lệ (khối chặn sát vách lấn qua biên đẩy nó
- * ra ngoài) thì lấy điểm trống gần nhất. Với một vật cản đứng riêng, kết quả như đẩy xuyên tâm một lần.
+ * vào vùng đi được (điểm gần nhất của hợp các phòng, hoặc bán kính với bố cục một đĩa), rồi đẩy thêm
+ * một lượt; điểm vẫn chưa hợp lệ (khối chặn sát vách lấn qua biên đẩy nó ra ngoài) thì lấy điểm trống
+ * gần nhất. Với một vật cản đứng riêng, kết quả như đẩy xuyên tâm một lần.
  * Thuần và tất định (chỉ + − × ÷ và sqrt, đều làm tròn chuẩn IEEE): server và client ra cùng kết quả.
  */
 export function constrain(
@@ -219,10 +251,16 @@ export function constrain(
     settled = !pushOut(p, layout.obstacles);
   if (!settled && insideAny(p.x, p.z, layout.obstacles))
     p = nearestFree(x, z, layout) ?? p;
-  const d = Math.sqrt(p.x * p.x + p.z * p.z);
-  if (d > layout.radius) {
-    p.x = (p.x / d) * layout.radius;
-    p.z = (p.z / d) * layout.radius;
+  if (layout.rooms) {
+    const c = clampToRooms(p.x, p.z, layout.rooms);
+    p.x = c.x;
+    p.z = c.z;
+  } else {
+    const d = Math.sqrt(p.x * p.x + p.z * p.z);
+    if (d > layout.radius) {
+      p.x = (p.x / d) * layout.radius;
+      p.z = (p.z / d) * layout.radius;
+    }
   }
   pushOut(p, layout.obstacles);
   if (!isFree(p.x, p.z, layout)) p = nearestFree(x, z, layout) ?? p;
@@ -270,7 +308,7 @@ export function spawnPoint(
 }
 
 export const Chat = z.string().trim().min(1).max(240);
-export const Emote = z.enum(["wave", "laugh", "cheer"]);
+export const Emote = z.enum(["wave", "laugh", "cheer", "jump"]);
 
 /** Giới hạn tần suất: tối đa `capacity` lần trong mỗi `perMs` (token bucket). */
 export interface Limit {
@@ -285,3 +323,9 @@ export const LIMITS = {
   emote: { capacity: 2, perMs: 1_000 },
   ping: { capacity: 2, perMs: 1_000 },
 } as const satisfies Record<string, Limit | Record<string, Limit>>;
+
+export * from "./matches.js";
+
+export * from "./altar.js";
+
+export * from "./progression.js";
