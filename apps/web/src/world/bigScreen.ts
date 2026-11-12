@@ -234,7 +234,10 @@ export function buildBigScreen(app: pc.AppBase, parent: pc.Entity, opts: BigScre
   material.diffuse = new pc.Color(0, 0, 0);
   material.emissive = new pc.Color(1, 1, 1);
   material.emissiveMap = texture;
-  material.emissiveIntensity = 1.1;
+  // The picture is the brightest thing in the dark cave: no haze on it (the black fog would swallow it
+  // from across the hall) and a little over full brightness so it blooms like a lit panel.
+  material.useFog = false;
+  material.emissiveIntensity = 1.5;
   material.update();
 
   let feed: Feed | null = null;
