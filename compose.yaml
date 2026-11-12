@@ -35,6 +35,9 @@ services:
       REDIS_URL: redis://redis:6379
       MATCH_FEED_ENABLED: ${MATCH_FEED_ENABLED:-false}
       TRUST_PROXY: "1"
+      # Trang quản trị /admin.html: để trống = tắt. Theo dõi người chơi hỏi cổng quản trị của game.
+      ADMIN_TOKEN: ${ADMIN_TOKEN:-}
+      GAME_ADMIN_URL: http://game:9100
     depends_on:
       migrate: {condition: service_completed_successfully}
     healthcheck:

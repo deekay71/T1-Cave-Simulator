@@ -30,6 +30,10 @@ services:
     restart: unless-stopped
   web:
     restart: unless-stopped
+    # Video màn hình lớn và audio điện thờ do người host tự đưa vào (không nằm trong image, không lên repo).
+    volumes:
+      - ./apps/web/public/videos:/usr/share/nginx/html/videos:ro
+      - ./apps/web/public/audio:/usr/share/nginx/html/audio:ro
   caddy:
     image: caddy:2.10-alpine
     ports: ["80:80", "443:443", "443:443/udp"]

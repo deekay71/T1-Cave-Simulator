@@ -2,7 +2,7 @@ import { Room, type Client } from '@colyseus/core';
 import type { Deferred } from '@colyseus/core';
 import { schema, t, type SchemaType } from '@colyseus/schema';
 import {
-  AXIS_MAX, CaveSeating, CaveSeatRequest, Chat, CLOSE_SIGNED_IN_ELSEWHERE, Emote, LIMITS, MoveInput,
+  AXIS_MAX, CaveSeating, CaveSeatRequest, Chat, HUB_CAVES, HUB_RADIUS, SIDE_CAVE_RADIUS, CLOSE_SIGNED_IN_ELSEWHERE, Emote, LIMITS, MoveInput,
   PATCH_MS, ROOM_CAPACITY, spawnPoint, TICK_RATE,
 } from '@te-liet/shared';
 import type { TicketIdentity } from '@te-liet/auth';
@@ -36,6 +36,40 @@ export const HubState = schema({ players: t.map(Player) });
 export type HubState = SchemaType<typeof HubState>;
 
 const RECONNECT_SECONDS = 15;
+
+/* ---------------------------------------------------------------- theo dõi (cổng quản trị) */
+
+/** Các room của tiến trình này và vài con số từ lúc khởi động, cho /live của cổng quản trị. */
+const LIVE_ROOMS = new Set<HubRoom>();
+const LIVE = {
+  startedAt: Date.now(),
+  joins: 0,
+  peak: 0,
+  /** 40 lượt vào gần nhất (mới nhất trước). */
+  recent: [] as { id: string; name: string; at: number; leftAt: number | null }[],
+};
+function zoneOf(p: { x: number; z: number }): string {
+  if (isInShrine(p)) return 'Điện thờ';
+  for (const c of HUB_CAVES) if (Math.hypot(p.x - c.x, p.z - c.z) <= SIDE_CAVE_RADIUS + 1.5) return c.name;
+  return Math.hypot(p.x, p.z) <= HUB_RADIUS + 1 ? 'Hang lớn' : 'Đường hầm';
+}
+const onlineNow = () => [...LIVE_ROOMS].reduce((n, r) => n + r.state.players.size, 0);
+/** Ảnh chụp cho trang quản trị: ai đang ở đâu, bao lâu; không có IP hay tài khoản. */
+export function liveSnapshot(now = Date.now()) {
+  const rooms = [...LIVE_ROOMS].map((r) => r.describe(now));
+  const zones: Record<string, number> = {};
+  for (const room of rooms) for (const p of room.players) zones[p.zone] = (zones[p.zone] ?? 0) + 1;
+  return {
+    at: now,
+    startedAt: LIVE.startedAt,
+    online: rooms.reduce((n, r) => n + r.players.length, 0),
+    peak: LIVE.peak,
+    joins: LIVE.joins,
+    zones,
+    rooms,
+    recent: LIVE.recent.map((e) => ({ name: e.name, at: e.at, leftAt: e.leftAt })),
+  };
+}
 const identity = (c: Client) => c.auth as TicketIdentity | undefined;
 
 export class HubRoom extends Room<{ state: HubState; input: MoveInput }> {
@@ -60,7 +94,21 @@ export class HubRoom extends Room<{ state: HubState; input: MoveInput }> {
   /** Phiên bị đóng vì tài khoản đã vào ở nơi khác: không giữ ghế chờ kết nối lại. */
   private replaced = new Set<string>();
 
+  /** Lúc vào (ms) của từng phiên, cho trang quản trị. */
+  private joinedAt = new Map<string, number>();
+
+  describe(now: number) {
+    const players: { id: string; name: string; zone: string; seat: 'cave' | 'shrine' | null; connected: boolean; minutes: number }[] = [];
+    this.state.players.forEach((p, id) => players.push({
+      id: id.slice(0, 6), name: p.name, zone: zoneOf(p),
+      seat: p.shrineSeat ? 'shrine' : p.seat ? 'cave' : null,
+      connected: p.connected, minutes: Math.round((now - (this.joinedAt.get(id) ?? now)) / 6000) / 10,
+    }));
+    return { roomId: this.roomId, players };
+  }
+
   onCreate() {
+    LIVE_ROOMS.add(this);
     this.setState(new HubState());
     this.setPatchRate(PATCH_MS);
     // Mỗi bước áp đúng một input; client dùng cùng solver theo khu vực và ghế ngồi.
@@ -263,6 +311,8 @@ export class HubRoom extends Room<{ state: HubState; input: MoveInput }> {
       this.leases.set(c.sessionId,lease);
       const player=new Player();player.name=who.name;player.avatarKey=(c.auth as TicketIdentity & {avatarKey?:string}).avatarKey || '';const spawn=spawnPoint();player.x=spawn.x;player.z=spawn.z;
       this.state.players.set(c.sessionId,player);metrics.clients.inc();
+      const at=Date.now();this.joinedAt.set(c.sessionId,at);LIVE.joins++;LIVE.peak=Math.max(LIVE.peak,onlineNow());
+      LIVE.recent.unshift({id:c.sessionId,name:who.name,at,leftAt:null});LIVE.recent.length=Math.min(LIVE.recent.length,40);
       this.syncShrine(c);
       this.publishShrine({ changed: true });
       this.syncAltar(c);
@@ -310,9 +360,12 @@ export class HubRoom extends Room<{ state: HubState; input: MoveInput }> {
     this.seatListeners.delete(c.sessionId);
     this.replaced.delete(c.sessionId);
     if(hadPlayer)metrics.clients.dec();
+    this.joinedAt.delete(c.sessionId);
+    const entry=LIVE.recent.find(e=>e.id===c.sessionId&&e.leftAt===null);if(entry)entry.leftAt=Date.now();
   }
 
   onDispose() {
+    LIVE_ROOMS.delete(this);
     metrics.rooms.dec();
     log.debug({ roomId: this.roomId }, 'room disposed');
   }

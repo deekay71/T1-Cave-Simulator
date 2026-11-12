@@ -105,6 +105,19 @@ export function shrineReturnPoint(): Position {
 
 export const ShrineGesture = z.enum(['pray', 'bow']);
 export type ShrineGesture = z.infer<typeof ShrineGesture>;
+
+/**
+ * The seated worship loop: everyone on a shrine seat bows once, then raises their hands in prayer,
+ * and starts over, all on the server clock so the whole shrine moves together. Each step lasts
+ * SHRINE_GESTURE_MS and starts and ends at seated rest.
+ */
+export const SHRINE_LOOP: readonly ShrineGesture[] = ['bow', 'pray'];
+export function shrineLoopAt(serverNow: number): { gesture: ShrineGesture; elapsed: number } {
+  const cycle = SHRINE_GESTURE_MS * SHRINE_LOOP.length;
+  const t = Number.isFinite(serverNow) ? ((serverNow % cycle) + cycle) % cycle : 0;
+  const i = Math.min(SHRINE_LOOP.length - 1, Math.floor(t / SHRINE_GESTURE_MS));
+  return { gesture: SHRINE_LOOP[i], elapsed: (t - i * SHRINE_GESTURE_MS) / 1000 };
+}
 export const ShrineRequest = z.discriminatedUnion('action', [
   z.object({ action: z.literal('enter') }).strict(),
   z.object({ action: z.literal('exit') }).strict(),

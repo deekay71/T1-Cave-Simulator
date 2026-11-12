@@ -9,7 +9,8 @@ import {
 } from "react";
 import { createRoot } from "react-dom/client";
 import { HUB_LANDMARKS, ROOM_CAPACITY, SCREEN_SPOT } from "@te-liet/shared";
-import { QUESTS, loadDone } from "./stalls/quests.js";
+import { loadDone } from "./stalls/quests.js";
+import { content, offContent } from "./content/api.js";
 import { StallPanel, RankPanel, ResidentHUD } from "./stalls/StallPanel.js";
 import { CAVE_STALLS, CAVE_STALL_RADIUS, stallApproach, type CaveStallId } from "../../../packages/shared/src/stalls.js";
 import { SHRINE_PORTAL, isInShrine } from "../../../packages/shared/src/shrine.js";
@@ -150,8 +151,14 @@ function NearbyBox({ position, destination, autoWalk, visit }: {
   autoWalk: boolean;
   visit: (id: string) => void;
 }) {
-  const [quests, setQuests] = useState(() => loadDone().length);
-  useEffect(() => { setQuests(loadDone().length); }, [destination?.id]);
+  const [quests, setQuests] = useState(() => ({ done: loadDone(undefined, content().quests).length, total: content().quests.length }));
+  useEffect(() => {
+    const count = () => setQuests({ done: loadDone(undefined, content().quests).length, total: content().quests.length });
+    count();
+    const on = () => count();
+    content(on);
+    return () => offContent(on);
+  }, [destination?.id]);
   const far = (p: { x: number; z: number }) => Math.ceil(Math.hypot(position.x - p.x, position.z - p.z));
   const near = HUB_LANDMARKS.filter((l) => l.id !== destination?.id)
     .map((l) => ({ ...l, d: far(l) }))
@@ -166,7 +173,7 @@ function NearbyBox({ position, destination, autoWalk, visit }: {
           <button onClick={() => ui.set({ destination: null })} aria-label="Bỏ chỉ dẫn">✕</button>
         </div>
       )}
-      <header><span>Gần đây</span><button onClick={() => visit("quest")} title="Tới Hang Quest">Quest T1 {quests}/{QUESTS.length}</button></header>
+      <header><span>Gần đây</span><button onClick={() => visit("quest")} title="Tới Hang Quest">Quest T1 {quests.done}/{quests.total}</button></header>
       <ul>
         {near.map((l) => (
           <li key={l.id}><button onClick={() => visit(l.id)} title="Tự đi tới đây"><i style={{ background: spotColor(l.id) }} /><span>{l.name}</span><small>{l.d} m</small></button></li>
@@ -617,7 +624,7 @@ export function mountUI(actions: Actions) {
               </button>
             )}
             {isInShrine(s.position) && !s.panel && <div className={s.shrineSeat ? "shrine-quick seated" : "shrine-quick"} role="group" aria-label="Thao tác điện thờ">
-              {s.shrineSeat ? <><strong>Đang ngồi hướng về tượng</strong><button onClick={() => actions.shrine({action:"gesture",gesture:"pray"})}>🙏 Giơ tay cầu nguyện</button><button onClick={() => actions.shrine({action:"gesture",gesture:"bow"})}>Cúi lạy</button><button onClick={() => actions.shrine({action:"stand"})}>Đứng dậy</button></> : <><span>Chọn ghế đá còn trống</span>{s.nearbyShrineSeat && <button onClick={() => actions.shrine({action:"sit",seatId:s.nearbyShrineSeat!.id})}>Ngồi {s.nearbyShrineSeat.label}</button>}</>}
+              {s.shrineSeat ? <><strong>Cả điện thờ cùng cúi lạy rồi giơ tay cầu nguyện</strong><button onClick={() => actions.shrine({action:"stand"})}>Đứng dậy</button></> : <><span>Chọn ghế đá còn trống</span>{s.nearbyShrineSeat && <button onClick={() => actions.shrine({action:"sit",seatId:s.nearbyShrineSeat!.id})}>Ngồi {s.nearbyShrineSeat.label}</button>}</>}
               <button onClick={() => actions.shrine({action:"exit"})}>Về hang</button>
             </div>}
             {!s.shrineSeat && <div className="toolbar" role="group" aria-label="Cảm xúc">

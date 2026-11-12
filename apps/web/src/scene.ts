@@ -90,7 +90,7 @@ export interface World {
   /**
    * Lighting mood. "day" (default): the bright look of the previews and the login scene. "cave" (the
    * game): the hall-wide fill, bounce and wall lights drop to a fraction, the haze turns black and
-   * closes in (sight ends ~22 m from the camera) and the player carries a flickering lantern; fires,
+   * closes in (the ground fades out ~4-10 m past the player) and the player carries a flickering lantern; fires,
    * torches, lanterns and the wall screen stay as they are and become the landmarks. "shrine": the
    * island's own lights, gentler darkness, no lantern.
    */
@@ -169,17 +169,22 @@ const LOOK = {
    * omnis, the black haze, a stronger vignette, and the lantern the player carries.
    */
   dark: {
-    ambient: 0.13,
-    fill: 0.05,
-    hall: 0.07,
-    side: 0.18,
-    focal: 0.5,
+    ambient: 0.07,
+    fill: 0.03,
+    hall: 0.04,
+    side: 0.1,
+    focal: 0.4,
     /** Fires, torches, lanterns and candles: dimmer pools of light that flicker harder. */
-    props: 0.42,
-    flicker: 2.4,
-    fog: { color: "#040302", start: 6, end: 22 },
+    props: 0.3,
+    flicker: 2.6,
+    /**
+     * Fog counts from the camera (5.5 m behind the player): the ground fades out ~4-10 m past the
+     * player. Flames, the wall screen and the entry markers ignore the fog, so they stay as points
+     * of light in the dark.
+     */
+    fog: { color: "#020101", start: 5, end: 16 },
     vignette: 0.5,
-    lantern: { y: 2.1, color: "#FFC98F", intensity: 1.05, range: 8.5, flicker: 0.2, hz: 2.3 },
+    lantern: { y: 2.1, color: "#FFC98F", intensity: 1.1, range: 7, flicker: 0.22, hz: 2.3 },
     /** In the shrine (its own lights): gentler darkness, no lantern. */
     shrine: { ambient: 0.75, fog: { start: 14, end: 60 } },
   },
@@ -577,24 +582,44 @@ export function createWorld(app: pc.AppBase, opts: WorldOptions = {}): World {
     lantern.entity.setPosition(x, L.y, z);
     lanternPlaced = true;
   };
+  /** Fog and ambient of each mood (the login scene and the previews may overwrite them in between). */
+  const moodFog = (m: Mood) => (m === "cave" ? LOOK.dark.fog : m === "shrine" ? { color: LOOK.dark.fog.color, ...LOOK.dark.shrine.fog } : LOOK.fog);
+  const moodAmbient = (m: Mood) => {
+    const k = m === "cave" ? LOOK.dark.ambient : m === "shrine" ? LOOK.dark.shrine.ambient : 1;
+    return new pc.Color(...LOOK.ambient.map((c) => c * k));
+  };
+  let wantFog = moodFog("day"),
+    wantFogColor = new pc.Color().fromString(wantFog.color),
+    wantAmbient = moodAmbient("day");
+  /**
+   * Call every frame: light intensities change only when the mood does, but the fog and ambient are
+   * re-asserted each time, because another owner of the camera (the login scene restores what it
+   * saved when it hides) may have put different values back in the meantime.
+   */
   const setMood = (next: Mood) => {
-    if (next === mood) return;
-    mood = next;
-    const D = LOOK.dark;
-    for (const h of hall) h.light.intensity = h.base * (mood === "cave" ? h.k : 1);
-    propLights.k = mood === "cave" ? D.props : 1;
-    propLights.flicker = mood === "cave" ? D.flicker : 1;
-    const amb = mood === "cave" ? D.ambient : mood === "shrine" ? D.shrine.ambient : 1;
-    app.scene.ambientLight = new pc.Color(...LOOK.ambient.map((c) => c * amb));
-    const f = mood === "cave" ? D.fog : mood === "shrine" ? { color: D.fog.color, ...D.shrine.fog } : LOOK.fog;
-    fog.color = new pc.Color().fromString(f.color);
-    fog.start = f.start;
-    fog.end = f.end;
-    cam.fog = fog;
-    if (frame) {
-      frame.vignette.intensity = mood === "day" ? LOOK.post.vignette : D.vignette;
-      frame.update();
+    if (next !== mood) {
+      mood = next;
+      const D = LOOK.dark;
+      for (const h of hall) h.light.intensity = h.base * (mood === "cave" ? h.k : 1);
+      propLights.k = mood === "cave" ? D.props : 1;
+      propLights.flicker = mood === "cave" ? D.flicker : 1;
+      wantFog = moodFog(mood);
+      wantFogColor = new pc.Color().fromString(wantFog.color);
+      wantAmbient = moodAmbient(mood);
+      if (frame) {
+        frame.vignette.intensity = mood === "day" ? LOOK.post.vignette : D.vignette;
+        frame.update();
+      }
     }
+    if (cam.fog !== fog) cam.fog = fog;
+    if (fog.start !== wantFog.start || fog.end !== wantFog.end || !fog.color.equals(wantFogColor)) {
+      fog.type = pc.FOG_LINEAR;
+      fog.color.copy(wantFogColor);
+      fog.start = wantFog.start;
+      fog.end = wantFog.end;
+    }
+    if (!app.scene.ambientLight.equals(wantAmbient)) app.scene.ambientLight = wantAmbient.clone();
+    if (app.scene.exposure !== LOOK.exposure) app.scene.exposure = LOOK.exposure;
   };
   if (opts.mood) setMood(opts.mood);
 

@@ -8,6 +8,8 @@ import { createTicketIssuer, loadPrivateJwk, TICKET_TTL_SECONDS } from '@te-liet
 import { registerMatchRoutes } from './matches/routes.js';
 import { registerProgressionRoutes, sendProgressionError } from './progression/routes.js';
 import { inviteMatches } from './invite.js';
+import { registerContentRoutes } from './content/routes.js';
+import { fileContentStore, pgContentStore } from './content/store.js';
 
 /**
  * TRUST_PROXY: "true", số hop ("1" khi đứng sau một Nginx), hoặc danh sách IP/CIDR của proxy.
@@ -37,6 +39,10 @@ await app.register(rateLimit, { max: RATE_LIMIT_PER_MINUTE, timeWindow: '1 minut
 
 await registerMatchRoutes(app, db);
 const progression = await registerProgressionRoutes(app, db);
+await registerContentRoutes(app, db ? pgContentStore(db) : fileContentStore(), {
+  adminToken: process.env.ADMIN_TOKEN,
+  gameAdminUrl: process.env.GAME_ADMIN_URL || 'http://127.0.0.1:9100',
+});
 
 app.get('/health/live', async () => ({ ok: true }));
 app.get('/health/ready', async () => {

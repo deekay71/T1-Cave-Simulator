@@ -79,3 +79,10 @@ Bản local để review gameplay và bố cục, chưa deploy public. Trước 
 - **Ngồi và nhảy.** F ngồi xuống ghế đẩu / thùng / đá thấp gần nhất (68 chỗ, `packages/shared/src/seats.ts`; server giữ chỗ, một ghế một người), F hoặc phím di chuyển để đứng dậy về chỗ cũ. Phím 4 hoặc Space: nhảy (emote `jump`, mọi người đều thấy). Fan NPC trong 3,4 m nhún đáp lại mỗi emote.
 - **Hang Quest** giờ là 7 quest về T1, mỗi quest ba câu, đúng cả ba là xong (`apps/web/src/stalls/quests.ts`); tiến độ lưu ở trình duyệt, chưa cộng xu/XP.
 - **Hang ký ức** hiện đủ sáu chức vô địch thế giới (2013, 2015, 2016, 2023, 2024, 2025) với ảnh thật từ Wikimedia Commons, ghi công từng ảnh (`apps/web/public/memories/CREDITS.md`). Năm 2016 và 2025 chưa có ảnh nâng cúp mang giấy phép tự do nên dùng ảnh sự kiện của đúng giải.
+
+## Cập nhật 2026-11-12 (tối)
+
+- **Hang tối thật sự.** Màn đăng nhập từng trả ánh sáng "ban ngày" lại đúng lúc vào hang, đè lên chế độ tối; giờ `World.setMood` giữ sương và ánh sáng nền mỗi khung hình. Sương khép lại còn ~4–10 m quanh người chơi, lửa và đuốc còn 30 % và lập lòe mạnh hơn.
+- **Điện thờ:** ngồi xuống là cùng cả điện thờ cúi lạy một lần rồi giơ tay cầu nguyện, lặp lại liên tục, theo đồng hồ server (`shrineLoopAt`); bỏ hai nút cử chỉ thủ công.
+- **Màn hình lớn chia 3/4 + 1/4:** bên trái chiếu playlist clip do admin đặt (không tiếng, mọi người xem cùng lúc khi đủ thời lượng), bên phải lịch đấu T1. Không có clip thì hiện màn hình chờ.
+- **Trang quản trị `/admin.html`:** xem `docs/admin.md`.

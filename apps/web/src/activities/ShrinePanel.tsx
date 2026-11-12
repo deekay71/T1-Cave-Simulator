@@ -15,7 +15,7 @@ export function ShrinePanel({ state, self, position, seated, act }: {
         const mine=occupant===self;const near=Math.hypot(position.x-seat.x,position.z-seat.z)<=2;
         return <button key={seat.id} disabled={!state || !!occupant || !near || !!seated} title={!near?'Đi lại gần ghế này trong 2m':seat.label} onClick={()=>act({action:'sit',seatId:seat.id})}>{seat.label}{mine?' · Bạn':occupant?' · Có người':''}</button>;
       })}</div></section>)}</div>
-      {seated && <div className="activity-buttons"><button onClick={()=>act({action:'gesture',gesture:'pray'})}>Giơ tay cầu nguyện</button><button onClick={()=>act({action:'gesture',gesture:'bow'})}>Cúi lạy</button><button onClick={()=>act({action:'stand'})}>Đứng dậy</button></div>}
+      {seated && <div className="activity-buttons"><p>Ngồi xuống là cùng cả điện thờ cúi lạy một lần rồi giơ tay cầu nguyện, lặp lại liên tục.</p><button onClick={()=>act({action:'stand'})}>Đứng dậy</button></div>}
       <button onClick={()=>act({action:'exit'})}>Về hang</button>
     </>}
     <small>Hoạt động giao lưu, không tác động đến kết quả thi đấu và không có đặt cược.</small>

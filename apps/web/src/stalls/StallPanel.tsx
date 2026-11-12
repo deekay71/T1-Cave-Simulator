@@ -2,7 +2,9 @@ import { useEffect, useState, useSyncExternalStore } from 'react';
 import { RANKS, dailyReward, type CosmeticItem, type ProgressionState } from '@te-liet/shared';
 import { CAVE_STALLS, type CaveStallId } from '../../../../packages/shared/src/stalls.js';
 import { resident } from './client.js';
-import { QUESTS, TITLES, gradeQuest, loadDone, saveDone, type Quest } from './quests.js';
+import { TITLES, gradeQuest, loadDone, saveDone, type Quest } from './quests.js';
+import { content, offContent } from '../content/api.js';
+import type { ContentDoc } from '@te-liet/shared';
 import './stalls.css';
 
 export function useResident(){return useSyncExternalStore(resident.subscribe,resident.get);}
@@ -60,8 +62,10 @@ function CheckIn({state}:{state:ProgressionState}){
  * Bảng quest của Doran: các quest về T1 (stalls/quests.ts). Mỗi quest ba câu, đúng cả ba là xong.
  * Tiến độ lưu ở trình duyệt; không cộng xu hay XP.
  */
+function useQuests(){const[list,setList]=useState<readonly Quest[]>(()=>content().quests);useEffect(()=>{const on=(d:ContentDoc)=>setList(d.quests);content(on);return()=>offContent(on);},[]);return list;}
 function Quests({onVisit}:{onVisit?:(id:string)=>void}){
-  const [done,setDone]=useState<string[]>(()=>loadDone());
+  const QUESTS=useQuests();
+  const [done,setDone]=useState<string[]>(()=>loadDone(undefined,content().quests));
   const [open,setOpen]=useState<Quest|null>(null);
   const [answers,setAnswers]=useState<number[]>([]);
   const start=(q:Quest)=>{setOpen(q);setAnswers([]);};

@@ -1,16 +1,22 @@
 /**
- * The wall screens (packages/shared/src/layout.ts HUB_SCREENS): the big one bolted to the wall of the
- * main cave (the only one now: the side cave that had a small one became Hang Quest). The housings and the dark glass are GLB
- * placements like every other prop; this module lays one shared live picture over the rectangle each
- * model declares (manifest meta.screen): a canvas drawn from the T1 match feed, as an emissive
- * texture, so it reads from anywhere in the cave.
+ * The big wall screen of the main cave (packages/shared/src/layout.ts HUB_SCREEN). The housing and the
+ * dark glass are a GLB placement like every other prop; this module lays the live picture over the
+ * rectangle the model declares (manifest meta.screen), split in two:
  *
- * What it shows is decided by matches/screenSlide.ts (never a score). The feed is polled once a
- * minute while the tab is visible; the picture is redrawn only when its text changes (the countdown
- * moves once a minute) plus one blink a second while a match is on.
+ * - left 3/4: the clip playlist the admin sets (/admin.html, GET /v1/content): a 16:9 video between
+ *   a title band ("ĐANG CHIẾU · …") and a progress band ("Tiếp theo · …"). Clips play muted, one
+ *   after another in a loop; when every clip has a duration the playlist runs on the wall clock, so
+ *   everyone in the cave sees the same moment. A clip that fails to load is skipped for a while.
+ * - right 1/4: the T1 schedule from the match feed (matches/screenSlide.ts, never a score).
+ *
+ * Both are unlit and fog-free, so they read across the dark cave. The canvas (bands + schedule) is
+ * redrawn once a second; the video texture is uploaded only for new video frames, and only while
+ * the camera is in the main cave.
  */
 import * as pc from 'playcanvas';
-import { HUB_SCREEN, HUB_SCREENS, type Placement } from '@te-liet/shared';
+import { HUB_SCREEN, VIDEO_CATEGORIES, type Placement, type ScreenVideo } from '@te-liet/shared';
+import { content } from '../content/api.js';
+import { playlistAt } from './playlist.js';
 import { readMatches, type Feed } from '../matches/client.js';
 import { screenSlide, slideKey, type ScreenSlide } from '../matches/screenSlide.js';
 import { loadManifests } from './manifest.js';
@@ -28,15 +34,22 @@ interface ScreenFace {
 /** Same numbers as the generator (tools/models/groups/furniture.ts WALL_SCREEN), used without a manifest. */
 const FALLBACK_FACE: ScreenFace = { center: [0, 4.7224, 0.9066], size: [9.6, 5.4], normal: [0, -0.1772, 0.9842], up: [0, 0.9842, 0.1772] };
 const POLL_MS = 60_000;
-const W = 1280, H = 720;
+/** Canvas over the whole glass. The left 3/4 (LEFT px) holds the clip, the rest the schedule. */
+const W = 1280, H = 720, LEFT = 960;
+/** The 16:9 video inside the left part, between the title band and the progress band. */
+const VIDEO = { x: 0, y: 90, w: 960, h: 540 } as const;
+/** The camera further than this (m) from the screen: no video decoding or uploads. */
+const WATCH_RANGE = 48;
+/** A clip that failed to load is skipped for this long (ms). */
+const RETRY_MS = 5 * 60_000;
 
 const RED = '#E0353F', AMBER = '#FFC56B', WHITE = '#F2F4F8', DIM = '#8D97AB';
 
 export type ScreenDemo = 'idle' | 'upcoming' | 'running';
 export interface BigScreenOptions {
-  /** Canned picture instead of the feed (dev preview, screenshots). */
+  /** Canned schedule instead of the feed (dev preview, screenshots). */
   demo?: ScreenDemo;
-  /** Frozen world time: draw once, no polling, no blink. */
+  /** Frozen world time: draw once, no polling, no blink, no video. */
   frozen?: boolean;
 }
 export interface BigScreen {
@@ -69,190 +82,310 @@ function fitFont(ctx: CanvasRenderingContext2D, text: string, weight: number, si
     s -= 4;
   }
 }
-function line(ctx: CanvasRenderingContext2D, text: string, y: number, weight: number, size: number, color: string, maxWidth = W * 0.9) {
+/** One centred line, shrunk to fit `maxWidth`, centred on `cx`. */
+function line(ctx: CanvasRenderingContext2D, text: string, cx: number, y: number, weight: number, size: number, color: string, maxWidth: number) {
   fitFont(ctx, text, weight, size, maxWidth);
   ctx.fillStyle = color;
   ctx.textAlign = 'center';
-  ctx.fillText(text, W / 2, y);
+  ctx.fillText(text, cx, y);
 }
 const whenText = (at: number) => {
   const d = new Date(at);
-  const day = d.toLocaleDateString('vi-VN', { weekday: 'long', day: '2-digit', month: '2-digit' });
+  const day = d.toLocaleDateString('vi-VN', { weekday: 'short', day: '2-digit', month: '2-digit' });
   const time = d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
-  return `${day.charAt(0).toLocaleUpperCase('vi')}${day.slice(1)} · ${time}`;
+  return [`${day.charAt(0).toLocaleUpperCase('vi')}${day.slice(1)}`, time];
 };
 
-/** "T1  vs  <away>" on one line, the names as large as the width allows. */
-function teams(ctx: CanvasRenderingContext2D, home: string, away: string, y: number, size: number) {
-  const gap = 46, vs = 'vs';
-  let s = size;
-  let wh = 0, wa = 0, wv = 0;
-  for (;;) {
-    ctx.font = `800 ${s}px ${WORLD_FONT}`;
-    wh = ctx.measureText(home).width; wa = ctx.measureText(away).width;
-    ctx.font = `600 ${Math.round(s * 0.42)}px ${WORLD_FONT}`;
-    wv = ctx.measureText(vs).width;
-    if (wh + wa + wv + 2 * gap <= W * 0.9 || s <= 40) break;
-    s -= 6;
-  }
-  let x = (W - (wh + wa + wv + 2 * gap)) / 2;
-  ctx.textAlign = 'left';
-  ctx.font = `800 ${s}px ${WORLD_FONT}`;
-  ctx.fillStyle = WHITE;
-  ctx.fillText(home, x, y);
-  x += wh + gap;
-  ctx.font = `600 ${Math.round(s * 0.42)}px ${WORLD_FONT}`;
-  ctx.fillStyle = DIM;
-  ctx.fillText(vs, x, y - s * 0.12);
-  x += wv + gap;
-  ctx.font = `800 ${s}px ${WORLD_FONT}`;
-  ctx.fillStyle = WHITE;
-  ctx.fillText(away, x, y);
-}
-
-function paint(ctx: CanvasRenderingContext2D, slide: ScreenSlide, blink: boolean) {
-  ctx.textBaseline = 'alphabetic';
-  // Backdrop: a deep blue panel, a little lighter in the middle, a red glow rising from below.
+/** Right quarter: the T1 schedule (never a score). */
+function paintSchedule(ctx: CanvasRenderingContext2D, slide: ScreenSlide, blink: boolean) {
+  const x0 = LEFT, w = W - LEFT, cx = x0 + w / 2, max = w - 40;
   const bg = ctx.createLinearGradient(0, 0, 0, H);
-  bg.addColorStop(0, '#0A0E1A'); bg.addColorStop(0.55, '#121A2E'); bg.addColorStop(1, '#0B0E18');
+  bg.addColorStop(0, '#0C111F'); bg.addColorStop(1, '#0A0D17');
   ctx.fillStyle = bg;
-  ctx.fillRect(0, 0, W, H);
-  const glow = ctx.createRadialGradient(W / 2, H * 1.15, 40, W / 2, H * 1.15, H * 0.95);
-  glow.addColorStop(0, slide.kind === 'idle' ? 'rgba(150,34,44,0.42)' : 'rgba(224,53,63,0.34)');
-  glow.addColorStop(1, 'rgba(224,53,63,0)');
-  ctx.fillStyle = glow;
-  ctx.fillRect(0, 0, W, H);
-
-  // Header strip.
+  ctx.fillRect(x0, 0, w, H);
+  ctx.fillStyle = 'rgba(255,255,255,0.16)';
+  ctx.fillRect(x0, 0, 3, H);
   ctx.fillStyle = RED;
-  ctx.fillRect(0, 0, W, 10);
-  ctx.textAlign = 'left';
-  ctx.font = `800 40px ${WORLD_FONT}`;
-  ctx.fillStyle = WHITE;
-  ctx.fillText('TRẬN ĐẤU T1', 56, 78);
-  ctx.textAlign = 'right';
-  ctx.font = `600 28px ${WORLD_FONT}`;
-  ctx.fillStyle = DIM;
-  ctx.fillText('HANG TRÚ THUA', W - 56, 76);
+  ctx.fillRect(x0, 0, w, 8);
+  line(ctx, 'TRẬN ĐẤU T1', cx, 62, 800, 34, WHITE, max);
   ctx.fillStyle = 'rgba(255,255,255,0.14)';
-  ctx.fillRect(56, 104, W - 112, 2);
-
+  ctx.fillRect(x0 + 20, 88, w - 40, 2);
   if (slide.kind === 'idle') {
-    // The concept's TV: DEFEAT, a little out of register.
-    const size = fitFont(ctx, 'DEFEAT', 800, 250, W * 0.86);
-    ctx.textAlign = 'center';
-    ctx.font = `800 ${size}px ${WORLD_FONT}`;
-    ctx.fillStyle = 'rgba(70,190,220,0.30)';
-    ctx.fillText('DEFEAT', W / 2 - 7, 412);
-    ctx.fillStyle = 'rgba(224,53,63,0.55)';
-    ctx.fillText('DEFEAT', W / 2 + 7, 420);
-    ctx.fillStyle = '#C9CFDA';
-    ctx.fillText('DEFEAT', W / 2, 416);
-    line(ctx, slide.note, 536, 600, 46, DIM);
+    line(ctx, 'CHƯA CÓ', cx, 300, 800, 44, '#C9CFDA', max);
+    line(ctx, 'TRẬN SẮP TỚI', cx, 352, 800, 44, '#C9CFDA', max);
+    const words = slide.note.split(' ');
+    const lines: string[] = [];
+    ctx.font = `600 24px ${WORLD_FONT}`;
+    for (const word of words) {
+      const last = lines[lines.length - 1];
+      if (last && ctx.measureText(`${last} ${word}`).width <= max) lines[lines.length - 1] = `${last} ${word}`;
+      else lines.push(word);
+    }
+    lines.slice(0, 3).forEach((l, i) => line(ctx, l, cx, 430 + i * 34, 600, 24, DIM, max));
   } else {
-    const meta = [slide.competition, slide.bestOf ? `BO${slide.bestOf}` : ''].filter(Boolean).join(' · ');
     if (slide.kind === 'running') {
-      // Status pill with a blinking dot.
-      ctx.font = `800 44px ${WORLD_FONT}`;
-      const label = 'ĐANG THI ĐẤU', tw = ctx.measureText(label).width, pw = tw + 110, px = (W - pw) / 2, py = 150;
       ctx.fillStyle = RED;
       ctx.beginPath();
-      ctx.roundRect(px, py, pw, 76, 38);
+      ctx.roundRect(x0 + 30, 122, w - 60, 58, 29);
       ctx.fill();
       ctx.fillStyle = blink ? WHITE : 'rgba(255,255,255,0.35)';
       ctx.beginPath();
-      ctx.arc(px + 44, py + 38, 13, 0, Math.PI * 2);
+      ctx.arc(x0 + 62, 151, 10, 0, Math.PI * 2);
       ctx.fill();
-      ctx.fillStyle = WHITE;
-      ctx.textAlign = 'left';
-      ctx.fillText(label, px + 76, py + 54);
-      teams(ctx, slide.home, slide.away, 410, 170);
-      if (meta) line(ctx, meta, 492, 600, 42, '#B9C3D8');
-      line(ctx, 'Tỉ số không hiện ở đây · đến gần màn hình, nhấn E', 590, 600, 36, DIM);
-    } else {
-      line(ctx, 'TRẬN SẮP TỚI', 196, 700, 44, '#B9C3D8');
-      teams(ctx, slide.home, slide.away, 346, 150);
-      if (meta) line(ctx, meta, 420, 600, 40, '#B9C3D8');
-      line(ctx, slide.countdown, 534, 800, 92, AMBER);
-      line(ctx, whenText(slide.at), 604, 600, 40, WHITE);
-    }
+      line(ctx, 'ĐANG ĐẤU', cx + 14, 163, 800, 32, WHITE, w - 120);
+    } else line(ctx, 'TRẬN SẮP TỚI', cx, 160, 700, 30, '#B9C3D8', max);
+    line(ctx, slide.home, cx, 262, 800, 64, WHITE, max);
+    line(ctx, 'vs', cx, 306, 600, 28, DIM, max);
+    line(ctx, slide.away, cx, 370, 800, 56, WHITE, max);
+    const meta = [slide.competition, slide.bestOf ? `BO${slide.bestOf}` : ''].filter(Boolean).join(' · ');
+    if (meta) line(ctx, meta, cx, 418, 600, 24, '#B9C3D8', max);
+    if (slide.kind === 'upcoming') {
+      line(ctx, slide.countdown, cx, 500, 800, 40, AMBER, max);
+      const [day, time] = whenText(slide.at);
+      line(ctx, day, cx, 548, 600, 26, WHITE, max);
+      line(ctx, time, cx, 584, 700, 30, WHITE, max);
+    } else line(ctx, 'Tỉ số: nhấn E ở đây', cx, 520, 600, 24, DIM, max);
   }
-
-  // Footer.
   ctx.fillStyle = 'rgba(255,255,255,0.14)';
-  ctx.fillRect(56, H - 72, W - 112, 2);
-  ctx.font = `500 26px ${WORLD_FONT}`;
-  ctx.fillStyle = DIM;
-  ctx.textAlign = 'left';
-  if (slide.kind !== 'idle') ctx.fillText('Source: PandaScore · giờ trên thiết bị', 56, H - 30);
-  ctx.textAlign = 'right';
-  ctx.fillText('Lịch và kết quả: đến gần màn hình, nhấn E', W - 56, H - 30);
+  ctx.fillRect(x0 + 20, H - 70, w - 40, 2);
+  line(ctx, 'Nhấn E trước màn hình', cx, H - 30, 500, 22, DIM, max);
+}
 
-  // Panel grid of the salvaged display and a soft vignette.
-  ctx.fillStyle = 'rgba(0,0,0,0.20)';
+interface NowPlaying {
+  clip: ScreenVideo | null;
+  next: ScreenVideo | null;
+  /** 0..1 */
+  progress: number;
+  /** True once the video draws over VIDEO. */
+  live: boolean;
+}
+/** Left 3/4: the title band, the video window (or a standby card) and the progress band. */
+function paintClip(ctx: CanvasRenderingContext2D, now: NowPlaying) {
+  ctx.fillStyle = '#05070D';
+  ctx.fillRect(0, 0, LEFT, H);
+  // title band
+  ctx.fillStyle = '#0D1220';
+  ctx.fillRect(0, 0, LEFT, VIDEO.y);
+  ctx.fillStyle = RED;
+  ctx.fillRect(0, 0, LEFT, 8);
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'alphabetic';
+  if (now.clip) {
+    ctx.font = `800 26px ${WORLD_FONT}`;
+    ctx.fillStyle = RED;
+    ctx.fillText('ĐANG CHIẾU', 36, 62);
+    const label = ctx.measureText('ĐANG CHIẾU').width;
+    const tag = [VIDEO_CATEGORIES[now.clip.category], now.clip.year ? String(now.clip.year) : ''].filter(Boolean).join(' · ');
+    ctx.textAlign = 'right';
+    ctx.font = `600 24px ${WORLD_FONT}`;
+    ctx.fillStyle = DIM;
+    ctx.fillText(tag, LEFT - 32, 62);
+    const tagW = ctx.measureText(tag).width;
+    const room = LEFT - 36 - label - 28 - tagW - 56;
+    const size = fitFont(ctx, now.clip.title, 700, 34, room);
+    ctx.font = `700 ${size}px ${WORLD_FONT}`;
+    ctx.textAlign = 'left';
+    ctx.fillStyle = WHITE;
+    ctx.fillText(now.clip.title, 36 + label + 28, 63);
+  } else {
+    ctx.font = `800 30px ${WORLD_FONT}`;
+    ctx.fillStyle = WHITE;
+    ctx.fillText('HANG TRÚ THUA', 36, 62);
+  }
+  // video window: the video quad covers it while a clip plays
+  if (!now.live) {
+    const bg = ctx.createLinearGradient(0, VIDEO.y, 0, VIDEO.y + VIDEO.h);
+    bg.addColorStop(0, '#0A0E1A'); bg.addColorStop(0.55, '#121A2E'); bg.addColorStop(1, '#0B0E18');
+    ctx.fillStyle = bg;
+    ctx.fillRect(VIDEO.x, VIDEO.y, VIDEO.w, VIDEO.h);
+    const glow = ctx.createRadialGradient(VIDEO.w / 2, VIDEO.y + VIDEO.h * 1.1, 30, VIDEO.w / 2, VIDEO.y + VIDEO.h * 1.1, VIDEO.h * 0.9);
+    glow.addColorStop(0, 'rgba(150,34,44,0.42)'); glow.addColorStop(1, 'rgba(224,53,63,0)');
+    ctx.fillStyle = glow;
+    ctx.fillRect(VIDEO.x, VIDEO.y, VIDEO.w, VIDEO.h);
+    const cy = VIDEO.y + VIDEO.h * 0.6;
+    const size = fitFont(ctx, 'DEFEAT', 800, 200, VIDEO.w * 0.8);
+    ctx.textAlign = 'center';
+    ctx.font = `800 ${size}px ${WORLD_FONT}`;
+    ctx.fillStyle = 'rgba(70,190,220,0.30)';
+    ctx.fillText('DEFEAT', VIDEO.w / 2 - 6, cy - 4);
+    ctx.fillStyle = 'rgba(224,53,63,0.55)';
+    ctx.fillText('DEFEAT', VIDEO.w / 2 + 6, cy + 4);
+    ctx.fillStyle = '#C9CFDA';
+    ctx.fillText('DEFEAT', VIDEO.w / 2, cy);
+    line(ctx, now.clip ? 'Đang tải clip…' : 'Màn hình chờ', VIDEO.w / 2, VIDEO.y + VIDEO.h - 60, 600, 34, DIM, VIDEO.w * 0.8);
+  }
+  // progress band
+  const y = VIDEO.y + VIDEO.h;
+  ctx.fillStyle = '#0D1220';
+  ctx.fillRect(0, y, LEFT, H - y);
+  ctx.fillStyle = 'rgba(255,255,255,0.12)';
+  ctx.fillRect(36, y + 22, LEFT - 72, 6);
+  if (now.clip) {
+    ctx.fillStyle = RED;
+    ctx.fillRect(36, y + 22, (LEFT - 72) * Math.max(0, Math.min(1, now.progress)), 6);
+  }
+  ctx.textAlign = 'left';
+  ctx.font = `600 24px ${WORLD_FONT}`;
+  ctx.fillStyle = DIM;
+  const nextText = now.next && now.next !== now.clip ? `Tiếp theo · ${now.next.title}` : now.clip ? 'Phát lại từ đầu' : 'Chưa có clip nào trong danh sách';
+  fitFont(ctx, nextText, 600, 24, LEFT - 72);
+  ctx.fillText(nextText, 36, y + 66);
+}
+
+/** Scanlines and panel seams of the salvaged display, over the canvas parts (not the video). */
+function grime(ctx: CanvasRenderingContext2D) {
+  ctx.fillStyle = 'rgba(0,0,0,0.18)';
   for (let y = 3; y < H; y += 6) ctx.fillRect(0, y, W, 1);
-  ctx.fillStyle = 'rgba(0,0,0,0.38)';
-  for (let x = 320; x < W; x += 320) ctx.fillRect(x - 1, 0, 2, H);
-  ctx.fillRect(0, H / 2 - 1, W, 2);
-  const edge = ctx.createRadialGradient(W / 2, H / 2, H * 0.45, W / 2, H / 2, W * 0.72);
-  edge.addColorStop(0, 'rgba(0,0,0,0)'); edge.addColorStop(1, 'rgba(0,0,0,0.5)');
+  const edge = ctx.createRadialGradient(W / 2, H / 2, H * 0.5, W / 2, H / 2, W * 0.75);
+  edge.addColorStop(0, 'rgba(0,0,0,0)'); edge.addColorStop(1, 'rgba(0,0,0,0.42)');
   ctx.fillStyle = edge;
   ctx.fillRect(0, 0, W, H);
 }
 
 /* ------------------------------------------------------------------ world */
 
-function placeOnGlass(e: pc.Entity, p: Placement, face: ScreenFace) {
+/**
+ * A holder at the placement, with `e` on the glass: +Z out of it, +Y the picture's up, +X along the
+ * text. (dx, dy) shifts `e` in the picture plane (m), dz out of it.
+ */
+function placeOnGlass(e: pc.Entity, p: Placement, face: ScreenFace, dx = 0, dy = 0, dz = 0) {
   const holder = new pc.Entity('big-screen');
   holder.setLocalPosition(p.x, p.y ?? 0, p.z);
   holder.setLocalEulerAngles(0, p.yaw, 0);
   if (p.scale) holder.setLocalScale(p.scale, p.scale, p.scale);
   holder.addChild(e);
-  // Orthonormal frame: +Z = out of the glass, +Y = the picture's up, +X = up x normal (text runs along +X).
   const n = new pc.Vec3(...face.normal).normalize(), up = new pc.Vec3(...face.up).normalize();
   const x = new pc.Vec3().cross(up, n).normalize();
   const m = new pc.Mat4();
   m.set([x.x, x.y, x.z, 0, up.x, up.y, up.z, 0, n.x, n.y, n.z, 0, 0, 0, 0, 1]);
   e.setLocalRotation(new pc.Quat().setFromMat4(m));
-  e.setLocalPosition(face.center[0], face.center[1], face.center[2]);
+  e.setLocalPosition(
+    face.center[0] + x.x * dx + up.x * dy + n.x * dz,
+    face.center[1] + x.y * dx + up.y * dy + n.y * dz,
+    face.center[2] + x.z * dx + up.z * dy + n.z * dz,
+  );
   return holder;
+}
+function unlit(texture: pc.Texture, intensity: number): pc.StandardMaterial {
+  const m = new pc.StandardMaterial();
+  m.useLighting = false;
+  m.useFog = false;
+  m.diffuse = new pc.Color(0, 0, 0);
+  m.emissive = new pc.Color(1, 1, 1);
+  m.emissiveMap = texture;
+  m.emissiveIntensity = intensity;
+  m.update();
+  return m;
 }
 
 export function buildBigScreen(app: pc.AppBase, parent: pc.Entity, opts: BigScreenOptions = {}): BigScreen {
   const report = (msg: string) => console.error(`[screen] ${msg}`);
+  const device = app.graphicsDevice;
   const canvas = document.createElement('canvas');
   canvas.width = W; canvas.height = H;
   const ctx = canvas.getContext('2d')!;
-  const texture = new pc.Texture(app.graphicsDevice, { width: W, height: H, mipmaps: true, anisotropy: 8, flipY: true });
+  const texture = new pc.Texture(device, { width: W, height: H, mipmaps: true, anisotropy: 8, flipY: true });
   texture.addressU = pc.ADDRESS_CLAMP_TO_EDGE;
   texture.addressV = pc.ADDRESS_CLAMP_TO_EDGE;
-  // Unlit: the picture is its own light. Kept under the bloom threshold's hot range so the
-  // lettering stays crisp; the glow on the rock comes from the model's light (scene.ts).
-  const material = new pc.StandardMaterial();
-  material.name = 'big-screen-picture';
-  material.useLighting = false;
-  material.diffuse = new pc.Color(0, 0, 0);
-  material.emissive = new pc.Color(1, 1, 1);
-  material.emissiveMap = texture;
-  // The picture is the brightest thing in the dark cave: no haze on it (the black fog would swallow it
-  // from across the hall) and a little over full brightness so it blooms like a lit panel.
-  material.useFog = false;
-  material.emissiveIntensity = 1.5;
-  material.update();
+  // The picture is the brightest thing in the dark cave: unlit, no haze on it, a little over full
+  // brightness so it blooms like a lit panel. The glow on the rock comes from the model's light.
+  const material = unlit(texture, 1.5);
+
+  // The clip: one muted <video> on a texture of its own, over the canvas's video window.
+  const video = document.createElement('video');
+  video.muted = true;
+  video.playsInline = true;
+  video.crossOrigin = 'anonymous';
+  video.preload = 'auto';
+  const videoTexture = new pc.Texture(device, { width: 16, height: 9, mipmaps: false, flipY: true, minFilter: pc.FILTER_LINEAR, magFilter: pc.FILTER_LINEAR });
+  videoTexture.addressU = pc.ADDRESS_CLAMP_TO_EDGE;
+  videoTexture.addressV = pc.ADDRESS_CLAMP_TO_EDGE;
+  const videoMaterial = unlit(videoTexture, 1.3);
+  let videoEntity: pc.Entity | null = null;
+  let frameDirty = false,
+    videoBound = false;
+  const watchFrames = () => {
+    if (typeof video.requestVideoFrameCallback !== 'function') return;
+    video.requestVideoFrameCallback(() => { frameDirty = true; watchFrames(); });
+  };
+  watchFrames();
+
+  let clips: ScreenVideo[] = content((doc) => { clips = doc.videos; }).videos;
+  const failed = new Map<string, number>();
+  let playing: ScreenVideo | null = null;
+  let sourceSet = false;
+  let near = true;
 
   let feed: Feed | null = null;
   let key = '', blink = true;
+  const playable = () => clips.filter((c) => c.enabled && c.url && !(Date.now() - (failed.get(c.url) ?? -Infinity) < RETRY_MS));
+  const nowPlaying = (): NowPlaying => {
+    const list = playable();
+    if (!list.length || opts.frozen) return { clip: null, next: null, progress: 0, live: false };
+    const clip = playing && list.includes(playing) ? playing : list[0];
+    const i = list.indexOf(clip);
+    const d = video.duration;
+    return {
+      clip,
+      next: list[(i + 1) % list.length],
+      progress: Number.isFinite(d) && d > 0 ? video.currentTime / d : 0,
+      live: sourceSet && video.readyState >= 2 && !!videoEntity?.enabled,
+    };
+  };
   const draw = (force = false) => {
     const slide = opts.demo ? demoSlide(opts.demo) : screenSlide(feed, Date.now());
-    const next = slideKey(slide);
-    const live = slide.kind === 'running' && !opts.frozen;
-    if (live) blink = !blink; else blink = true;
-    if (!force && !live && next === key) return;
+    const now = nowPlaying();
+    const running = slide.kind === 'running' && !opts.frozen;
+    blink = running ? !blink : true;
+    const next = `${slideKey(slide)}|${blink}|${now.clip?.id ?? ''}|${now.next?.id ?? ''}|${now.live}|${Math.round(now.progress * 200)}`;
+    if (!force && next === key) return;
     key = next;
-    paint(ctx, slide, blink);
+    paintClip(ctx, now);
+    paintSchedule(ctx, slide, blink);
+    grime(ctx);
     texture.setSource(canvas);
   };
   draw(true);
+
+  /** Start `clip` (from `offset` s when known). */
+  const load = (clip: ScreenVideo, offset: number | null) => {
+    playing = clip;
+    sourceSet = true;
+    video.src = clip.url;
+    const seek = () => {
+      if (offset !== null && Number.isFinite(video.duration)) video.currentTime = Math.min(offset, Math.max(0, video.duration - 0.25));
+      void video.play().catch(() => undefined);
+    };
+    video.addEventListener('loadedmetadata', seek, { once: true });
+  };
+  video.addEventListener('error', () => {
+    if (playing?.url) failed.set(playing.url, Date.now());
+    playing = null;
+    sourceSet = false;
+  });
+  // Without durations for every clip there is no shared clock: play them in order.
+  video.addEventListener('ended', () => {
+    const list = playable();
+    if (!list.length || playlistAt(list, Date.now())) return;
+    load(list[(Math.max(0, list.indexOf(playing!)) + 1) % list.length], 0);
+  });
+  /** Once a second: follow the playlist clock, pause when nobody near can see it. */
+  const steer = () => {
+    if (opts.frozen) return;
+    const list = playable();
+    if (!list.length || !near || document.hidden) {
+      if (!video.paused) video.pause();
+      if (!list.length && sourceSet) { video.removeAttribute('src'); video.load(); sourceSet = false; playing = null; }
+      return;
+    }
+    const at = playlistAt(list, Date.now());
+    if (at) {
+      const clip = list[at.index];
+      if (clip !== playing || !sourceSet) return load(clip, at.offset);
+      if (video.readyState >= 1 && Math.abs(video.currentTime - at.offset) > 2.5) video.currentTime = at.offset;
+    } else if (!playing || !list.includes(playing) || !sourceSet) return load(list[0], 0);
+    if (video.paused) void video.play().catch(() => undefined);
+  };
 
   const root = new pc.Entity('wall-screens');
   parent.addChild(root);
@@ -279,34 +412,61 @@ export function buildBigScreen(app: pc.AppBase, parent: pc.Entity, opts: BigScre
     }
   };
   const visibility = () => {
-    if (document.hidden) { clearTimeout(poll); request?.abort(); }
+    if (document.hidden) { clearTimeout(poll); request?.abort(); video.pause(); }
     else void refresh();
+  };
+  let camera: pc.GraphNode | null = null;
+  const screenAt = new pc.Vec3(HUB_SCREEN.x, 4.7, HUB_SCREEN.z);
+  const onUpdate = () => {
+    camera ??= app.root.findByName('camera');
+    const eye = camera?.getPosition();
+    near = !eye || eye.distance(screenAt) < WATCH_RANGE;
+    const show = sourceSet && video.readyState >= 2 && near;
+    if (videoEntity && videoEntity.enabled !== show) videoEntity.enabled = show;
+    if (!show || video.paused) return;
+    // A new frame (or every frame where requestVideoFrameCallback is missing).
+    if (frameDirty || typeof video.requestVideoFrameCallback !== 'function') {
+      frameDirty = false;
+      if (!videoBound) { videoTexture.setSource(video); videoBound = true; }
+      else videoTexture.upload();
+    }
   };
   const dispose = () => {
     disposed = true;
     clearInterval(timer); clearTimeout(poll); request?.abort();
+    app.off('update', onUpdate);
     document.removeEventListener('visibilitychange', visibility);
-    material.destroy(); texture.destroy();
+    video.pause(); video.removeAttribute('src'); video.load();
+    material.destroy(); texture.destroy(); videoMaterial.destroy(); videoTexture.destroy();
   };
 
   const ready = loadManifests(['furniture'], report)
     .then(index => {
       const meshes: pc.Mesh[] = [];
-      for (const p of HUB_SCREENS) {
-        const declared = index.get(p.asset)?.meta?.screen;
-        const face = isFace(declared) ? declared : p === HUB_SCREEN ? FALLBACK_FACE : null;
-        if (!face) { report(`${p.asset}: no screen face in the manifest`); continue; }
-        const mesh = quadMesh(app.graphicsDevice, face.size[0], face.size[1]);
-        meshes.push(mesh);
-        const picture = renderEntity('screen-picture', mesh, material);
-        picture.render!.receiveShadows = false;
-        root.addChild(placeOnGlass(picture, p, face));
-      }
-      root.on('destroy', () => { dispose(); for (const mesh of meshes) mesh.destroy(); });
+      const declared = index.get(HUB_SCREEN.asset)?.meta?.screen;
+      const face = isFace(declared) ? declared : FALLBACK_FACE;
+      const mesh = quadMesh(device, face.size[0], face.size[1]);
+      meshes.push(mesh);
+      const picture = renderEntity('screen-picture', mesh, material);
+      picture.render!.receiveShadows = false;
+      root.addChild(placeOnGlass(picture, HUB_SCREEN, face));
+      // The video window in metres: the canvas maps W px onto the glass width.
+      const k = face.size[0] / W;
+      const vMesh = quadMesh(device, VIDEO.w * k, VIDEO.h * k);
+      meshes.push(vMesh);
+      videoEntity = renderEntity('screen-video', vMesh, videoMaterial);
+      videoEntity.render!.receiveShadows = false;
+      videoEntity.enabled = false;
+      const dx = (VIDEO.x + VIDEO.w / 2 - W / 2) * k, dy = (H / 2 - (VIDEO.y + VIDEO.h / 2)) * k;
+      root.addChild(placeOnGlass(videoEntity, HUB_SCREEN, face, dx, dy, 0.004));
+      root.on('destroy', () => { dispose(); for (const m of meshes) m.destroy(); });
       // The web font may arrive after the first picture: draw again with it.
       void document.fonts?.ready.then(() => { if (!disposed) draw(true); });
-      if (opts.demo || opts.frozen) return;
-      timer = setInterval(() => draw(), 1000);
+      if (opts.frozen) return;
+      app.on('update', onUpdate);
+      timer = setInterval(() => { steer(); draw(); }, 1000);
+      steer();
+      if (opts.demo) return;
       document.addEventListener('visibilitychange', visibility);
       void refresh();
     })

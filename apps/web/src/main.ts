@@ -29,7 +29,7 @@ import {
   LIMITS,
   MoveInput,
 } from "@te-liet/shared";
-import { SHRINE_CENTER, SHRINE_SEATS, SHRINE_SEAT_HEIGHT, SHRINE_RADIUS, applyShrineAwareInput, isInShrine } from "../../../packages/shared/src/shrine.js";
+import { SHRINE_CENTER, SHRINE_SEATS, SHRINE_SEAT_HEIGHT, SHRINE_RADIUS, applyShrineAwareInput, isInShrine, shrineLoopAt } from "../../../packages/shared/src/shrine.js";
 import "./style.css";
 import { resident } from "./stalls/client.js";
 import { CAVE_STALLS, CAVE_STALL_RADIUS } from "../../../packages/shared/src/stalls.js";
@@ -767,7 +767,8 @@ app.on("update", (dt: number) => {
   devTick();
   const s = session;
   if (!s) {
-    world.setMood("day");
+    // Màn đăng nhập tự quản sương và ánh sáng của nó; chỉ trả về kiểu "ngày" khi nó đã ẩn.
+    if (!login.active) world.setMood("day");
     shrineAudio.leave();
     if (!devView && !login.active) drift(dt);
     return;
@@ -857,7 +858,9 @@ app.on("update", (dt: number) => {
     const shrineSeat = SHRINE_SEATS.find(seat => seat.id === p.shrineSeat);
     if (shrineSeat) f.yaw = f.wantYaw = shrineSeat.yaw * DEG;
     else if (sitting) f.yaw = f.wantYaw = p.seatYaw * DEG;
-    f.avatar?.setShrinePose(!!shrineSeat || !!sitting, p.shrineGesture === "pray" || p.shrineGesture === "bow" ? p.shrineGesture : null, Math.max(0,(Date.now()+shrineClockOffset-p.shrineGestureAt)/1000));
+    // Ghế điện thờ: cả điện thờ cúi lạy rồi giơ tay cầu nguyện theo đồng hồ server, lặp lại. Ghế trong hang: chỉ ngồi.
+    const worship = shrineSeat ? shrineLoopAt(Date.now() + shrineClockOffset) : null;
+    f.avatar?.setShrinePose(!!shrineSeat || !!sitting, worship?.gesture ?? null, worship?.elapsed ?? 0);
     // Ghế trong hang cao thấp khác nhau: dáng ngồi dựng cho mặt ghế SHRINE_SEAT_HEIGHT, nâng/hạ gốc cho khớp.
     moveFan(f, x, z, dt, f.self && !shrineSeat && !sitting ? a : null, sitting ? sitting.h - SHRINE_SEAT_HEIGHT : 0);
     if (sitting && f.avatar) f.avatar.entity.setEulerAngles(0, p.seatYaw, 0);
