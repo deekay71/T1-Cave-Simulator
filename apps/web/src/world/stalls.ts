@@ -1,122 +1,453 @@
-/** Original low-poly hosts and readable canvas signs, generated without external art. */
+/**
+ * Stall signs and the name boards of the tunnel gates: lettering painted on weathered planks. The stalls themselves (counters, awning,
+ * clothes rail, sign posts and boards) and their hosts are GLB placements of the shared table
+ * (packages/shared/src/layout.ts: HUB_STALL_SIGNS / HUB_STALL_HOSTS), so they load, batch, collide
+ * and idle like every other prop and NPC. This module only lays a canvas texture (wood grain,
+ * seams, nail heads, worn paint) over the flat faces the sign boards declare in the furniture
+ * manifest (meta.sign.faces), one texture per side, so the text never reads mirrored. The gates in
+ * front of the four tunnel mouths (HUB_CAVE_GATES) carry the same kind of board: the side cave's
+ * name toward the main cave, "HANG LỚN" toward the tunnel.
+ */
 import * as pc from 'playcanvas';
+import { HUB_CAVES, HUB_CAVE_GATES, HUB_STALL_SIGNS, STALL_SIGN_BOARD, STALL_SIGN_BOARDS, type Placement } from '@te-liet/shared';
 import type { Blocker } from '../cameraMath.js';
-import { CAVE_STALLS } from '../../../../packages/shared/src/stalls.js';
+import { CAVE_STALLS, type CaveStall } from '../../../../packages/shared/src/stalls.js';
+import { loadManifests } from './manifest.js';
 
-/** Elevated signs do not push a low camera away from an otherwise open aisle. */
+type V3 = readonly [number, number, number];
+/** A flat rectangle of a sign board in the model's frame (manifest meta.sign.faces). */
+export interface SignFace {
+  center: V3;
+  /** [width, height] in metres. */
+  size: readonly [number, number];
+  normal: V3;
+  up: V3;
+}
+/** One plank row of a board: heights in the model's frame and the plank's exact front colour. */
+export interface SignPlank {
+  y0: number;
+  y1: number;
+  color: string;
+}
+interface SignMeta {
+  faces: SignFace[];
+  planks: SignPlank[];
+}
+
+/** Board wood when no manifest colours are known (tools/models/groups/furniture.ts SIGN_WOOD). */
+const SIGN_WOOD = '#584232';
+/** Lettering: worn white for the name, a paler tint of the stall's accent for the host line. */
+const PAINT = '#D9D0BC';
+const BOARD_HEIGHT = STALL_SIGN_BOARD.height;
+const BOARD_BOTTOM = STALL_SIGN_BOARD.bottom;
+
+const DEG = Math.PI / 180;
+/** Model frame (x, z) of a placement -> cave space. */
+function toCave(p: Placement, lx: number, lz: number): { x: number; z: number } {
+  const s = p.scale ?? 1, c = Math.cos(p.yaw * DEG), n = Math.sin(p.yaw * DEG);
+  return { x: p.x + (lx * c + lz * n) * s, z: p.z + (-lx * n + lz * c) * s };
+}
+
+/**
+ * Camera-only bounds of what hangs overhead at a stall: the sign board with its crossbar and the
+ * check-in awning. They start above head height, so a low camera still passes under them; the
+ * posts (thin, floor to top) and the hosts come from cameraBlockers() like every placement.
+ */
 export const STALL_CAMERA_BLOCKERS: readonly (Blocker & { bottom?: number })[] = CAVE_STALLS.flatMap(s => {
-  const a = s.yaw * Math.PI / 180;
-  const sign = { x: s.x - Math.sin(a) * .3, z: s.z - Math.cos(a) * .3, r: 1.5, bottom: 2.2, top: 3.15 };
-  const npcX = s.id === 'tv' ? 1.25 : s.id === 'quiz' ? .85 : 0;
-  const npcZ = s.id === 'memory' ? .65 : -.15;
-  return [sign, { x: s.x + npcX * Math.cos(a) + npcZ * Math.sin(a), z: s.z - npcX * Math.sin(a) + npcZ * Math.cos(a), r: .4, bottom: 0, top: 2 }];
+  const p = HUB_STALL_SIGNS[s.id];
+  const board = STALL_SIGN_BOARDS[p.asset];
+  if (!board) return [];
+  const y = p.y ?? 0;
+  const out: (Blocker & { bottom?: number })[] = [];
+  const n = Math.ceil((2 * board.half + 0.5) / 0.5);
+  for (let i = 0; i <= n; i++) {
+    const lx = -board.half - 0.25 + (i * (2 * board.half + 0.5)) / n;
+    out.push({ ...toCave(p, lx, board.z), r: 0.4, bottom: y + BOARD_BOTTOM - 0.2, top: y + BOARD_BOTTOM + BOARD_HEIGHT + 0.6 });
+    // awning: from the board plane forward to its front edge
+    if (board.awning !== undefined)
+      for (let lz = board.z + 0.45; lz < board.awning + 0.2; lz += 0.45)
+        out.push({ ...toCave(p, lx, lz), r: 0.4, bottom: y + 1.85, top: y + 2.5 });
+  }
+  return out;
 });
 
-export function worldSign(app: pc.AppBase, parent: pc.Entity, lines: readonly string[], width = 2.8, height = 0.8, accent = '#DA4A48') {
-  const canvas = document.createElement('canvas');
-  canvas.width = 1024; canvas.height = 320;
-  const ctx = canvas.getContext('2d')!;
-  ctx.fillStyle = '#171B24'; ctx.fillRect(0, 0, 1024, 320);
-  ctx.strokeStyle = accent; ctx.lineWidth = 16; ctx.strokeRect(8, 8, 1008, 304);
-  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  lines.forEach((line, i) => {
-    ctx.fillStyle = i ? '#EEE5D3' : accent;
-    let size = i ? 44 : 66;
-    do { ctx.font = `700 ${size--}px sans-serif`; } while (ctx.measureText(line).width > 940 && size > 24);
-    ctx.fillText(line, 512, lines.length === 1 ? 160 : i === 0 ? 115 : 224);
-  });
-  const texture = new pc.Texture(app.graphicsDevice, { width: 1024, height: 320, mipmaps: true });
-  texture.setSource(canvas);
-  const material = new pc.StandardMaterial();
-  material.diffuseMap = texture; material.emissiveMap = texture;
-  material.emissive = new pc.Color(0.8, 0.8, 0.8); material.useLighting = false;
-  material.cull = pc.CULLFACE_BACK; material.update();
-  const sign = new pc.Entity('readable-sign'); parent.addChild(sign);
-  // Each side has its own outward-facing UV frame. A double-sided single plane
-  // exposes the front UVs from behind and makes the text read in a mirror.
-  for (const yaw of [0, 180]) {
-    const face = new pc.Entity(yaw === 0 ? 'sign-front' : 'sign-reverse');
-    sign.addChild(face);
-    face.addComponent('render', { type: 'plane', material, castShadows: false });
-    face.setLocalPosition(0, 0, yaw === 0 ? .008 : -.008);
-    face.setLocalEulerAngles(90, yaw, 0);
-    face.setLocalScale(width, 1, height);
+/* ------------------------------------------------------------------ painted wood texture */
+
+/** Deterministic 0..1 stream (mulberry32) so a sign looks the same on every client and reload. */
+function rng(seed: string): () => number {
+  let h = 2166136261;
+  for (let i = 0; i < seed.length; i++) h = Math.imul(h ^ seed.charCodeAt(i), 16777619);
+  let a = h >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = Math.imul(a ^ (a >>> 15), a | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+const hexRgb = (hex: string): [number, number, number] => {
+  const v = parseInt(hex.replace('#', ''), 16);
+  return [(v >> 16) & 255, (v >> 8) & 255, v & 255];
+};
+const mixHex = (a: string, b: string, t: number) => {
+  const p = hexRgb(a), q = hexRgb(b);
+  return `rgb(${p.map((v, i) => Math.round(v + (q[i] - v) * t)).join(',')})`;
+};
+export const WORLD_FONT = '"Be Vietnam Pro", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Roboto, Arial, sans-serif';
+
+interface PaintOptions {
+  /** Face size in metres (sets the canvas aspect). */
+  width: number;
+  height: number;
+  accent: string;
+  /** Plank rows as fractions of the face height, bottom to top. */
+  rows: { v0: number; v1: number; color: string }[];
+}
+
+/**
+ * Paints a sign face: plank colours of the board underneath with grain, seams between the planks
+ * and nail heads, then hand-painted lettering (the name in worn white over a rough accent stroke,
+ * the host line below), scuffed along the grain. Returns the colour canvas and a lettering-only
+ * canvas used as a faint emissive map so the name stays readable in the dark.
+ */
+function paintSign(lines: readonly string[], o: PaintOptions): { color: HTMLCanvasElement; glow: HTMLCanvasElement } {
+  const W = 1024;
+  const H = Math.max(64, Math.round((W * o.height) / o.width / 4) * 4);
+  const rand = rng(lines.join('|') + o.width.toFixed(2));
+  const color = document.createElement('canvas');
+  color.width = W; color.height = H;
+  const ctx = color.getContext('2d')!;
+  const rowPx = o.rows.map(r => ({ top: Math.round((1 - r.v1) * H), bottom: Math.round((1 - r.v0) * H), color: r.color }));
+
+  // Wood: each plank in its own colour, grain streaks, a darker band at knots.
+  ctx.fillStyle = '#1B1410';
+  ctx.fillRect(0, 0, W, H);
+  for (const r of rowPx) {
+    ctx.fillStyle = r.color;
+    ctx.fillRect(0, r.top, W, r.bottom - r.top);
+    const n = 26;
+    for (let i = 0; i < n; i++) {
+      const y = r.top + 3 + rand() * (r.bottom - r.top - 6);
+      const x = rand() * W, len = 60 + rand() * 420;
+      const light = rand() < 0.4;
+      ctx.strokeStyle = light ? `rgba(226,196,160,${0.05 + rand() * 0.07})` : `rgba(18,10,6,${0.08 + rand() * 0.14})`;
+      ctx.lineWidth = 1 + rand() * 2.2;
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.bezierCurveTo(x + len * 0.3, y + (rand() - 0.5) * 6, x + len * 0.7, y + (rand() - 0.5) * 6, x + len, y + (rand() - 0.5) * 4);
+      ctx.stroke();
+    }
+    if (rand() < 0.7) {
+      const kx = 80 + rand() * (W - 160), ky = r.top + (r.bottom - r.top) * (0.3 + rand() * 0.4);
+      ctx.fillStyle = 'rgba(16,9,6,0.42)';
+      ctx.beginPath();
+      ctx.ellipse(kx, ky, 15 + rand() * 12, 5 + rand() * 4, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    // plank edges: lit top edge, shaded bottom edge
+    ctx.fillStyle = 'rgba(235,205,170,0.10)';
+    ctx.fillRect(0, r.top, W, 2);
+    ctx.fillStyle = 'rgba(10,6,4,0.28)';
+    ctx.fillRect(0, r.bottom - 3, W, 3);
   }
-  sign.on('destroy', () => { material.destroy(); texture.destroy(); });
+
+  // Lettering on its own layer, so the wear can cut through the paint only.
+  const paint = document.createElement('canvas');
+  paint.width = W; paint.height = H;
+  const p = paint.getContext('2d')!;
+  p.textAlign = 'left';
+  p.textBaseline = 'alphabetic';
+  const single = lines.length === 1;
+  const fit = (text: string, weight: number, size: number, maxWidth: number) => {
+    let s = size;
+    do { p.font = `${weight} ${s}px ${WORLD_FONT}`; s -= 2; } while (p.measureText(text).width > maxWidth && s > 18);
+    return s + 2;
+  };
+  /** Letter by letter with a little wobble: reads as brushed by hand, stays legible. */
+  const brush = (text: string, weight: number, size: number, cy: number, fill: string, wobble: number) => {
+    p.font = `${weight} ${size}px ${WORLD_FONT}`;
+    const total = p.measureText(text).width;
+    const x0 = (W - total) / 2;
+    const base = cy + size * 0.36;
+    p.fillStyle = fill;
+    for (let i = 0; i < text.length; i++) {
+      const ch = text[i];
+      if (ch === ' ') continue;
+      const x = x0 + p.measureText(text.slice(0, i)).width;
+      const w = p.measureText(ch).width;
+      p.save();
+      p.translate(x + w / 2, base + (rand() - 0.5) * wobble * 2);
+      p.rotate((rand() - 0.5) * wobble * 0.012);
+      p.fillText(ch, -w / 2, 0);
+      p.restore();
+    }
+    return total;
+  };
+  const title = lines[0]?.normalize('NFC') ?? '';
+  const sub = lines.slice(1).join(' · ').normalize('NFC');
+  const titleSize = fit(title, 800, Math.round(H * (single ? 0.5 : 0.4)), W * 0.9);
+  const titleY = single ? H * 0.5 : H * 0.34;
+  const titleW = brush(title, 800, titleSize, titleY, PAINT, 2.2);
+  if (!single) {
+    // one rough stroke of the accent colour under the name
+    const y = titleY + titleSize * 0.56, half = Math.min(W * 0.44, titleW * 0.52);
+    p.fillStyle = mixHex(o.accent, PAINT, 0.12);
+    p.beginPath();
+    p.moveTo(W / 2 - half, y + 2);
+    for (let i = 0; i <= 12; i++) p.lineTo(W / 2 - half + (2 * half * i) / 12, y - 3 - rand() * 3);
+    for (let i = 12; i >= 0; i--) p.lineTo(W / 2 - half + (2 * half * i) / 12 + (i === 12 ? 14 : 0), y + 4 + rand() * 4);
+    p.closePath();
+    p.fill();
+    const subSize = fit(sub, 700, Math.round(H * 0.19), W * 0.92);
+    brush(sub, 700, subSize, H * 0.78, mixHex(PAINT, o.accent, 0.3), 1.2);
+  }
+  // Wear: scuffs along the grain, chips, and no paint across the gaps between planks.
+  p.globalCompositeOperation = 'destination-out';
+  for (let i = 0; i < 150; i++) {
+    const y = rand() * H, x = rand() * W, len = 14 + rand() * 110;
+    p.strokeStyle = `rgba(0,0,0,${0.25 + rand() * 0.5})`;
+    p.lineWidth = 1 + rand() * 2;
+    p.beginPath();
+    p.moveTo(x, y);
+    p.lineTo(x + len, y + (rand() - 0.5) * 3);
+    p.stroke();
+  }
+  for (let i = 0; i < 46; i++) {
+    p.fillStyle = `rgba(0,0,0,${0.35 + rand() * 0.5})`;
+    p.beginPath();
+    p.ellipse(rand() * W, rand() * H, 2 + rand() * 7, 1.5 + rand() * 3, rand() * 3, 0, Math.PI * 2);
+    p.fill();
+  }
+  p.fillStyle = '#000';
+  for (const r of rowPx.slice(1)) p.fillRect(0, r.bottom - 1, W, 5);
+  p.globalCompositeOperation = 'source-over';
+
+  // a thin dark edge under the paint gives it a little body, then the paint itself
+  const shadow = document.createElement('canvas');
+  shadow.width = W; shadow.height = H;
+  const sh = shadow.getContext('2d')!;
+  sh.drawImage(paint, 0, 0);
+  sh.globalCompositeOperation = 'source-in';
+  sh.fillStyle = '#120C09';
+  sh.fillRect(0, 0, W, H);
+  ctx.globalAlpha = 0.45;
+  ctx.drawImage(shadow, 1.5, 2.5);
+  ctx.globalAlpha = 0.96;
+  ctx.drawImage(paint, 0, 0);
+  ctx.globalAlpha = 1;
+
+  // nail heads near both ends of every plank (over the paint)
+  for (const r of rowPx)
+    for (const x of [W * 0.045, W * 0.955]) {
+      const y = (r.top + r.bottom) / 2 + (rand() - 0.5) * 10;
+      ctx.fillStyle = '#17110E';
+      ctx.beginPath(); ctx.arc(x + (rand() - 0.5) * 8, y, 5, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = 'rgba(190,170,150,0.35)';
+      ctx.beginPath(); ctx.arc(x - 1.5, y - 1.5, 1.6, 0, Math.PI * 2); ctx.fill();
+    }
+
+  const glow = document.createElement('canvas');
+  glow.width = W / 2; glow.height = H / 2;
+  const g = glow.getContext('2d')!;
+  g.fillStyle = '#000';
+  g.fillRect(0, 0, glow.width, glow.height);
+  g.drawImage(paint, 0, 0, glow.width, glow.height);
+  return { color, glow };
+}
+
+function signMaterial(app: pc.AppBase, lines: readonly string[], o: PaintOptions): { material: pc.StandardMaterial; destroy: () => void } {
+  const { color, glow } = paintSign(lines, o);
+  const texture = (c: HTMLCanvasElement) => {
+    const t = new pc.Texture(app.graphicsDevice, { width: c.width, height: c.height, mipmaps: true, anisotropy: 8, flipY: true });
+    t.addressU = pc.ADDRESS_CLAMP_TO_EDGE;
+    t.addressV = pc.ADDRESS_CLAMP_TO_EDGE;
+    t.setSource(c);
+    return t;
+  };
+  const map = texture(color), emissive = texture(glow);
+  // Matte like the GLB "tl_matte" (metallic 0, roughness 0.9): lit by the torches and the fire.
+  const material = new pc.StandardMaterial();
+  material.name = 'stall-sign-paint';
+  material.diffuseMap = map;
+  material.useMetalness = true;
+  material.metalness = 0;
+  material.gloss = 0.1;
+  // The lettering alone glows a little: readable from across the cave without lighting the wood.
+  material.emissiveMap = emissive;
+  material.emissive = new pc.Color(1, 1, 1);
+  material.emissiveIntensity = 0.42;
+  material.cull = pc.CULLFACE_BACK;
+  material.update();
+  return { material, destroy: () => { material.destroy(); map.destroy(); emissive.destroy(); } };
+}
+
+/* ------------------------------------------------------------------ meshes */
+
+/** Unit quad in the XY plane facing +Z; u runs along +X, v up, so text reads from the +Z side. */
+export function quadMesh(device: pc.GraphicsDevice, w: number, h: number): pc.Mesh {
+  const x = w / 2, y = h / 2;
+  const mesh = new pc.Mesh(device);
+  mesh.setPositions([-x, -y, 0, x, -y, 0, x, y, 0, -x, y, 0]);
+  mesh.setNormals([0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1]);
+  mesh.setUvs(0, [0, 0, 1, 0, 1, 1, 0, 1]);
+  mesh.setIndices([0, 1, 2, 0, 2, 3]);
+  mesh.update(pc.PRIMITIVE_TRIANGLES);
+  return mesh;
+}
+
+/** A plank slab w x h x t: front and back carry the whole texture (each reads un-mirrored), the four edges a sliver of its wood. */
+function slabMesh(device: pc.GraphicsDevice, w: number, h: number, t: number): pc.Mesh {
+  const x = w / 2, y = h / 2, z = t / 2;
+  const pos: number[] = [], nrm: number[] = [], uv: number[] = [], idx: number[] = [];
+  const face = (pts: number[][], n: number[], uvs: number[][]) => {
+    const base = pos.length / 3;
+    pts.forEach((q, i) => { pos.push(...q); nrm.push(...n); uv.push(...uvs[i]); });
+    idx.push(base, base + 1, base + 2, base, base + 2, base + 3);
+  };
+  const full = [[0, 0], [1, 0], [1, 1], [0, 1]];
+  const edge = [[0.004, 0.1], [0.012, 0.1], [0.012, 0.2], [0.004, 0.2]];
+  face([[-x, -y, z], [x, -y, z], [x, y, z], [-x, y, z]], [0, 0, 1], full);
+  face([[x, -y, -z], [-x, -y, -z], [-x, y, -z], [x, y, -z]], [0, 0, -1], full);
+  face([[-x, y, z], [x, y, z], [x, y, -z], [-x, y, -z]], [0, 1, 0], edge);
+  face([[-x, -y, -z], [x, -y, -z], [x, -y, z], [-x, -y, z]], [0, -1, 0], edge);
+  face([[x, -y, z], [x, -y, -z], [x, y, -z], [x, y, z]], [1, 0, 0], edge);
+  face([[-x, -y, -z], [-x, -y, z], [-x, y, z], [-x, y, -z]], [-1, 0, 0], edge);
+  const mesh = new pc.Mesh(device);
+  mesh.setPositions(pos); mesh.setNormals(nrm); mesh.setUvs(0, uv); mesh.setIndices(idx);
+  mesh.update(pc.PRIMITIVE_TRIANGLES);
+  return mesh;
+}
+
+export function renderEntity(name: string, mesh: pc.Mesh, material: pc.Material): pc.Entity {
+  const e = new pc.Entity(name);
+  e.addComponent('render', { meshInstances: [new pc.MeshInstance(mesh, material)], castShadows: false, receiveShadows: true });
+  return e;
+}
+
+/** Plank rows for a free-standing board: four planks in slightly different tones of the sign wood. */
+function defaultRows(seed: string): PaintOptions['rows'] {
+  const rand = rng(seed);
+  return [0, 1, 2, 3].map(i => {
+    const k = 0.93 + rand() * 0.14;
+    const [r, g, b] = hexRgb(SIGN_WOOD).map(v => Math.min(255, Math.round(v * k)));
+    return { v0: i / 4 + (i ? 0.008 : 0), v1: (i + 1) / 4 - (i < 3 ? 0.008 : 0), color: `rgb(${r},${g},${b})` };
+  });
+}
+
+/**
+ * Free-standing painted board (used by the shrine doorway): a plank slab `width` x `height` m with
+ * the lines painted on both sides, centred on the returned entity, facing its +Z and -Z. The first
+ * line is the name, the rest a smaller line under it. Lit by the scene.
+ */
+export function worldSign(app: pc.AppBase, parent: pc.Entity, lines: readonly string[], width = 2.8, height = 0.8, accent = '#DA4A48') {
+  const { material, destroy } = signMaterial(app, lines, { width, height, accent, rows: defaultRows(lines.join('|')) });
+  const mesh = slabMesh(app.graphicsDevice, width, height, 0.05);
+  const sign = renderEntity('readable-sign', mesh, material);
+  parent.addChild(sign);
+  sign.on('destroy', () => { destroy(); mesh.destroy(); });
   return sign;
 }
 
-export function buildCaveStalls(app: pc.AppBase, parent: pc.Entity, withNpcs = true) {
-  const materials = new Map<string, pc.StandardMaterial>();
-  const mat = (color: string) => {
-    let m = materials.get(color);
-    if (!m) { m = new pc.StandardMaterial(); m.diffuse = new pc.Color().fromString(color); m.gloss = .15; m.update(); materials.set(color, m); }
-    return m;
+/* ------------------------------------------------------------------ stall signs */
+
+const stallLines = (s: CaveStall) => [s.name, `${s.npc} · ${s.role}`];
+
+/** Faces of a board when the manifest is unavailable: same numbers as the generator. */
+function fallbackSign(asset: string): SignMeta | null {
+  const b = STALL_SIGN_BOARDS[asset];
+  if (!b) return null;
+  const cy = BOARD_BOTTOM + BOARD_HEIGHT / 2, h = BOARD_HEIGHT - 0.012;
+  return {
+    faces: [
+      { center: [0, cy, b.z + 0.023], size: [2 * b.half - 0.15, h], normal: [0, 0, 1], up: [0, 1, 0] },
+      { center: [0, cy, b.z - 0.023], size: [2 * b.half - 0.39, h], normal: [0, 0, -1], up: [0, 1, 0] },
+    ],
+    planks: [],
   };
-  const all = new pc.Entity('five-cave-stalls'); parent.addChild(all);
-  const part = (into: pc.Entity, name: string, color: string, x: number, y: number, z: number, sx: number, sy: number, sz: number) => {
-    const e = new pc.Entity(name); into.addChild(e);
-    e.setLocalPosition(x, y, z); e.setLocalScale(sx, sy, sz);
-    e.addComponent('render', { type: 'box', material: mat(color), castShadows: false });
-    return e;
-  };
-  for (const s of CAVE_STALLS) {
-    const root = new pc.Entity(`stall-${s.id}`); all.addChild(root);
-    root.setLocalPosition(s.x, 0, s.z); root.setLocalEulerAngles(0, s.yaw, 0);
-    const sign = worldSign(app, root, [s.name, `${s.npc} · ${s.role}`], s.id === 'memory' ? 3.5 : 2.9, .85, s.accent);
-    sign.setLocalPosition(0, 2.65, -.3);
-    for (const side of [-1, 1]) part(root, 'timber-sign-post', '#59493D', side * 1.08, 1.35, -.37, .085, 2.7, .085);
-    // Shared, low counters already have collision in the placement table. Existing
-    // quiz board, CRT crates and memory wall remain the furniture for those stalls.
-    if (s.id === 'checkin' || s.id === 'shop') {
-      part(root, 'counter-top', '#B59772', 0, .84, 0, 1.5, .1, .8);
-      part(root, 'counter-accent', s.accent, 0, .48, .414, 1.15, .18, .025);
-    }
-    if (s.id === 'checkin') {
-      part(root, 'checkin-ledger', '#EBD9B4', -.4, .915, .16, .36, .05, .29);
-      part(root, 'ledger-spine', '#762B37', -.4, .95, .16, .025, .025, .29);
-    }
-    if (s.id === 'shop') {
-      for (const side of [-1, 1]) {
-        const shirt = new pc.Entity('display-jersey'); root.addChild(shirt);
-        shirt.setLocalPosition(side * .68, 1.6, -.4); shirt.setLocalScale(.65, .65, .65);
-        part(shirt, 'shirt-body', side < 0 ? '#B52F40' : '#EEE6D6', 0, 0, 0, .4, .45, .055);
-        for (const arm of [-1, 1]) part(shirt, 'shirt-sleeve', side < 0 ? '#B52F40' : '#EEE6D6', arm * .25, .12, 0, .17, .2, .055);
-      }
-    }
-    if (s.id === 'memory') {
-      for (let i = 0; i < 5; i++) {
-        const x = (i - 2) * .32;
-        part(root, 'memory-cup', '#D7AD61', x, 2.02, .06, .2, .17, .14);
-        part(root, 'memory-cup-stem', '#D7AD61', x, 1.87, .06, .055, .14, .06);
-      }
-    }
-    if (!withNpcs) continue;
-    const npc = new pc.Entity(`original-host-${s.npc}`); root.addChild(npc);
-    npc.setLocalPosition(s.id === 'tv' ? 1.25 : s.id === 'quiz' ? .85 : 0, 0, s.id === 'memory' ? .65 : -.15);
-    const jacket = s.id === 'checkin';
-    const shirt = jacket ? '#302F36' : s.id === 'shop' ? '#E3DDCE' : '#A62D3E';
-    const skin = '#D0A287'; const hair = '#24242B';
-    part(npc, jacket ? 'oner-jacket' : 'host-shirt', shirt, 0, 1.05, 0, .5, .62, .29);
-    part(npc, 'neck', skin, 0, 1.41, 0, .15, .16, .16);
-    part(npc, 'head', skin, 0, 1.65, .015, .36, .38, .31);
-    part(npc, 'hair-cap', hair, 0, 1.84, -.005, .38, .13, .34);
-    part(npc, 'fringe', hair, -.065, 1.77, .173, .24, .12, .035).setLocalEulerAngles(0, 0, -10);
-    for (const side of [-1, 1]) {
-      part(npc, 'trouser', '#292B35', side * .135, .4, 0, .22, .73, .24);
-      part(npc, 'shoe', '#151921', side * .135, .075, .07, .24, .15, .36);
-      part(npc, 'sleeve', shirt, side * .32, 1.13, 0, .17, jacket ? .42 : .27, .22);
-      part(npc, 'forearm', jacket ? shirt : skin, side * .32, .86, .07, .14, .27, .16);
-      part(npc, 'hand', skin, side * .32, .72, .085, .145, .13, .17);
-      part(npc, 'eye', hair, side * .085, 1.67, .177, .035, .025, .015);
-      if (s.id === 'quiz') {
-        part(npc, 'keria-glasses', hair, side * .085, 1.67, .19, .14, .085, .02);
-        part(npc, 'glasses-lens', '#9DADB6', side * .085, 1.67, .204, .105, .052, .01);
-      }
-      if (jacket) part(npc, 'jacket-red-stripe', '#B73A46', side * .21, 1.06, .151, .055, .5, .025);
-    }
-    if (jacket) part(npc, 'jacket-zip', '#CFBC9A', 0, 1.08, .153, .018, .53, .022);
+}
+
+function isSignMeta(v: unknown): v is SignMeta {
+  const m = v as Partial<SignMeta> | null;
+  return !!m && Array.isArray(m.faces) && m.faces.length > 0 && Array.isArray(m.planks);
+}
+
+/** What a board says: the side facing the model's +Z, and (when it differs) the side facing -Z. */
+interface SignText {
+  front: readonly string[];
+  back?: readonly string[];
+  accent: string;
+}
+
+/** Text faces for one board, parented to a node that copies the sign model's placement. */
+function buildSign(app: pc.AppBase, parent: pc.Entity, id: string, text: SignText, p: Placement, meta: SignMeta) {
+  const root = new pc.Entity(`sign-${id}`);
+  parent.addChild(root);
+  root.setLocalPosition(p.x, p.y ?? 0, p.z);
+  root.setLocalEulerAngles(0, p.yaw, 0);
+  if (p.scale) root.setLocalScale(p.scale, p.scale, p.scale);
+  for (const face of meta.faces) {
+    const [w, h] = face.size;
+    const bottom = face.center[1] - h / 2;
+    const rows = meta.planks.length
+      ? meta.planks.map(k => ({ v0: Math.max(0, (k.y0 - bottom) / h), v1: Math.min(1, (k.y1 - bottom) / h), color: k.color }))
+      : defaultRows(id);
+    const lines = face.normal[2] >= 0 ? text.front : (text.back ?? text.front);
+    const { material, destroy } = signMaterial(app, lines, { width: w, height: h, accent: text.accent, rows });
+    const mesh = quadMesh(app.graphicsDevice, w, h);
+    const e = renderEntity(face.normal[2] >= 0 ? 'sign-front' : 'sign-back', mesh, material);
+    root.addChild(e);
+    // Orthonormal frame: +Z = the face normal, +Y = up, +X = up x normal (text runs along +X).
+    const n = new pc.Vec3(...face.normal).normalize(), up = new pc.Vec3(...face.up).normalize();
+    const x = new pc.Vec3().cross(up, n).normalize();
+    const m = new pc.Mat4();
+    m.set([x.x, x.y, x.z, 0, up.x, up.y, up.z, 0, n.x, n.y, n.z, 0, 0, 0, 0, 1]);
+    e.setLocalRotation(new pc.Quat().setFromMat4(m));
+    e.setLocalPosition(face.center[0], face.center[1], face.center[2]);
+    e.on('destroy', () => { destroy(); mesh.destroy(); });
   }
-  all.on('destroy', () => { for (const m of materials.values()) m.destroy(); });
-  return all;
+  return root;
+}
+
+export interface CaveStallSigns {
+  root: pc.Entity;
+  /** Resolves when every sign is painted (the furniture manifest has been read). Never rejects. */
+  ready: Promise<void>;
+}
+
+/** Board of the gate in front of a side tunnel: the cave's name and what waits there. */
+function gateText(cave: (typeof HUB_CAVES)[number]): SignText {
+  const stall = CAVE_STALLS.find(s => s.id === cave.stall);
+  return {
+    front: [cave.name.toLocaleUpperCase('vi'), ...(stall ? [`${stall.name} · ${stall.npc}`] : [])],
+    back: ['HANG LỚN', 'Lửa trại · Điện thờ'],
+    accent: stall?.accent ?? '#DA4A48',
+  };
+}
+
+/**
+ * Paints the five stall signs and the four tunnel-gate boards onto their GLB boards. `_withNpcs` is kept for the call site: the
+ * hosts are NPC placements now and scene.ts already leaves those out when NPCs are off.
+ */
+export function buildCaveStalls(app: pc.AppBase, parent: pc.Entity, _withNpcs = true): CaveStallSigns {
+  const root = new pc.Entity('cave-stall-signs');
+  parent.addChild(root);
+  const report = (msg: string) => console.error(`[stalls] ${msg}`);
+  const ready = loadManifests(['furniture'], report)
+    .then(index => {
+      for (const stall of CAVE_STALLS) {
+        const p = HUB_STALL_SIGNS[stall.id];
+        const declared = index.get(p.asset)?.meta?.sign;
+        const meta = isSignMeta(declared) ? declared : fallbackSign(p.asset);
+        if (!meta) { report(`${p.asset}: no sign faces`); continue; }
+        buildSign(app, root, `stall-${stall.id}`, { front: stallLines(stall), accent: stall.accent }, p, meta);
+      }
+      for (const cave of HUB_CAVES) {
+        const p = HUB_CAVE_GATES[cave.id];
+        const meta = index.get(p.asset)?.meta?.sign;
+        if (!isSignMeta(meta)) { report(`${p.asset}: no sign faces`); continue; }
+        buildSign(app, root, `gate-${cave.id}`, gateText(cave), p, meta);
+      }
+    })
+    .catch((err: unknown) => report(`signs failed: ${err instanceof Error ? err.message : String(err)}`));
+  return { root, ready };
 }

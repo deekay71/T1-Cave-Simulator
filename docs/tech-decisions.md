@@ -55,7 +55,7 @@ Lý do nâng ngay: 0.18 có sẵn đúng những phần scaffold còn thiếu v�
 
 Mô hình:
 - Input là hướng đi trên mặt phẳng XZ, không gửi tọa độ.
-- Server áp mỗi input đúng một bước cố định 50 ms (20 Hz); patch 10 Hz.
+- Server áp mỗi input đúng một bước cố định 50 ms (20 Hz); patch 20 Hz (mỗi patch đúng một bước mô phỏng; client nội suy người khác trễ 100 ms = 2 patch, có lò xo đầu ra 25 ms. Patch 10 Hz với độ trễ nội suy 100 ms từng làm nhân vật người khác khựng rồi vọt: bộ đệm nội suy cạn mỗi khi một patch tới muộn).
 - Một hàm thuần `step(state, input, dt, colliders)` đặt trong `packages/shared`, chạy giống nhau ở client (dự đoán) và server (quyết định).
 - Client không gửi input khi đứng yên.
 - Avatar người khác nội suy theo `room.clock`.

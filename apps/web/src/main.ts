@@ -9,11 +9,14 @@
  *
  * Tham số URL chỉ cho bản dev (import.meta.env.DEV; bản build bỏ qua):
  *   ?view=<preset>          không vào hang, đặt camera theo preset của world (concept, spawn,
- *                           campfire, memory, tv, rest, living, quiz, exit, overview)
+ *                           campfire, overview, exit, rest, living, quest, screen, memory, quiz, shop,
+ *                           cave_<id>, tunnel_<id>, mouth_<id>…: xem world/views.ts) hoặc
+ *                           ?view=login: màn đăng nhập (cảnh ngoài hang + hàng người)
  *   ?autojoin=<tên>         tự vào hang; &yaw=&pitch=&dist= cho camera bám theo
  *   ?stats=1                fps, ms/khung, draw call, tam giác
  *   ?batch=0                tắt gom batch avatar (so sánh)
- * window.__ready = true (title READY) khi: ?view → world xong + 10 khung; ?autojoin → đã vào,
+ * window.__ready = true (title READY) khi: ?view → world xong + 10 khung (login: cảnh ngoài hang và
+ * nhân vật đã tải + 10 khung); ?autojoin → đã vào,
  * avatar của mình đã có, mô hình đã tải + 20 khung. Lỗi đẩy vào window.__errors.
  * window.__game (chỉ dev) cho test headless: snapshot(), follow, world.
  */
@@ -42,8 +45,9 @@ import {
 } from "./avatar.js";
 import { cameraBlockers } from "./blockers.js";
 import { createFollowCamera } from "./camera.js";
+import { createLoginScene } from "./login/scene.js";
 import { chatBucket } from "./chatLimit.js";
-import { CAVE_BOUNDS, DEG, fitFov, type Blocker } from "./cameraMath.js";
+import { CAVE_BOUNDS, DEG, clearLine, fitFov, type Blocker } from "./cameraMath.js";
 import { GLOW_MATERIAL_PREFIX } from "./models.js";
 import { createNameTags } from "./nametags.js";
 import { createNearFlames } from "./nearFlames.js";
@@ -174,9 +178,15 @@ Promise.all([world.ready, loadAvatars()]).then(
   },
 );
 
-// Trước khi vào hang: khung hình concept 01, trôi rất chậm.
-if (devView && !world.setView(devView))
-  report(`unknown view "${devView}" (${Object.keys(world.views).join(", ")})`);
+/**
+ * Trước khi vào hang (và sau khi rời hang): màn đăng nhập, cảnh ngoài hang của login/scene.ts. Khi
+ * đang hiện, nó giữ camera, sương và ánh sáng nền; vào hang xong thì trả lại và tắt hẳn.
+ * Bản dev: ?view=<preset của world> và ?autojoin bỏ qua màn này lúc khởi động.
+ */
+const login = createLoginScene(app, camera, { report });
+if (devView === "login" || (!devView && !autojoin)) login.show();
+else if (devView && !world.setView(devView))
+  report(`unknown view "${devView}" (login, ${Object.keys(world.views).join(", ")})`);
 const concept = world.views.concept;
 /**
  * Màn ngang, trước khi vào hang: thẻ chào che ~30 % bên trái, nên khung concept lùi ra sau
@@ -546,7 +556,7 @@ function nearestLandmark(x: number, z: number) {
     const dx = l.x - x,
       dz = l.z - z;
     const d2 = dx * dx + dz * dz;
-    const radius = l.id === "altar" || l.id === "rest" ? 3 : CAVE_STALL_RADIUS;
+    const radius = l.id === "altar" || l.id === "rest" || l.id === "screen" ? 3 : CAVE_STALL_RADIUS;
     if (d2 <= radius * radius && d2 < bestD2) {
       best = l;
       bestD2 = d2;
@@ -612,7 +622,7 @@ app.on("update", (dt: number) => {
   devTick();
   const s = session;
   if (!s) {
-    if (!devView) drift(dt);
+    if (!devView && !login.active) drift(dt);
     return;
   }
   const { room, predict, input } = s;
@@ -709,7 +719,9 @@ app.on("update", (dt: number) => {
   follow.focus = !!near && stillFor >= FOCUS_AFTER;
   setFov(fitFov(FOLLOW_FOV, aspect()));
   const inShrine = isInShrine(self ?? mine);
-  follow.setBoundsCenter(inShrine ? SHRINE_CENTER.x : 0, 0, inShrine ? 14 : CAVE_BOUNDS.maxRadius);
+  // Điện thờ: hình trụ quanh tâm đảo; hang: hợp các phòng (hang lớn, hầm, hang nhỏ) của CAVE_BOUNDS.
+  if (inShrine) follow.setBoundsCenter(SHRINE_CENTER.x, SHRINE_CENTER.z, 14);
+  else follow.useRooms();
   follow.update(dt, target.set(mine.x, 0, mine.z));
   if (performance.now() - shrineUiAt > 120 || ui.get().shrineSeat !== (self?.shrineSeat || "")) {
     shrineUiAt = performance.now();
@@ -741,8 +753,15 @@ app.on("update", (dt: number) => {
 app.on("postrender", () => {
   if (!session) return;
   tags.begin(camera);
+  // Bảng tên không hiện xuyên vách đá: người ở hang khác / trong hầm chỉ có bảng tên khi đường thẳng
+  // từ camera tới họ nằm trong các phòng của hang (điện thờ là một phòng riêng, không cần xét).
+  const eye = camera.getPosition();
+  const mine = me();
+  const rooms = mine && !isInShrine(mine) ? CAVE_BOUNDS.rooms : undefined;
   for (const [id, f] of fans) {
-    if (f.avatar) tags.place(id, f.hidden || !f.avatar.entity.enabled ? null : f.avatar.headTop);
+    const seen = !rooms || f.self || clearLine(eye.x, eye.z, f.x, f.z, rooms, CAVE_BOUNDS.roomMargin);
+    if (!seen) tags.place(id, null);
+    else if (f.avatar) tags.place(id, f.hidden || !f.avatar.entity.enabled ? null : f.avatar.headTop);
     else if (avatarsFailed) tags.place(id, tagAt.set(f.x, TAG_HEIGHT, f.z));
     else tags.place(id, null);
   }
@@ -801,7 +820,7 @@ async function join(name: string, invite = "") {
     const input = room.input({ type: MoveInput });
     if (input.tickRate === undefined)
       throw new Error("Server chưa khai báo nhịp mô phỏng cố định");
-    const predict = Predict.get(room, { mode: "lerp", delay: 100 });
+    const predict = Predict.get(room, { mode: "lerp", delay: 100, smoothMs: 25 });
     predict.attachAll("players", { x: "lerp", z: "lerp", snap: 2 });
     const s: Session = {
       room,
@@ -826,6 +845,7 @@ async function join(name: string, invite = "") {
     if (pitch !== undefined) follow.pitch = pitch;
     if (dist !== undefined) follow.distance = dist;
     follow.attach(canvas);
+    login.enterCave(); // đẩy camera vào cửa hang, mờ qua đỏ-đen rồi trả camera cho hang
 
     resident.name(name);
     void resident.load(true);
@@ -895,6 +915,7 @@ async function join(name: string, invite = "") {
       follow.focus = false;
       world.setView("concept");
       driftT = 0;
+      login.show();
       ui.set({
         connected: false,
         altar: null, altarBadge: false, selfId: "", shrine:null, shrineSeat:"", nearbyShrineSeat:null,
@@ -916,6 +937,7 @@ async function join(name: string, invite = "") {
       clearFans();
       follow.detach();
       world.setView("concept");
+      login.show();
     }
     if (joined) await joined.leave().catch(() => {});
     ui.set({ connected: false, status: describe(err), busy: false });
@@ -928,13 +950,16 @@ async function join(name: string, invite = "") {
 
 mountUI({
   join,
+  // Chưa có đăng nhập Google ở backend: chỉ báo, không giả lập phiên.
+  google: () =>
+    ui.set({ loginNotice: "Đăng nhập Google sẽ mở sau. Bấm Chơi thử để vào hang." }),
   chat: sendChat,
   emote: sendEmote,
   interact,
   visit: (id) => {
     const landmark = landmarks.find(l => l.id === id); const f=me();
     if (!landmark || !f) return;
-    const radius=id==='altar'||id==='rest'?3:CAVE_STALL_RADIUS;
+    const radius=id==='altar'||id==='rest'||id==='screen'?3:CAVE_STALL_RADIUS;
     keys.clear();
     if (Math.hypot(f.x-landmark.x,f.z-landmark.z)<=radius) ui.set({panel:id,destination:null});
     else ui.set({panel:null,destination:id});
@@ -994,6 +1019,10 @@ canvas.addEventListener("pointerup", e => {
 const r = (v: number, k = 1000) => Math.round(v * k) / k;
 /** Trạng thái đọc được cho test headless (window.__game.snapshot()). */
 function selfShrineSeat() { return session ? playersOf(session.room)?.get(session.room.sessionId)?.shrineSeat || "" : ""; }
+function selfServer() {
+  const p = session ? playersOf(session.room)?.get(session.room.sessionId) : undefined;
+  return p ? { x: r(p.x), z: r(p.z) } : null;
+}
 function snapshot() {
   const s = session,
     mine = me(),
@@ -1014,6 +1043,8 @@ function snapshot() {
           hidden: mine.hidden,
           opacity: selfOpacity,
           shrineSeat: selfShrineSeat(),
+          // vị trí server đã xác nhận (state của room), để so với vị trí dự đoán ở trên
+          server: selfServer(),
         }
       : null,
     camera: {
@@ -1036,6 +1067,7 @@ function snapshot() {
       avatar: !!f.avatar,
     })),
     tags: tags.inspect(),
+    login: login.inspect(),
     ui: {
       status: ui.get().status,
       panel: ui.get().panel,
@@ -1057,7 +1089,12 @@ function snapshot() {
 
 function devTick() {
   if (!dev || window.__ready || !(devView || autojoin)) return;
-  const ok = devView ? worldReady : assetsReady && !!session && !!me()?.avatar;
+  const ok =
+    devView === "login"
+      ? login.ready
+      : devView
+        ? worldReady
+        : assetsReady && !!session && !!me()?.avatar;
   devFrames = ok ? devFrames + 1 : 0;
   if (devFrames < (devView ? 10 : 20)) return;
   window.__info = snapshot();
@@ -1066,7 +1103,7 @@ function devTick() {
 }
 
 if (dev) {
-  window.__game = { snapshot, follow, world, app, blockers };
+  window.__game = { snapshot, follow, world, app, blockers, login };
   if (dev.get("stats") === "1") {
     const el = document.createElement("div");
     el.className = "dev-stats";

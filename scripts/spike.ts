@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { writeFile, mkdir } from 'node:fs/promises';
 import { performance } from 'node:perf_hooks';
 import { createTicketIssuer, loadPrivateJwk } from '@te-liet/auth';
-import { AXIS_MAX, CLOSE_SIGNED_IN_ELSEWHERE, HUB_LAYOUT, LIMITS, MOVE_SPEED, MoveInput, ROOM_CAPACITY, TICK_RATE } from '@te-liet/shared';
+import { AXIS_MAX, CLOSE_SIGNED_IN_ELSEWHERE, HUB_LAYOUT, HUB_ROOMS, inRooms, LIMITS, MOVE_SPEED, MoveInput, ROOM_CAPACITY, TICK_RATE } from '@te-liet/shared';
 
 const endpoint = process.env.GAME_URL || 'ws://localhost:2567';
 const count = Number(process.env.BOTS || ROOM_CAPACITY + 1), duration = Number(process.env.DURATION_SECONDS || 10);
@@ -51,7 +51,8 @@ try {
   const chatDeliveredPerReceiver = spamReceived / receivers;
   assert.equal(chatDeliveredPerReceiver, LIMITS.chat.guest.capacity);
 
-  // 4. Di chuyển qua kênh input: server quảng bá nhịp cố định, giữ biên hang, không vượt tốc độ
+  // 4. Di chuyển qua kênh input: server quảng bá nhịp cố định, giữ người chơi trong vùng đi được (hợp
+  //    các phòng: hang lớn, bốn hang nhỏ, bốn đường hầm) và ngoài vật cản, không vượt tốc độ
   const inputs = rooms.map((r) => r.input({ type: MoveInput }));
   assert.equal(inputs[0].tickRate, TICK_RATE);
   const before = { x: self(rooms[0]).x, z: self(rooms[0]).z };
@@ -76,8 +77,12 @@ try {
   assert.ok(moved <= MOVE_SPEED * elapsed + 0.25, `vượt tốc độ: ${moved} m trong ${elapsed} s`);
   for (const room of rooms) {
     const p = self(room);
-    assert.ok(p && Math.hypot(p.x, p.z) <= HUB_LAYOUT.radius + 1e-3, 'ra ngoài biên hang');
+    assert.ok(p && inRooms(p.x, p.z, HUB_ROOMS, 1e-3), `ra ngoài vùng đi được: (${p?.x}, ${p?.z})`);
+    for (const o of HUB_LAYOUT.obstacles)
+      assert.ok(Math.hypot(p.x - o.x, p.z - o.z) >= o.r - 1e-3, `trong vật cản: (${p.x}, ${p.z})`);
   }
+  // Đẩy chéo (+X, +Z) suốt 10 s từ chỗ xuất hiện: dừng ở vách hang lớn, không lọt sang hang nhỏ.
+  assert.ok(Math.hypot(after.x, after.z) <= HUB_LAYOUT.radius + 1e-3, 'ra ngoài hang lớn');
   assert.ok(rtts.length > 0);
   assert.equal(errors, 0);
 

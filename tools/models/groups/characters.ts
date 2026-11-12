@@ -270,7 +270,25 @@ function ripShape(rngNext: () => number, r: number, n = 9, squash = 0.8): Vec2[]
  * Variant spec
  * ========================================================================================= */
 
-type HairStyle = "messy" | "spiky" | "neat" | "short" | "buzz" | "puff" | "fringe";
+type HairStyle =
+  | "messy"
+  | "spiky"
+  | "neat"
+  | "short"
+  | "buzz"
+  | "puff"
+  | "fringe"
+  // stall hosts only
+  | "curtain"
+  | "comma"
+  | "mushroom"
+  | "bowl";
+/** Round glasses (stall hosts): `rim` = frame thickness in metres (thick plastic ~0.015, wire ~0.007). */
+interface RoundGlasses {
+  color: Color;
+  rim: number;
+  radius?: number;
+}
 interface Spec {
   key: string;
   notes: string;
@@ -303,13 +321,24 @@ interface Spec {
     /** horizontal band around the belly (jersey) */
     band?: Color;
     rips?: { at: Vec2; r: number; back?: boolean }[];
+    /** raglan shoulder panels: triangles from the collar to the armpits, front and back (host kit) */
+    raglan?: Color;
+    /** open cardigan: a strip of this (shirt) colour down the front, with buttons on the edge */
+    openFront?: Color;
   };
   bottom: { kind: "pants" | "shorts"; color: Color; cuff?: Color; torn?: boolean; kneeRip?: Side };
   feet: { kind: "sneaker" | "sandal"; upper: Color; sole: Color; accent?: Color; sock?: Color };
   cap?: { crown: Color; front: Color; brim: Color };
   headband?: Color;
-  glasses?: Color;
+  glasses?: Color | RoundGlasses;
   scarf?: Color;
+  moustache?: Color;
+  /**
+   * Stall hosts only: proportions on top of the shared rig. height = uniform scale of the whole
+   * body (hips node), shoulders = x scale of the upper body (spine node), head = [x, y, z] scale
+   * of the head node (a leaf: no skew). The 7 player variants never set it.
+   */
+  build?: { height?: number; shoulders?: number; head?: Vec3 };
   /** thin nasal oxygen cannula looped over the ears (rank 03) */
   cannula?: Color;
 }
@@ -453,6 +482,34 @@ function buildTorso(r: Rig, s: Spec) {
       );
   }
 
+  if (t.raglan) {
+    // raglan panels: from the collar out to the armpits, on the flat front and back planes
+    for (const sd of [1, -1] as Side[]) {
+      const tri: Vec2[] = [
+        [sd * 0.172, 0.262],
+        [sd * 0.172, 0.12],
+        [sd * 0.058, 0.262],
+      ];
+      b.extrude(tri, { depth: 0, at: [0, 0, zf + 0.002], color: t.raglan });
+      b.extrude(
+        tri.map(([x, y]) => [-x, y] as Vec2),
+        { depth: 0, at: [0, 0, zb - 0.002], rot: [0, 180, 0], color: t.raglan },
+      );
+    }
+  }
+  if (t.openFront) {
+    // cardigan worn open: shirt strip widening toward the collar, three buttons on its edge
+    b.extrude(
+      [
+        [-0.022, -0.118],
+        [0.022, -0.118],
+        [0.07, 0.262],
+        [-0.07, 0.262],
+      ],
+      { depth: 0, at: [0, 0, zf + 0.002], color: t.openFront },
+    );
+    for (const y of [-0.06, 0.02, 0.1]) b.box({ size: [0.018, 0.018, 0.008], at: [0.045 + (y + 0.118) * 0.126, y, zf + 0.004], color: DARK });
+  }
   if (t.stripes) {
     // worn-white chevrons on the chest (no text, no logo); kept inside the front plane
     for (const sd of [1, -1] as Side[])
@@ -544,7 +601,12 @@ function buildNeckHead(r: Rig, s: Spec) {
   buildHair(b, s);
   if (s.cap) buildCap(b, s.cap);
   if (s.headband) buildHeadband(b, s.headband);
-  if (s.glasses) buildGlasses(b, s.glasses);
+  if (typeof s.glasses === "string") buildGlasses(b, s.glasses);
+  else if (s.glasses) buildRoundGlasses(b, s.glasses);
+  if (s.moustache) {
+    for (const sd of [1, -1] as Side[])
+      b.box({ size: [0.05, 0.024, 0.014], at: [sd * 0.024, ey - 0.076, zf + 0.008], rot: [0, 0, sd * 12], color: s.moustache });
+  }
   if (s.top.hood === "up") buildHoodUp(b, s);
   if (s.cannula) buildCannula(b, s.cannula);
 }
@@ -697,6 +759,135 @@ function buildHair(b: MeshBuilder, s: Spec) {
       }
       break;
     }
+    case "curtain": {
+      // centre parting: two curtains falling from the part to the temples, a strip of forehead
+      // showing between them; longer strands beside the face
+      hairShell(b, c, { top: H.top + 0.034, bulk: 0.02, side: 0.165, back: 0.045 });
+      const zf = H.zf;
+      for (const sd of [1, -1] as Side[]) {
+        b.hull(
+          [
+            [sd * 0.012, ht + 0.02, zf + 0.016],
+            [sd * 0.04, ht - 0.05, zf + 0.026],
+            [sd * 0.112, ht - 0.1, zf + 0.028],
+            [sd * 0.164, ht - 0.135, zf + 0.008],
+            [sd * 0.168, ht - 0.02, zf - 0.004],
+            [sd * 0.168, ht - 0.12, zf - 0.055],
+            [sd * 0.02, ht + 0.044, zf - 0.05],
+            [sd * 0.16, ht + 0.026, zf - 0.06],
+          ],
+          o(sd === 1 ? 0.96 : 1.04),
+        );
+        // strand in front of the ear, down to the cheekbone
+        clump(b, [sd * (H.hx + 0.012), 0.2, 0.075], [sd * 0.12, -1, 0.1], 0.085, 0.07, 0.034, o(0.9));
+        // parted volume on top
+        for (let i = 0; i < 3; i++)
+          clump(b, [sd * 0.03, H.top + 0.02, 0.085 - i * 0.075], [sd * 0.95, 0.12, rng.jitter(0.1)], rng.range(0.1, 0.112), 0.105, 0.05, o(rng.range(0.92, 1.08)), 0.75);
+      }
+      for (const x of [-0.08, 0, 0.08]) clump(b, [x, 0.12, H.zb - 0.014], [x * 1.5, -0.9, -0.3], 0.07, 0.09, 0.036, o(0.9));
+      break;
+    }
+    case "comma": {
+      // short textured crop, fringe swept from the left part across to the right brow where it
+      // curls in like a comma; the left third of the forehead stays bare
+      hairShell(b, c, { top: H.top + 0.028, bulk: 0.014, side: 0.185, back: 0.075 });
+      const zf = H.zf;
+      b.hull(
+        [
+          [0.092, ht + 0.02, zf + 0.012],
+          [0.078, ht - 0.018, zf + 0.022],
+          [-0.02, ht - 0.064, zf + 0.028],
+          [-0.108, ht - 0.086, zf + 0.026],
+          [-0.162, ht - 0.05, zf + 0.008],
+          [-0.164, ht + 0.0, zf - 0.006],
+          [0.085, ht + 0.042, zf - 0.05],
+          [-0.15, ht + 0.03, zf - 0.06],
+        ],
+        o(0.97),
+      );
+      clump(b, [-0.118, ht - 0.07, zf + 0.022], [0.55, -0.8, 0.15], 0.042, 0.05, 0.03, o(1.06), 0.4);
+      // short tufts, pushed up and to the right
+      for (let i = 0; i < 7; i++) {
+        const x = -0.11 + (i % 4) * 0.07 + rng.jitter(0.012);
+        const z = i < 4 ? 0.07 : -0.03;
+        clump(b, [x, H.top + 0.012, z + rng.jitter(0.015)], [-0.35 + rng.jitter(0.2), 0.8, 0.3 + rng.jitter(0.2)], rng.range(0.045, 0.062), 0.085, 0.04, o(rng.range(0.88, 1.12)), 0.35);
+      }
+      for (const sd of [1, -1] as Side[])
+        b.box({ size: [0.02, 0.06, 0.045], at: [sd * (H.hx + 0.004), 0.185, 0.07], color: shade(c, 0.95) });
+      break;
+    }
+    case "mushroom": {
+      // the biggest hair: a round fluffy cap with a thick full fringe down to the brows and the
+      // sides over the ears
+      const zc = H.cz + 0.008;
+      block(
+        b,
+        [
+          { y: H.top + 0.112, w: 0.23, d: 0.23, z: zc - 0.012, bev: 0.07 },
+          { y: H.top + 0.07, w: 0.39, d: 0.38, z: zc - 0.004, bev: 0.11 },
+          { y: 0.262, w: 0.47, d: 0.445, z: zc + 0.002, bev: 0.125 },
+          { y: 0.19, w: 0.445, d: 0.42, z: zc + 0.004, bev: 0.11 },
+        ],
+        { color: c, vary: 0.06 },
+      );
+      // skirt over the ears and the back of the head (stays behind the face plane)
+      block(
+        b,
+        [
+          { y: 0.2, w: 0.44, d: 0.27, z: -0.07, bev: 0.09, bevF: 0.03 },
+          { y: 0.05, w: 0.38, d: 0.21, z: -0.08, bev: 0.075, bevF: 0.03 },
+        ],
+        o(0.94),
+      );
+      // fluff: lumps breaking the dome's outline, tufts along the fringe edge
+      for (const [x, z, k] of [
+        [0.15, 0.07, 1],
+        [-0.16, 0.03, 0.9],
+        [0.07, -0.15, 1],
+        [-0.08, 0.15, 0.85],
+        [0.0, 0.0, 1.15],
+        [-0.14, -0.12, 0.95],
+        [0.14, -0.06, 0.9],
+      ] as Vec3[])
+        b.rock({ size: [0.14 * k, 0.09, 0.14 * k], at: [x, H.top + 0.058 + rng.range(0, 0.02), z], points: 9, jitter: 0.2, color: shade(c, rng.range(0.9, 1.14)), vary: 0.08 });
+      for (let i = 0; i < 6; i++) {
+        const x = -0.16 + i * 0.064 + rng.jitter(0.008);
+        clump(b, [x, 0.205, H.zf + 0.05], [rng.jitter(0.2), -1, -0.05], rng.range(0.022, 0.036), 0.066, 0.036, o(rng.range(0.9, 1.1)), 0.55);
+      }
+      break;
+    }
+    case "bowl": {
+      // neat cut: a smooth cap with a straight full fringe ending just above the brows and
+      // flat sides to the top of the ears
+      const zc = H.cz + 0.004;
+      block(
+        b,
+        [
+          { y: H.top + 0.052, w: 0.23, d: 0.24, z: zc - 0.01, bev: 0.06 },
+          { y: H.top + 0.024, w: 0.345, d: 0.338, z: zc, bev: 0.055 },
+          { y: 0.25, w: 0.345, d: 0.332, z: zc + 0.004, bev: 0.06 },
+          { y: 0.207, w: 0.34, d: 0.328, z: zc + 0.004, bev: 0.05 },
+        ],
+        { color: c, vary: 0.05 },
+      );
+      block(
+        b,
+        [
+          { y: 0.215, w: 0.34, d: 0.21, z: -0.062, bev: 0.06, bevF: 0.02 },
+          { y: 0.125, w: 0.326, d: 0.17, z: -0.075, bev: 0.05, bevF: 0.02 },
+        ],
+        o(0.95),
+      );
+      // strands of the fringe: shallow facets with a hair-thin gap toward the left temple
+      const zf = zc + 0.004 + 0.164;
+      for (const [x, w, k] of [
+        [-0.085, 0.11, 1.1],
+        [0.03, 0.1, 1.2],
+        [0.115, 0.05, 1.08],
+      ] as Vec3[])
+        b.box({ size: [w, 0.05, 0.008], at: [x, 0.236, zf], rot: [0, 0, rng.jitter(2)], color: shade(c, k) });
+      break;
+    }
   }
 }
 
@@ -753,6 +944,22 @@ function buildGlasses(b: MeshBuilder, color: Color) {
     b.box({ size: [0.013, 0.013, 0.17], at: [sd * (H.hx + 0.008), y + Hh / 2 - 0.013, z - 0.088], ...o });
   }
   b.box({ size: [0.034, 0.013, dz], at: [0, y + 0.015, z], ...o });
+}
+
+/** Round frames (octagons at this size): thick dark plastic or thin metal wire. */
+function buildRoundGlasses(b: MeshBuilder, g: RoundGlasses) {
+  const z = H.zf + 0.014;
+  const y = H.eyeY;
+  const R = g.radius ?? 0.05;
+  const o: PrimOpts = { color: g.color };
+  for (const sd of [1, -1] as Side[]) {
+    const cx = sd * 0.066;
+    b.ring({ radius: R, inner: R - g.rim, depth: 0.012, segments: 8, start: 22.5, end: 382.5, at: [cx, y, z], ...o });
+    // temple arm back to the ear
+    b.box({ size: [Math.max(0.008, g.rim * 0.8), Math.max(0.008, g.rim * 0.8), 0.17], at: [sd * (H.hx + 0.008), y + 0.012, z - 0.088], ...o });
+    b.box({ size: [H.hx + 0.012 - (0.066 + R) + 0.012, Math.max(0.008, g.rim * 0.8), 0.01], at: [sd * ((H.hx + 0.012 + 0.066 + R) / 2 - 0.003), y + 0.012, z], ...o });
+  }
+  b.box({ size: [2 * (0.066 - R) + 0.012, Math.max(0.008, g.rim * 0.8), 0.01], at: [0, y + 0.012, z], ...o });
 }
 
 function buildHoodUp(b: MeshBuilder, s: Spec) {
@@ -1217,6 +1424,169 @@ const SPECS: Spec[] = [
 ];
 
 /* =========================================================================================
+ * Stall hosts (tl_char_host_<key>_v01) — NPC only, never handed to players
+ * ========================================================================================= */
+
+/**
+ * Low-poly caricatures of the four named stall hosts in one shared kit (worn-white jersey with
+ * black raglan shoulders and side panels, thin crimson collar and sleeve piping, dark trousers:
+ * no logos, sponsor marks or text) plus an original older fan who keeps the memory wall. Hair
+ * silhouette, glasses and head / body proportions tell them apart; the rig is the fans' rig.
+ */
+const KIT_WHITE: Color = "#DED8CB";
+const KIT: Spec["top"] = {
+  kind: "tee",
+  body: KIT_WHITE,
+  sleeve: P.black,
+  shoulder: P.black,
+  sidePanel: P.black,
+  raglan: P.black,
+  collar: P.crimson,
+  sleeveBand: P.crimson,
+};
+const KIT_REST = {
+  skin: P.skinLight,
+  hair: P.hairBlack,
+  eyes: "open" as const,
+  top: KIT,
+  bottom: { kind: "pants" as const, color: "#2C2A2D" },
+  feet: { kind: "sneaker" as const, upper: "#262322", sole: P.white, accent: P.crimson },
+};
+const HOSTS: Spec[] = [
+  {
+    key: "oner",
+    notes: "Check-in host: tall, long face, centre-parted curtain fringe showing a strip of forehead, round thick dark glasses; team kit.",
+    ...KIT_REST,
+    hairStyle: "curtain",
+    glasses: { color: "#171413", rim: 0.016, radius: 0.052 },
+    build: { height: 1.04, head: [0.95, 1.07, 0.98] },
+  },
+  {
+    key: "peyz",
+    notes: "Apparel host: broad shoulders, fuller square face, short textured hair with a side-swept comma fringe, no glasses; team kit.",
+    ...KIT_REST,
+    skin: mix(P.skinLight, P.skinMedium, 0.18),
+    hairStyle: "comma",
+    build: { height: 1.0, shoulders: 1.08, head: [1.07, 0.97, 1.03] },
+  },
+  {
+    key: "keria",
+    notes: "Quiz host: slightly shorter, small round face, the biggest fluffy mushroom hair with a thick full fringe down to the brows, no glasses; team kit.",
+    ...KIT_REST,
+    hairStyle: "mushroom",
+    build: { height: 0.955, shoulders: 0.97, head: [0.98, 0.94, 0.98] },
+  },
+  {
+    key: "doran",
+    notes: "Match-feed host: slim long face, neat straight full fringe, thin round metal-wire glasses; team kit.",
+    ...KIT_REST,
+    skin: mix(P.skinLight, P.skinMedium, 0.08),
+    hairStyle: "bowl",
+    glasses: { color: "#B9B4A6", rim: 0.008, radius: 0.047 },
+    build: { height: 1.01, shoulders: 0.96, head: [0.92, 1.06, 0.96] },
+  },
+  {
+    key: "keeper",
+    notes: "Memory-wall keeper: an original older fan (not a player) with grey side-parted hair and moustache, warm grey cardigan worn open over a worn-white shirt, brown trousers.",
+    skin: P.skinMedium,
+    hair: P.hairGrey,
+    hairStyle: "neat",
+    eyes: "open",
+    moustache: shade(P.hairGrey, 0.92),
+    top: {
+      kind: "hoodie",
+      body: mix(P.woodGrey, P.earth, 0.35),
+      sleeve: mix(P.woodGrey, P.earth, 0.35),
+      cuff: mix(P.woodGrey, P.earth, 0.6),
+      hem: mix(P.woodGrey, P.earth, 0.6),
+      collar: P.worn,
+      openFront: P.worn,
+    },
+    bottom: { kind: "pants", color: "#4A3E35" },
+    feet: { kind: "sneaker", upper: "#3A322C", sole: "#8F877A" },
+    build: { height: 0.975 },
+  },
+];
+
+/**
+ * Standing poses of the hosts (same format as POSES). `h` = the host's height scale: the hips
+ * pivot of a scaled body sits at RIG.hips * h. Layout tweaks must not override hips.at.
+ */
+function hostPoses(h: number): Record<string, Record<string, PoseVal>> {
+  const hips: PoseVal = { at: [0, r4(RIG.hips[1] * h), 0], rot: ZERO };
+  const lean: PoseVal = { at: [0, r4(RIG.hips[1] * h), -0.02], rot: ZERO };
+  return {
+    // relaxed standing, arms a little bent
+    host_stand: fullPose({
+      hips,
+      spine: [3, 0, 0],
+      head: [-2, 0, 0],
+      arm_upper_l: [5, 0, 2],
+      arm_lower_l: [-14, 0, 0],
+      arm_upper_r: [5, 0, -2],
+      arm_lower_r: [-14, 0, 0],
+    }),
+    // behind a 0.9 m counter (root ~0.62 m behind its centre): leaning on both palms
+    host_counter: fullPose({
+      hips: lean,
+      spine: [9, 0, 0],
+      neck: [-3, 0, 0],
+      head: [-5, 0, 0],
+      arm_upper_l: [-9, 0, 7],
+      arm_lower_l: [-57, 0, 0],
+      arm_upper_r: [-9, 0, -7],
+      arm_lower_r: [-57, 0, 0],
+    }),
+    // behind the counter: left palm on it, right hand raised in a small greeting
+    host_greet: fullPose({
+      hips: lean,
+      spine: [6, 0, -2],
+      neck: [-2, 0, 0],
+      head: [-4, 0, 3],
+      arm_upper_l: [-12, 0, 7],
+      arm_lower_l: [-57, 0, 0],
+      arm_upper_r: [-28, 0, -24],
+      arm_lower_r: [-118, 0, 0],
+    }),
+    // left arm held out to the side toward a board, right arm relaxed
+    host_present: fullPose({
+      hips,
+      spine: [2, 0, -3],
+      head: [-3, 0, 0],
+      arm_upper_l: [-12, 0, 58],
+      arm_lower_l: [-14, 0, 8],
+      arm_upper_r: [5, 0, -3],
+      arm_lower_r: [-16, 0, 0],
+    }),
+    // right forearm up in front of the chest holding something (mug), left arm relaxed
+    host_hold: fullPose({
+      hips,
+      spine: [3, 0, 0],
+      head: [2, 0, 0],
+      arm_upper_l: [5, 0, 2],
+      arm_lower_l: [-14, 0, 0],
+      arm_upper_r: [-18, 0, 22],
+      arm_lower_r: [-78, 0, 0],
+    }),
+    // older keeper: a little stooped, left arm slightly out carrying a lantern by its ring
+    host_keeper: fullPose({
+      hips: { at: [0, r4(RIG.hips[1] * h - 0.004), -0.02], rot: ZERO },
+      spine: [10, 0, 0],
+      neck: [4, 0, 0],
+      head: [-6, 0, 0],
+      arm_upper_l: [-14, 0, 10],
+      arm_lower_l: [-10, 0, 0],
+      arm_upper_r: [8, 0, -3],
+      arm_lower_r: [-20, 0, 0],
+      leg_upper_l: [-4, 0, 0],
+      leg_lower_l: [4, 0, 0],
+      leg_upper_r: [-4, 0, 0],
+      leg_lower_r: [4, 0, 0],
+    }),
+  };
+}
+
+/* =========================================================================================
  * Assembly
  * ========================================================================================= */
 
@@ -1253,10 +1623,18 @@ function debugSeat(m: Model, kind: string) {
   }
 }
 
-function buildFan(s: Spec): Model {
-  const name = `tl_char_fan_${s.key}_v01`;
+function buildFan(s: Spec, kind: "fan" | "host" = "fan"): Model {
+  const name = `tl_char_${kind}_${s.key}_v01`;
   const m = new Model(name, { budget: 2500 });
   const r = makeRig(m);
+  const tall = s.build?.height ?? 1;
+  if (s.build) {
+    // proportions of a host: scale nodes, never the joint offsets, so poses still apply
+    r.hips.at = [0, r4(RIG.hips[1] * tall), 0];
+    r.hips.scale = [tall, tall, tall];
+    if (s.build.shoulders) r.spine.scale = [s.build.shoulders, 1, 1];
+    if (s.build.head) r.head.scale = s.build.head;
+  }
   buildPelvis(r, s);
   buildTorso(r, s);
   buildNeckHead(r, s);
@@ -1267,7 +1645,7 @@ function buildFan(s: Spec): Model {
   if (DEBUG.has("stool")) debugStool(m);
   for (const k of ["chair", "wheelchair", "bed"]) if (DEBUG.has(k)) debugSeat(m, k);
 
-  for (const [k, v] of Object.entries(POSES)) m.pose(k, v);
+  for (const [k, v] of Object.entries(kind === "host" ? hostPoses(tall) : POSES)) m.pose(k, v);
   m.collider = { type: "capsule", center: [0, 0.875, 0], radius: 0.3, height: 1.75 };
   const hand = (sd: Side) => m.worldPoint(`arm_lower_${LR(sd)}`, rotatePoint([0, HAND_Y, 0.004], [0, 0, sd * RIG.armTilt]));
   m.anchor("hand_l", hand(1));
@@ -1285,7 +1663,7 @@ function buildFan(s: Spec): Model {
   });
   const j = (n: string) => joints[n];
   m.meta = {
-    kind: "avatar",
+    kind: kind === "host" ? "host" : "avatar",
     variant: s.key,
     rig: {
       version: 1,
@@ -1311,6 +1689,13 @@ function buildFan(s: Spec): Model {
       otherSeatHeights: "raise/lower the root by (seatY - 0.45); for seats lower than ~0.4 bend the knees more",
     },
   };
+  if (kind === "host") {
+    m.notes =
+      `Stall host NPC (${s.key}), never a player outfit. ${s.notes} Same joints as the fan rig` +
+      (s.build ? `; proportions by node scale (hips ${tall}, spine x ${s.build.shoulders ?? 1}, head ${JSON.stringify(s.build.head ?? [1, 1, 1])})` : "") +
+      `. Poses: ${Object.keys(hostPoses(tall)).join(", ")} (standing; hips.at already carries the height scale).`;
+    return m;
+  }
   m.notes =
     `Fan avatar (${s.key}). ${s.notes} ` +
     `Rig (world rest pivots): hips ${j("hips")[1]}; spine ${j("spine")[1]}; neck ${j("neck")[1]}; head ${j("head")[1]}; ` +
@@ -1325,5 +1710,5 @@ function buildFan(s: Spec): Model {
 }
 
 export default function build(): Model[] {
-  return SPECS.map(buildFan);
+  return [...SPECS.map((s) => buildFan(s)), ...HOSTS.map((s) => buildFan(s, "host"))];
 }

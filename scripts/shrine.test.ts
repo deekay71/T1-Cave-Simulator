@@ -2,10 +2,10 @@ import { test, type TestContext } from 'node:test';
 import assert from 'node:assert/strict';
 import { Deferred, LocalPresence, type Client } from '@colyseus/core';
 import type { SeatLease } from '@te-liet/security';
-import { applyInput, HUB_LAYOUT, type Axes } from '../packages/shared/src/index.js';
+import { applyInput, constrain, HUB_LAYOUT, HUB_PLACEMENTS, HUB_ROOMS, inRooms, type Axes } from '../packages/shared/src/index.js';
 import {
-  SHRINE_CENTER, SHRINE_ENTRY, SHRINE_GESTURE_MS, SHRINE_LIMIT, SHRINE_PORTAL, SHRINE_RADIUS,
-  SHRINE_SEATS, ShrineRequest, applyShrineAwareInput, constrainShrine, isInShrine,
+  SHRINE_CENTER, SHRINE_ENTRY, SHRINE_EXIT, SHRINE_GESTURE_MS, SHRINE_LIMIT, SHRINE_PORTAL, SHRINE_RADIUS,
+  SHRINE_SEATS, SHRINE_ZONE_X, ShrineRequest, applyShrineAwareInput, constrainShrine, isInShrine,
   nearShrinePortal, shrineReturnPoint, shrineStandingPoint, type ShrineSnapshot,
 } from '../packages/shared/src/shrine.js';
 import { ALTAR_CENTER } from '../packages/shared/src/altar.js';
@@ -34,21 +34,28 @@ function fixture() {
   return { activity, actors, add, lookup, request, seat };
 }
 
-test('shrine has twenty unique evenly spaced seats in two inward-facing concentric rings', () => {
-  assert.equal(SHRINE_SEATS.length, 20);
-  assert.equal(new Set(SHRINE_SEATS.map((seat) => seat.id)).size, 20);
-  for (const [ring, count, radius] of [[1, 8, 3], [2, 12, 5]]) {
+test('shrine has 35 unique seats in three inward-facing rings; the rim ring leaves the approach open', () => {
+  assert.equal(SHRINE_SEATS.length, 35);
+  assert.equal(new Set(SHRINE_SEATS.map((seat) => seat.id)).size, 35);
+  // ring, seats, grid slots, radius
+  for (const [ring, count, slots, radius] of [[1, 8, 8, 3], [2, 12, 12, 5], [3, 15, 18, 7]]) {
     const seats = SHRINE_SEATS.filter((seat) => seat.ring === ring);
     assert.equal(seats.length, count);
-    for (let i = 0; i < count; i++) {
-      const seat = seats[i];
-      assert.ok(Math.abs(Math.hypot(seat.x - SHRINE_CENTER.x, seat.z) - radius) < 0.00001);
-      assert.equal(seat.index, i);
-      assert.equal(seat.yaw, (i * 360 / count + 180) % 360);
-      const next = seats[(i + 1) % count];
-      assert.ok(Math.abs(Math.hypot(next.x - seat.x, next.z - seat.z) - 2 * radius * Math.sin(Math.PI / count)) < 0.00001);
+    assert.equal(new Set(seats.map((seat) => seat.index)).size, count);
+    for (const seat of seats) {
+      const dx = seat.x - SHRINE_CENTER.x, dz = seat.z - SHRINE_CENTER.z;
+      assert.ok(Math.abs(Math.hypot(dx, dz) - radius) < 0.00001);
+      assert.equal(seat.yaw, (seat.index * 360 / slots + 180) % 360);
+      const angle = seat.index * Math.PI * 2 / slots;
+      assert.ok(Math.abs(dx - Math.sin(angle) * radius) < 0.00001 && Math.abs(dz - Math.cos(angle) * radius) < 0.00001);
     }
   }
+  // every seat keeps at least 1.5 m from every other, and its standing point stays on the island
+  for (const a of SHRINE_SEATS) for (const b of SHRINE_SEATS)
+    if (a !== b) assert.ok(Math.hypot(a.x - b.x, a.z - b.z) > 1.5, `${a.id} / ${b.id}`);
+  // the rim ring is open where players arrive (SHRINE_ENTRY on +Z): no rim seat within 2.3 m of it
+  for (const seat of SHRINE_SEATS.filter((s) => s.ring === 3))
+    assert.ok(Math.hypot(seat.x - SHRINE_CENTER.x, seat.z - (SHRINE_CENTER.z + 6.8)) > 2.3, seat.id);
 });
 
 test('shrine schema allows only explicit actions and rejects client positions, identities and clocks', () => {
@@ -155,7 +162,10 @@ test('exit works anywhere in the shrine, clears a reserved seat and never return
   assert.equal(isInShrine(player), false);
   assert.equal(player.shrineSeat, '');
   assert.deepEqual({ x: player.x, z: player.z }, shrineReturnPoint());
+  // Back in the main cave, inside the walk area (the union of rooms), 2.2 m in front of the door.
+  assert.ok(inRooms(player.x, player.z, HUB_ROOMS, 1e-6));
   assert.ok(Math.hypot(player.x, player.z) <= HUB_LAYOUT.radius);
+  assert.ok(nearShrinePortal(player));
   for (const o of HUB_LAYOUT.obstacles) assert.ok(Math.hypot(player.x - o.x, player.z - o.z) >= o.r - 0.00001);
   assert.ok(f.activity.snapshot(START).seats.every((seat) => seat.occupant === null));
   assert.equal(f.request('a', { action: 'exit' }).error, 'outside-shrine');
@@ -214,7 +224,7 @@ test('snapshots cannot mutate reservations and separate rooms never share occupa
   assert.equal(snapshot.serverNow, START);
   snapshot.seats[8].occupant = 'forged';
   snapshot.seats.pop();
-  assert.equal(f.activity.snapshot(START).seats.length, 20);
+  assert.equal(f.activity.snapshot(START).seats.length, 35);
   assert.equal(f.activity.snapshot(START).seats[8].occupant, 'a');
   assert.ok(fixture().activity.snapshot(START).seats.every((seat) => seat.occupant === null));
 });
@@ -247,6 +257,49 @@ test('shrine movement is deterministic, stays on its floor and cannot pass throu
   }
   const center = constrainShrine(SHRINE_CENTER.x, SHRINE_CENTER.z);
   assert.ok(Math.hypot(center.x - SHRINE_CENTER.x, center.z) >= 1.2 - 0.00001);
+});
+
+test('the shrine island lies east of every cave: side caves and tunnels are never "in the shrine"', () => {
+  assert.deepEqual({ ...SHRINE_CENTER }, { x: 120, z: 0 });
+  assert.equal(SHRINE_ZONE_X, 80);
+  assert.equal(isInShrine({ x: 80, z: 0 }), false);
+  assert.equal(isInShrine({ x: 80.001, z: 0 }), true);
+  // Entry and exit points follow the centre and stand on the island's walking floor.
+  assert.deepEqual({ ...SHRINE_ENTRY }, { x: SHRINE_CENTER.x, z: SHRINE_CENTER.z + 6.8 });
+  assert.deepEqual({ ...SHRINE_EXIT }, { x: SHRINE_CENTER.x, z: SHRINE_CENTER.z + 7.2 });
+  for (const p of [SHRINE_ENTRY, SHRINE_EXIT]) {
+    assert.equal(isInShrine(p), true);
+    assert.ok(Math.hypot(p.x - SHRINE_CENTER.x, p.z - SHRINE_CENTER.z) <= SHRINE_RADIUS);
+    assert.deepEqual(constrainShrine(p.x, p.z), { x: Math.fround(p.x), z: Math.fround(p.z) });
+  }
+  for (const seat of SHRINE_SEATS) assert.equal(isInShrine(seat), true);
+  // Every room of the cave (walk discs, plus the 15 m rock shell of the grotto around the island)
+  // stays clear of the island: the east side caves reach x = 39.
+  let east = -Infinity;
+  for (const room of HUB_ROOMS) {
+    east = Math.max(east, room.x + room.r);
+    for (let i = 0; i < 16; i++) {
+      const a = (i / 16) * Math.PI * 2;
+      assert.equal(isInShrine({ x: room.x + room.r * Math.cos(a), z: room.z + room.r * Math.sin(a) }), false);
+    }
+  }
+  assert.ok(east <= 39 + 1e-9);
+  assert.ok(SHRINE_CENTER.x - 16 - east > 40, 'the grotto shell must not be visible from the side caves');
+  // A walker pushed east from the market cave stays in the cave.
+  const p = { x: 38, z: 18.5 };
+  for (let i = 0; i < 200; i++) applyShrineAwareInput(p, { moveX: 127, moveZ: 0 }, 0.05);
+  assert.equal(isInShrine(p), false);
+  assert.ok(inRooms(p.x, p.z, HUB_ROOMS, 1e-4));
+});
+
+test('the cave-side door: portal in front of the exit tunnel, frame 0.95 m before the mouth plane', () => {
+  assert.deepEqual({ x: SHRINE_PORTAL.x, z: SHRINE_PORTAL.z }, { x: 0, z: -19.9 });
+  assert.deepEqual(constrain(SHRINE_PORTAL.x, SHRINE_PORTAL.z), { x: SHRINE_PORTAL.x, z: SHRINE_PORTAL.z });
+  const frame = HUB_PLACEMENTS.find((q) => q.asset === 'environment/tl_env_tunnel_frame_v01')!;
+  assert.deepEqual([frame.x, frame.z, frame.yaw], [0, -22.45, 0]);
+  // The door frame is within reach of the portal's E radius and behind the walk limit.
+  assert.ok(Math.hypot(frame.x - SHRINE_PORTAL.x, frame.z - SHRINE_PORTAL.z) < 3);
+  assert.ok(Math.hypot(frame.x, frame.z) > HUB_LAYOUT.radius + 2);
 });
 
 /** Room wiring without networking, dev-key generation, database or live security services. */
@@ -297,7 +350,7 @@ test('room shrineSync repairs initial listener races, validates active membershi
   const state = a.sent[0].value as ShrineSnapshot;
   assert.equal(a.sent[0].type, 'shrineState');
   assert.equal(state.serverNow, START);
-  assert.equal(state.seats.length, 20);
+  assert.equal(state.seats.length, 35);
   f.send(a.client, 'shrineSync'); f.send(a.client, 'shrineSync');
   assert.equal(a.sent.length, 2);
   const offline = f.add('offline'); offline.player.connected = false;

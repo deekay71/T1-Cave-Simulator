@@ -1,6 +1,13 @@
 # Cave stalls update — local prototype, 2026-11-10
 
-> Implementation snapshot, not a current deployment report. Read [Opus visual handoff](opus-visual-handoff.md) first. Later stall work supersedes the old campfire shrine portal: the current entrance is at the back wall, (0, -15.8).
+> Implementation snapshot, not a current deployment report. Read [Opus visual handoff](opus-visual-handoff.md) first.
+>
+> **Đã thay thế (2026-11-11), đọc phần này trước:**
+> - **Sạp nằm trong hang nhỏ.** Chỉ còn ĐIỂM DANH (Oner) ở hang lớn, cạnh chỗ xuất hiện. Bốn sạp kia mỗi sạp một hang nhỏ, vào qua đường hầm: BẢNG QUEST (Doran) ở Hang Quest (32; −18,5; trước là Hang xem trận, nay lịch đấu xem ở màn hình lớn của hang lớn), KÝ ỨC HUY HOÀNG ở Hang ký ức (−32; −18,5), ĐỐ VUI T1 (Keria) ở Hang đố vui (−32; 18,5), QUẦY TRANG PHỤC (Peyz) ở Hang chợ (32; 18,5). Toạ độ chỗ bấm E: `docs/cameras-and-layout.md`. TV "DEFEAT" bên trái lửa trại đã bỏ: thay bằng màn hình lớn bắt thẳng vào vách sau-trái hang lớn (lịch đấu T1, không hiện tỉ số); 3 TV trong Hang xem trận cũng thay bằng một màn hình gắn vách trong hốc đá, cùng hình; trước mỗi cửa hầm có cổng gỗ treo biển tên hang.
+> - **Cửa điện thờ** ở hầm cửa hang phía sau: chỗ bấm E (0; −19,9), không còn là (0; −15,8). Điện thờ là hang đá có tượng thần (xem `docs/shrine-update.md`).
+> - **Chủ sạp Oner, Peyz, Keria, Doran (và tượng Faker ở điện thờ) là chân dung cách điệu** của năm tuyển thủ theo yêu cầu của người dùng ngày 2026-11-11 (GLB có rig, biển gỗ sơn tay), không logo / dấu nhà tài trợ; câu "not … accurate facial likenesses" bên dưới là của bản cũ. Quy ước ở `docs/art-direction.md`.
+> - **Hạng 3 (300 XP, "Tê Nạng") chống nạng**, không phải khung tập đi (walker) như ghi bên dưới.
+> - Nút "Các sạp trong hang" vẫn hiện khoảng cách đường chim bay; đường đi thật vòng qua miệng hầm.
 
 ## Open the game
 

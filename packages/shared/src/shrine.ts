@@ -2,12 +2,17 @@ import { CAVE_SHRINE_GATE } from "./stalls.js";
 import { z } from 'zod';
 import { applyInput, constrain, type Axes, type Layout, type Position } from './index.js';
 
-/** A separate island in the same room: all zone changes are server-authoritative. */
-export const SHRINE_CENTER = { x: 48, z: 0 } as const;
+/**
+ * A separate island in the same room: all zone changes are server-authoritative. It lies far east
+ * of the cave (the side caves reach x = 39 with their walk discs and ~44 with their rock).
+ */
+export const SHRINE_CENTER = { x: 120, z: 0 } as const;
 export const SHRINE_RADIUS = 8;
 export const SHRINE_PORTAL = CAVE_SHRINE_GATE;
-export const SHRINE_ENTRY = { x: 48, z: 6.8 } as const;
-export const SHRINE_EXIT = { x: 48, z: 7.2 } as const;
+export const SHRINE_ENTRY = { x: SHRINE_CENTER.x, z: SHRINE_CENTER.z + 6.8 } as const;
+export const SHRINE_EXIT = { x: SHRINE_CENTER.x, z: SHRINE_CENTER.z + 7.2 } as const;
+/** Everything east of this x is the shrine island (the cave's walk area ends at x = 39). */
+export const SHRINE_ZONE_X = 80;
 export const SHRINE_PORTAL_DISTANCE = 3;
 export const SHRINE_SEAT_DISTANCE = 2;
 export const SHRINE_GESTURE_MS = 3_000;
@@ -17,7 +22,7 @@ export const SHRINE_LIMIT = { capacity: 6, perMs: 3_000 } as const;
 export interface ShrineSeat {
   id: string;
   label: string;
-  ring: 1 | 2;
+  ring: 1 | 2 | 3;
   index: number;
   x: number;
   z: number;
@@ -25,19 +30,30 @@ export interface ShrineSeat {
   yaw: number;
 }
 
-export const SHRINE_SEATS: readonly ShrineSeat[] = [
-  { ring: 1 as const, count: 8, radius: 3, prefix: 'inner' },
-  { ring: 2 as const, count: 12, radius: 5, prefix: 'outer' },
-].flatMap(({ ring, count, radius, prefix }) => Array.from({ length: count }, (_, index) => {
-  const angle = index * Math.PI * 2 / count;
-  return {
-    id: `${prefix}-${index + 1}`, label: `${ring === 1 ? 'Vòng trong' : 'Vòng ngoài'} · ${index + 1}`,
-    ring, index,
-    x: Math.fround(SHRINE_CENTER.x + Math.sin(angle) * radius),
-    z: Math.fround(SHRINE_CENTER.z + Math.cos(angle) * radius),
-    yaw: (index * 360 / count + 180) % 360,
-  };
-}));
+/**
+ * Three rings of stone seats round the statue: 8 at 3 m, 12 at 5 m and a rim ring at 7 m on an
+ * 18-slot grid (20 degrees apart) whose three slots on the +Z approach stay empty, so the way in
+ * from SHRINE_ENTRY is never blocked: 35 seats. `index` is the slot on the ring's grid (angle =
+ * index * 360 / slots from +Z); ids number the seats that exist.
+ */
+const SHRINE_RINGS = [
+  { ring: 1, slots: 8, radius: 3, prefix: 'inner', label: 'Vòng trong', skip: [] },
+  { ring: 2, slots: 12, radius: 5, prefix: 'outer', label: 'Vòng ngoài', skip: [] },
+  { ring: 3, slots: 18, radius: 7, prefix: 'rim', label: 'Vòng rìa', skip: [0, 1, 17] },
+] as const;
+export const SHRINE_SEATS: readonly ShrineSeat[] = SHRINE_RINGS.flatMap(({ ring, slots, radius, prefix, label, skip }) =>
+  Array.from({ length: slots }, (_, index) => index)
+    .filter(index => !(skip as readonly number[]).includes(index))
+    .map((index, n) => {
+      const angle = index * Math.PI * 2 / slots;
+      return {
+        id: `${prefix}-${n + 1}`, label: `${label} · ${n + 1}`,
+        ring, index,
+        x: Math.fround(SHRINE_CENTER.x + Math.sin(angle) * radius),
+        z: Math.fround(SHRINE_CENTER.z + Math.cos(angle) * radius),
+        yaw: (index * 360 / slots + 180) % 360,
+      };
+    }));
 
 /** The translated shrine-local layout reuses the deterministic cave solver. */
 const SHRINE_LAYOUT: Layout = {
@@ -47,7 +63,7 @@ const SHRINE_LAYOUT: Layout = {
 };
 
 export function isInShrine(p: Position): boolean {
-  return Number.isFinite(p.x) && Number.isFinite(p.z) && p.x > 25;
+  return Number.isFinite(p.x) && Number.isFinite(p.z) && p.x > SHRINE_ZONE_X;
 }
 
 export function nearShrinePortal(p: Position): boolean {

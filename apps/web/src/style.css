@@ -104,20 +104,262 @@ header {
   border-radius: 50%;
   margin-right: 8px;
 }
-/* Thẻ chào hẹp, trong mờ: góc TV và vũng nước bên trái vẫn lộ ra sau nó. */
-.welcome {
+/*
+ * Màn đăng nhập (design/concepts/login-low-poly): cột trái trên cảnh 3D, không có thẻ nền. Phía sau
+ * cột chỉ là một quầng tối mềm để chữ luôn đọc được; tựa game là chữ + CSS (không dùng ảnh).
+ */
+.login {
+  --login-ink: #efe9e0;
   pointer-events: auto;
   position: absolute;
-  top: 23%;
-  left: 6%;
-  width: 300px;
-  padding: 24px;
-  background: #191410b3;
-  -webkit-backdrop-filter: blur(6px);
-  backdrop-filter: blur(6px);
-  border: 1px solid #8f705544;
-  border-radius: 4px;
-  box-shadow: 0 24px 100px #0006;
+  left: clamp(24px, 6vw, 120px);
+  /* neo theo mép trên: tựa game đứng yên khi mở bước nhập tên */
+  top: clamp(72px, 25vh, 300px);
+  width: min(340px, 28vw);
+  min-width: 262px;
+  isolation: isolate;
+}
+.login::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: -34% -46% -30% -70%;
+  background: radial-gradient(closest-side, #0b090fc7 0%, #0b090f8c 48%, #0b090f00 100%);
+  pointer-events: none;
+}
+.login-title {
+  margin: 0 0 26px;
+  font:
+    italic 900 1em/0.92 "Avenir Next",
+    "Segoe UI Black",
+    "Segoe UI",
+    "Helvetica Neue",
+    system-ui,
+    sans-serif;
+  letter-spacing: -0.02em;
+  text-align: center;
+  transform: rotate(-3.5deg);
+  transform-origin: 30% 60%;
+  user-select: none;
+}
+.login-title span {
+  display: block;
+  white-space: nowrap;
+}
+/* Trắng cũ: cạnh dưới sẫm dần như khối đá đẽo, vài vết xước chéo. */
+.login-title-main {
+  font-size: clamp(50px, 5.7vw, 84px);
+  color: var(--login-ink);
+  text-shadow:
+    0 1px 0 #d2cac0,
+    0 2px 0 #a59e9c,
+    0 3px 0 #6d6770,
+    0 4px 0 #3a3640,
+    0 5px 0 #1d1a22,
+    0 10px 18px #000d;
+  -webkit-mask-image: linear-gradient(
+    112deg,
+    #000 0 31%,
+    #000a 31% 31.7%,
+    #000 31.7% 58%,
+    #0009 58% 58.5%,
+    #000 58.5% 83%,
+    #000b 83% 83.8%,
+    #000 83.8%
+  );
+  mask-image: linear-gradient(
+    112deg,
+    #000 0 31%,
+    #000a 31% 31.7%,
+    #000 31.7% 58%,
+    #0009 58% 58.5%,
+    #000 58.5% 83%,
+    #000b 83% 83.8%,
+    #000 83.8%
+  );
+}
+.login-title-sub {
+  margin-top: 0.06em;
+  font-size: clamp(31px, 3.55vw, 52px);
+  color: #d42b33;
+  -webkit-text-stroke: 1.5px #f4e4de;
+  paint-order: stroke fill;
+  text-shadow:
+    0 1px 0 #a91f27,
+    0 2px 0 #7c151c,
+    0 3px 0 #4b0c12,
+    0 4px 0 #1f0508,
+    0 9px 16px #000d;
+}
+.login-brush {
+  display: block;
+  width: 86%;
+  margin: 8px auto 0;
+  fill: #c9252d;
+  filter: drop-shadow(0 3px 0 #3d090d) drop-shadow(0 6px 8px #000a);
+  transform: rotate(-1.5deg);
+}
+.login-actions,
+.login-guest {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: min(100%, 252px);
+  margin: 0 auto;
+}
+/*
+ * Phiến nút low-poly: hình đa giác vát góc nằm ở ::before (clip-path), nên viền focus của chính nút
+ * không bị cắt. Mặt trên sáng, mép dưới sẫm làm độ dày, hai mảng chéo làm mặt đẽo.
+ */
+.slab {
+  --slab: #d8d1c7;
+  --slab-edge: #8d8580;
+  position: relative;
+  z-index: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 58px;
+  margin: 0;
+  padding: 0 20px 6px;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: #25212a;
+  font:
+    italic 800 21px/1 "Avenir Next",
+    "Segoe UI",
+    "Helvetica Neue",
+    system-ui,
+    sans-serif;
+  filter: drop-shadow(0 7px 9px #000b);
+  transition:
+    transform 0.08s ease-out,
+    filter 0.12s ease-out;
+}
+.slab::before,
+.slab::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  clip-path: polygon(4% 0, 96.5% 0, 100% 20%, 100% 72%, 96% 100%, 3.5% 100%, 0 78%, 0 22%);
+}
+.slab::before {
+  background: var(--slab-edge);
+}
+.slab::after {
+  bottom: 6px;
+  background:
+    linear-gradient(104deg, #ffffff38 0 34%, #ffffff00 34% 68%, #0000001f 68%),
+    linear-gradient(#ffffff2e 0 9%, #ffffff00 9%),
+    var(--slab);
+}
+.slab:hover,
+.slab:disabled {
+  background: none;
+}
+.slab:hover {
+  filter: drop-shadow(0 7px 9px #000b) brightness(1.08);
+}
+.slab:active {
+  transform: translateY(3px);
+}
+.slab:focus-visible {
+  outline: 3px solid #ffd27a;
+  outline-offset: 4px;
+}
+.slab-crimson {
+  --slab: #b7232c;
+  --slab-edge: #5e0d14;
+  color: #fff4ea;
+  text-shadow: 0 2px 0 #5e0d14;
+}
+.slab-icon {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  stroke-linecap: butt;
+}
+.slab-crimson .slab-icon {
+  filter: drop-shadow(0 2px 0 #5e0d14);
+}
+.slab-tag {
+  position: absolute;
+  top: -9px;
+  right: 6px;
+  padding: 3px 8px 4px;
+  background: #25212a;
+  color: #f1e6d0;
+  font:
+    700 10px/1 system-ui,
+    sans-serif;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  clip-path: polygon(8% 0, 100% 0, 92% 100%, 0 100%);
+}
+.login label {
+  margin: 0 0 -6px;
+  color: #e6dccf;
+  font-weight: 600;
+  text-shadow: 0 1px 2px #000c;
+}
+.login input {
+  min-height: 46px;
+  background: #1c1920e6;
+  border: 1px solid #a79aa066;
+  border-radius: 2px;
+  color: #f6eee2;
+  font-size: 16px;
+}
+.login-back {
+  align-self: center;
+  min-height: 44px;
+  padding: 8px 14px;
+  border-color: transparent;
+  background: none;
+  color: #e6dccf;
+  text-shadow: 0 1px 2px #000c;
+}
+.login-back:hover {
+  background: #ffffff14;
+}
+.login-notice {
+  min-height: 1.5em;
+  margin: 14px auto 0;
+  max-width: 300px;
+  color: #ffd9a8;
+  font-size: 12.5px;
+  font-weight: 600;
+  text-align: center;
+  text-shadow: 0 1px 3px #000e;
+}
+.login-notice:empty {
+  display: none;
+}
+.login small {
+  margin: 12px auto 0;
+  max-width: 300px;
+  color: #d9cfc8;
+  font-size: 12px;
+  text-align: center;
+  text-shadow: 0 1px 3px #000e;
+}
+/* Màn chuyển khi vào hang (login/scene.ts chỉnh opacity): đỏ ở giữa, đen ở rìa. */
+.login-veil {
+  position: fixed;
+  inset: 0;
+  display: none;
+  opacity: 0;
+  pointer-events: none;
+  background: radial-gradient(120% 95% at 62% 56%, #7a1216 0%, #2c080a 40%, #070304 100%);
+}
+@media (prefers-reduced-motion: reduce) {
+  .slab {
+    transition: none;
+  }
 }
 .eyebrow {
   color: #c99560;
@@ -174,13 +416,6 @@ a:focus-visible {
 }
 button:disabled {
   opacity: 0.6;
-}
-.welcome button {
-  width: 100%;
-  margin: 10px 0;
-  background: #8a302b;
-  border-color: #b55243;
-  font-weight: 700;
 }
 small {
   display: block;
@@ -431,19 +666,42 @@ footer {
 a {
   color: #e8b77a;
 }
-@media (max-height: 660px) and (min-width: 701px) {
-  .welcome {
-    top: 92px;
-    padding: 22px 28px;
+/* Màn ngang thấp (laptop nhỏ, điện thoại xoay ngang): cột đăng nhập co lại cho đủ chỗ. */
+@media (max-height: 560px) and (min-width: 701px) {
+  .login {
+    top: clamp(40px, 13vh, 72px);
+    width: min(300px, 30vw);
+    min-width: 230px;
   }
-  .welcome h1 {
-    font-size: 32px;
-    margin: 10px 0;
+  .login-actions,
+  .login-guest {
+    width: min(100%, 230px);
+  }
+  .login-title {
+    margin-bottom: 14px;
+  }
+  .login-title-main {
+    font-size: clamp(38px, 11vh, 60px);
+  }
+  .login-title-sub {
+    font-size: clamp(24px, 7vh, 38px);
+  }
+  .slab {
+    min-height: 50px;
+    font-size: 18px;
+  }
+  .login-actions,
+  .login-guest {
+    gap: 10px;
   }
 }
 @media (max-width: 700px) {
   header {
     padding: 18px;
+  }
+  /* Màn đăng nhập trên điện thoại: tựa game chiếm phần trên, chân trang đã ghi "Bản chơi thử". */
+  header.at-login {
+    display: none;
   }
   .brand {
     font-size: 23px;
@@ -460,12 +718,49 @@ a {
   .movement button {
     min-height: 44px;
   }
-  .welcome {
-    top: 18%;
-    left: 5%;
-    width: 90%;
-    max-width: 350px;
-    padding: 22px;
+  /*
+   * Điện thoại dọc: tựa ở trên, nút ở dưới, cửa hang và hàng người ở giữa; hai dải tối mềm thay
+   * cho quầng bên trái.
+   */
+  .login {
+    left: 0;
+    right: 0;
+    top: 58px;
+    bottom: 46px;
+    width: auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0 20px 6px;
+    pointer-events: none;
+  }
+  .login > * {
+    pointer-events: auto;
+  }
+  .login::before {
+    inset: -58px 0 -46px;
+    background:
+      linear-gradient(#0b090fd9 0, #0b090f8c 17%, #0b090f00 34%),
+      linear-gradient(#0b090f00 52%, #0b090fa6 72%, #0b090fe6 100%);
+  }
+  .login-title {
+    margin: 0 0 auto;
+  }
+  .login-title-main {
+    font-size: clamp(46px, 15.5vw, 68px);
+  }
+  .login-title-sub {
+    font-size: clamp(29px, 9.6vw, 42px);
+  }
+  .login-actions,
+  .login-guest {
+    width: min(100%, 300px);
+    gap: 12px;
+  }
+  .login-notice,
+  .login small {
+    margin-top: 8px;
   }
   h1 {
     font-size: 32px;

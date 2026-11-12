@@ -15,6 +15,7 @@ import {
   PALETTE as P,
   Rng,
   mix,
+  rotatePoint,
   shade,
   shape2d,
   type Color,
@@ -1473,6 +1474,880 @@ function rugWorn(): Model {
 }
 
 /* =========================================================================================
+ * Market stalls: hanging sign boards, check-in stall, apparel stall
+ * ========================================================================================= */
+
+/** Dark weathered board wood of the stall signs (painted lettering has to read on it). */
+const SIGN_WOOD = mix(WOOD_DARK, P.woodGrey, 0.28);
+/** Faded tarp crimson of the two shelters, and its worn-white patches. */
+const TARP = shade(mix(P.tarp, P.rust, 0.35), 0.84);
+const TARP_WORN = mix(P.worn, P.crimsonFaded, 0.12);
+
+/** A flat rectangle of a sign board the runtime paints its text texture on (model space). */
+interface SignFace {
+  name: "front" | "back";
+  center: Vec3;
+  /** [width along up x normal, height along up] in metres. */
+  size: Vec2;
+  normal: Vec3;
+  up: Vec3;
+}
+interface SignFrame {
+  faces: SignFace[];
+  /** Board rows bottom to top with the exact front colour of each plank (the texture repeats them). */
+  planks: { y0: number; y1: number; color: Color }[];
+  /** Post axes at the floor. */
+  posts: Vec3[];
+  postTop: number;
+  crossbarY: number;
+}
+
+/**
+ * Stall sign: a board of four dark weathered planks hung by two rope loops from a crossbar
+ * lashed to two rough posts wedged with rocks. The planks are flat and coplanar so the runtime
+ * can lay a painted-text texture over each side (see SignFace); the two back battens sit outside
+ * the back face. Built into `g` in the plane z = o.z, centred on x = 0, posts down to y = 0.
+ */
+function signFrame(
+  g: MeshBuilder,
+  rng: Rng,
+  o: {
+    width: number;
+    z?: number;
+    bottom?: number;
+    rag?: -1 | 1;
+    /** Post axes at +-postHalf instead of just outside the board (a gate wider than its board). */
+    postHalf?: number;
+    /** Thickness factor of posts, crossbar, lashings and foot rocks (default 1). */
+    heavy?: number;
+  },
+): SignFrame {
+  const W = o.width,
+    z0 = o.z ?? 0,
+    bottom = o.bottom ?? 2.24;
+  const Hb = 0.78,
+    rows = 4,
+    gap = 0.012,
+    T = 0.04;
+  const h = (Hb - gap * (rows - 1)) / rows;
+  const top = bottom + Hb;
+  const planks: SignFrame["planks"] = [];
+  for (let k = 0; k < rows; k++) {
+    const y0 = bottom + k * (h + gap),
+      y1 = y0 + h;
+    const c = shade(SIGN_WOOD, 1 + rng.jitter(0.07));
+    g.plank({
+      size: [W + rng.jitter(0.045), T, h],
+      rot: [90, 0, 0],
+      at: [rng.jitter(0.025), (y0 + y1) / 2, z0],
+      jitter: 0.05,
+      color: c,
+      parts: { top: c, bottom: c, side: shade(c, 0.78), end: shade(c, 0.66) },
+    });
+    planks.push({ y0: rn(y0), y1: rn(y1), color: c });
+  }
+  // back battens, outside the back face
+  const battenX = W / 2 - 0.13;
+  for (const s of [-1, 1])
+    g.box({ size: [0.07, Hb - 0.07, 0.028], at: [s * battenX, bottom + Hb / 2, z0 - T / 2 - 0.014], ...wood(mix(WOOD_DARK, P.woodGrey, 0.5), 0.05) });
+  // posts (a slight kink each), crossbar lashed across them, rocks wedging the feet
+  const postTop = top + 0.3,
+    crossY = top + 0.13;
+  const postC = wood(mix(WOOD, WOOD_DARK, 0.3), 0.06);
+  const posts: Vec3[] = [];
+  const K = o.heavy ?? 1;
+  for (const s of [-1, 1]) {
+    const x = s * (o.postHalf ?? W / 2 + 0.16);
+    const base: Vec3 = [x + s * 0.03 + rng.jitter(0.02), 0, z0 + rng.jitter(0.02)];
+    const tp: Vec3 = [x, postTop + rng.jitter(0.05), z0];
+    const mid = add3(lerp3(base, tp, 0.48), [rng.jitter(0.025), 0, rng.jitter(0.02)]);
+    pole(g, base, mid, [0.062 * K, 0.054 * K], postC, 6, rng.range(0, 60));
+    pole(g, mid, tp, [0.054 * K, 0.046 * K], postC, 6, rng.range(0, 60));
+    posts.push(base);
+    g.cylinder({ height: 0.11 * K, radius: 0.074 * K, sides: 6, at: [x, crossY, z0], color: ROPE, vary: 0.06 });
+    for (const [dx, dz, k] of [
+      [0.17, 0.1, 1],
+      [-0.1, -0.13, 0.8],
+    ] as const)
+      g.rock({
+        size: [0.32 * k * K, 0.2 * k * K, 0.28 * k * K],
+        at: [base[0] + s * dx * K, 0, base[2] + dz * K],
+        align: "bottom",
+        rot: [0, rng.range(0, 180), 0],
+        points: 9,
+        jitter: 0.25,
+        flat: 0.3,
+        color: mix(P.rock, P.pebble, 0.25),
+        parts: { top: mix(P.rockLight, P.pebble, 0.3), bottom: P.rockDark },
+        vary: 0.07,
+      });
+  }
+  const barEnd = o.postHalf === undefined ? [W / 2 + 0.42, W / 2 + 0.38] : [o.postHalf + 0.36, o.postHalf + 0.3];
+  g.tube(
+    [
+      [-barEnd[0], crossY + rng.jitter(0.02), z0 + 0.012],
+      [barEnd[1], crossY + rng.jitter(0.02), z0 + 0.012],
+    ],
+    { radius: 0.042 * K, sides: 6, ...wood(mix(WOOD, WOOD_DARK, 0.15), 0.06) },
+  );
+  // two rope loops: over the crossbar, down both sides of the top plank
+  for (const s of [-1, 1]) {
+    const x = s * W * 0.36;
+    g.tube(
+      [
+        [x, top - 0.05, z0 + T / 2 + 0.009],
+        [x, top + 0.02, z0 + T / 2 + 0.014],
+        [x, crossY + 0.052, z0 + 0.02],
+        [x, crossY + 0.02, z0 - 0.04],
+        [x, top - 0.05, z0 - T / 2 - 0.009],
+      ],
+      { radius: 0.011, sides: 4, color: ROPE, vary: 0.05 },
+    );
+    g.box({ size: [0.05, 0.035, 0.03], at: [x, top - 0.055, z0 + T / 2 + 0.012], rot: [0, 0, rng.jitter(15)], color: shade(ROPE, 0.88) });
+  }
+  if (o.rag) {
+    // a faded rag knotted on one end of the crossbar
+    const x = o.rag * (W / 2 + 0.33);
+    const c = mix(P.crimsonFaded, P.crimson, 0.45);
+    g.quad([x - 0.045, crossY, z0 + 0.03], [x - 0.07, crossY - 0.36, z0 + 0.06], [x + 0.02, crossY - 0.3, z0 + 0.07], [x + 0.045, crossY, z0 + 0.03], {
+      mat: "cloth",
+      color: c,
+    });
+    g.quad([x - 0.03, crossY, z0 - 0.02], [x - 0.01, crossY - 0.22, z0 - 0.05], [x + 0.06, crossY - 0.26, z0 - 0.04], [x + 0.04, crossY, z0 - 0.02], {
+      mat: "cloth",
+      color: mix(P.worn, P.wornDark, 0.35),
+    });
+  }
+  const faceH = Hb - 0.012,
+    cy = bottom + Hb / 2;
+  return {
+    faces: [
+      { name: "front", center: r4([0, cy, z0 + T / 2 + 0.003]), size: [rn(W - 0.15), rn(faceH)], normal: [0, 0, 1], up: [0, 1, 0] },
+      { name: "back", center: r4([0, cy, z0 - T / 2 - 0.003]), size: [rn(2 * battenX - 0.13), rn(faceH)], normal: [0, 0, -1], up: [0, 1, 0] },
+    ],
+    planks,
+    posts,
+    postTop,
+    crossbarY: crossY,
+  };
+}
+
+function signMeta(f: SignFrame) {
+  return {
+    faces: f.faces,
+    planks: f.planks,
+    wood: SIGN_WOOD,
+    note:
+      "faces: flat rectangles (model space) for the runtime text texture, one per side, 3 mm proud of the planks; " +
+      "planks: board rows with the exact front colour so the texture's wood matches the GLB.",
+  };
+}
+const postColliders = (f: SignFrame) =>
+  f.posts.map((p) => ({ type: "cylinder", center: r4([p[0], f.postTop / 2, p[2]]), radius: 0.08, height: rn(f.postTop) }));
+
+function stallSign(name: string, width: number, rag: -1 | 1): Model {
+  const m = new Model(name, {
+    budget: 500,
+    notes:
+      `Stall sign, board ${width} x 0.78 m: four dark weathered planks hung by rope loops from a crossbar on two ` +
+      "rough posts wedged with rocks (posts ~3.3 m, board 2.24-3.02 m above the floor), a faded rag on the crossbar. " +
+      "No lettering in the GLB: meta.sign.faces gives the flat front/back rectangles (centre, size, normal, up) for " +
+      "the runtime text texture, meta.sign.planks the plank rows and their colours. Only the posts collide.",
+  });
+  const rng = new Rng(`${name}/shape`);
+  const f = signFrame(m.geo, rng, { width, rag });
+  m.anchor("board_center", [0, f.faces[0].center[1], 0]);
+  m.meta = { sign: signMeta(f), postColliders: postColliders(f) };
+  return m;
+}
+
+/**
+ * Gate in front of a side-tunnel mouth: two tall rough posts either side of the path, a crossbar
+ * lashed across them with two knee braces, and the cave's name board hanging from the crossbar
+ * above head height. Same board construction as the stall signs (signFrame), so the runtime paints
+ * it the same way.
+ */
+const CAVE_GATE = { board: 3.2, bottom: 3.2, postHalf: 2.85 };
+function caveGate(): Model {
+  const m = new Model("tl_sign_cave_gate_v01", {
+    budget: 700,
+    notes:
+      `Gate sign for a side-tunnel mouth: posts at x = +-${CAVE_GATE.postHalf} m (clear width ~5.5 m, the path is 3.4 m), ` +
+      `crossbar at ~4.1 m with knee braces, a ${CAVE_GATE.board} x 0.78 m board of four dark planks hanging from it ` +
+      `(${CAVE_GATE.bottom}-${CAVE_GATE.bottom + 0.78} m above the floor, above the camera ceiling of the tunnels). No lettering in ` +
+      "the GLB: meta.sign.faces / planks as on tl_sign_stall_*. Front (+Z) faces the main cave. Only the posts collide.",
+  });
+  const rng = new Rng(`${m.name}/shape`);
+  const g = m.geo;
+  const f = signFrame(g, rng, { width: CAVE_GATE.board, bottom: CAVE_GATE.bottom, postHalf: CAVE_GATE.postHalf, heavy: 1.7, rag: 1 });
+  const braceC = wood(mix(WOOD, WOOD_DARK, 0.5), 0.06);
+  for (const s of [-1, 1])
+    bar(g, [s * (CAVE_GATE.postHalf - 0.02), f.crossbarY - 0.8, 0], [s * (CAVE_GATE.postHalf - 0.78), f.crossbarY - 0.03, 0.01], 0.08, braceC);
+  m.anchor("board_center", [0, f.faces[0].center[1], 0]);
+  m.meta = {
+    sign: signMeta(f),
+    postColliders: postColliders(f),
+    gate: { postHalf: CAVE_GATE.postHalf, clearHeight: CAVE_GATE.bottom },
+  };
+  return m;
+}
+
+/** Rock tones of the cave walls (tools/models/groups/caves.ts WALL_TONES): the rim reads as part of the wall. */
+const WALL_ROCK: Color[] = [P.ochre, P.rock, mix(P.ochre, P.earth, 0.5), P.rock, P.rockLight, mix(P.rock, P.rockDark, 0.5)];
+
+interface WallScreenSpec {
+  name: string;
+  /** Picture width (m); the height follows from 16:9. */
+  w: number;
+  /** Height of the housing's bottom edge above the pivot (m). */
+  lift: number;
+  /** Forward lean (deg): the rock face it is bolted to leans into the cave. */
+  tilt: number;
+  bezel: number;
+  depth: number;
+  /** Rim rocks: how far they run back into the wall (m) and how thick they are around the housing (0 = no rim). */
+  rimBack: number;
+  rim: number;
+  speakers: boolean;
+  /** Battery box on the floor, in model space, with the cable running down to it. */
+  battery?: Vec3;
+  light: { intensity: number; range: number; out: number };
+  notes: string;
+  budget: number;
+}
+
+/**
+ * Screen bolted straight onto the cave wall: a salvaged 16:9 display in a dark housing, set in a
+ * rim of wall rock that runs back into the rock face (so no gap shows where the wall bends away),
+ * held by iron corner brackets and two chains running into the rock above. No frame, no legs. The
+ * picture is not in the GLB: meta.screen gives the flat rectangle for the runtime texture.
+ *
+ * Model frame: pivot on the floor under the bottom-centre of the housing's BACK plane; the housing
+ * starts `lift` m up and leans `tilt` degrees forward about its bottom edge. Place the model so
+ * that back plane lies on the rock (packages/shared/src/layout.ts has the fitted poses).
+ */
+function wallScreen(o: WallScreenSpec): Model {
+  const { w, lift, tilt, bezel, depth } = o;
+  const h = (w * 9) / 16;
+  const W = w + 2 * bezel,
+    H = h + 2 * bezel;
+  /** Panel frame (x right, y up the housing from its bottom edge, z out of the back plane) -> model space. */
+  const panel = (p: Vec3): Vec3 => add3(rotatePoint(p, [tilt, 0, 0]), [0, lift, 0]);
+  const m = new Model(o.name, { budget: o.budget, notes: o.notes });
+  const rng = new Rng(`${m.name}/shape`);
+  const g = m.geo;
+  const CASE = "#22252A",
+    CASE_LIT = "#30343B";
+
+  g.push();
+  g.translate(0, lift, 0);
+  g.rotateX(tilt);
+  // housing and glass
+  g.box({
+    size: [W, H, depth],
+    at: [0, H / 2, depth / 2],
+    chamfer: Math.min(0.035, depth * 0.12),
+    color: CASE,
+    parts: { front: shade(CASE, 0.9), top: CASE_LIT, bevel: CASE_LIT, bottom: shade(CASE, 0.7), back: shade(CASE, 0.6) },
+    vary: 0.04,
+  });
+  const zg = depth + 0.004;
+  g.quad([-w / 2, bezel, zg], [w / 2, bezel, zg], [w / 2, bezel + h, zg], [-w / 2, bezel + h, zg], { color: "#090B10" });
+
+  // Rim of wall rock around the housing, running back into the rock face. Blocks overlap along each
+  // edge; the bottom ones are the deepest and thickest: the ledge the housing sits on.
+  const rimRock = (at: Vec3, size: Vec3, rot: Vec3) => {
+    const tone = WALL_ROCK[rng.int(0, WALL_ROCK.length - 1)];
+    g.rock({
+      size,
+      at,
+      rot,
+      points: 11,
+      jitter: 0.22,
+      flat: 0.25,
+      color: shade(tone, 0.96),
+      parts: { top: mix(tone, P.worn, 0.12), bottom: shade(tone, 0.6) },
+      vary: 0.08,
+    });
+  };
+  const zc = (depth - o.rimBack) / 2 - 0.04; // front of the rim just behind the glass
+  const along = (len: number, target: number) => (o.rim > 0 ? Math.max(2, Math.round(len / target)) : 0);
+  const nx = along(W, 1.25 * (o.rim / 0.5)),
+    ny = along(H, 1.15 * (o.rim / 0.5));
+  const reach = Math.max(o.rim, 0.2); // how far the chains climb above the housing
+  for (const [side, thick] of [
+    [1, o.rim],
+    [-1, o.rim * 1.35],
+  ] as const)
+    for (let i = 0; i < nx; i++) {
+      const x = -W / 2 + (W * (i + 0.5)) / nx + rng.jitter(0.1 * o.rim);
+      const t = thick * rng.range(0.85, 1.25);
+      rimRock(
+        [x, side > 0 ? H + t * 0.34 : -t * 0.36, zc + rng.jitter(0.06)],
+        [(W / nx) * rng.range(1.3, 1.55), t, o.rimBack + depth * 0.9],
+        [rng.jitter(6), rng.jitter(8), rng.jitter(7)],
+      );
+    }
+  for (const side of [-1, 1])
+    for (let i = 0; i < ny; i++) {
+      const y = (H * (i + 0.5)) / ny + rng.jitter(0.1 * o.rim);
+      const t = o.rim * rng.range(0.9, 1.3);
+      rimRock(
+        [side * (W / 2 + t * 0.34), y, zc + rng.jitter(0.06)],
+        [t, (H / ny) * rng.range(1.3, 1.55), o.rimBack + depth * 0.9],
+        [rng.jitter(7), rng.jitter(8), rng.jitter(6)],
+      );
+    }
+
+  // iron corner brackets with bolt heads, lapping over the bezel
+  const IRON = shade(P.metalDark, 0.85);
+  for (const sx of [-1, 1])
+    for (const sy of [0, 1]) {
+      const x = sx * (W / 2),
+        y = sy * H,
+        L = Math.min(0.75, W * 0.11),
+        t = Math.min(0.13, bezel * 0.95);
+      g.box({ size: [L, t, 0.035], at: [x - sx * (L / 2 - 0.03), y + (sy ? -t / 2 : t / 2), depth + 0.012], color: IRON, vary: 0.06 });
+      g.box({ size: [t, L, 0.035], at: [x - sx * (t / 2), y + (sy ? -(L / 2 - 0.03) : L / 2 - 0.03), depth + 0.012], color: IRON, vary: 0.06 });
+      for (const [dx, dy] of [
+        [L * 0.78, t / 2],
+        [t / 2, L * 0.78],
+        [t / 2, t / 2],
+      ] as const)
+        g.cylinder({ height: 0.03, radius: t * 0.3, sides: 6, rot: [90, 0, 0], at: [x - sx * dx, y + (sy ? -dy : dy), depth + 0.04], color: P.metal });
+    }
+  // two chains from the top edge up and back into the rock above
+  for (const sx of [-1, 1]) {
+    const x = sx * W * 0.36;
+    g.tube(
+      [
+        [x, H - 0.02, depth * 0.6],
+        [x + sx * 0.1 * (reach / 0.55), H + reach * 1.25, depth * 0.35],
+        [x + sx * 0.22 * (reach / 0.55), H + reach * 1.9, -Math.max(o.rimBack, 0.4) * 0.6],
+      ],
+      { radius: Math.max(0.018, bezel * 0.2), sides: 4, color: P.metalDark, vary: 0.08 },
+    );
+  }
+  if (o.speakers)
+    for (const s of [-1, 1]) {
+      // speaker bracketed to the rock beside the picture, tipped down toward the floor of the cave
+      g.group({ at: [s * (W / 2 + 0.62), H - 1.05, depth + 0.2], rot: [8, -s * 14, 0] }, (b) => {
+        b.box({ size: [0.66, 1.0, 0.5], chamfer: 0.03, color: "#2A2826", parts: { front: "#1C1B1A", top: "#37342F" }, vary: 0.05 });
+        b.cylinder({ height: 0.03, radius: 0.22, sides: 10, rot: [90, 0, 0], at: [0, -0.17, 0.262], color: "#4A4C4E", parts: { top: "#3A3C3E" } });
+        b.cylinder({ height: 0.03, radius: 0.1, sides: 8, rot: [90, 0, 0], at: [0, 0.27, 0.262], color: "#55585A" });
+      });
+      bar(g, [s * (W / 2 + 0.62), H - 1.05, depth - 0.05], [s * (W / 2 + 0.5), H - 1.0, -0.6], 0.07, { color: IRON, vary: 0.06 });
+    }
+  g.pop();
+
+  if (o.battery) {
+    // cable down the rock to a battery box on the floor
+    const [bx, , bz] = o.battery;
+    g.tube(
+      [
+        panel([-(W / 2 - 0.6), 0.02, depth * 0.4]),
+        panel([-(W / 2 - 0.75), -reach * 1.6, depth * 0.3]),
+        [bx + 0.25, lift * 0.45, bz * 0.45],
+        [bx + 0.1, 0.5, bz - 0.2],
+        [bx, 0.36, bz],
+      ],
+      { radius: 0.03, sides: 4, color: "#19181A", vary: 0.05 },
+    );
+    g.group({ at: [bx, 0, bz], rot: [0, 18, 0] }, (b) => {
+      const c = mix(P.oxygen, P.metalDark, 0.55);
+      b.box({ size: [0.85, 0.52, 0.5], at: [0, 0.26, 0], chamfer: 0.03, color: c, parts: { top: shade(c, 1.15), bottom: shade(c, 0.6) }, vary: 0.05 });
+      b.box({ size: [0.5, 0.05, 0.08], at: [0, 0.6, 0], color: P.metalDark });
+      for (const sx of [-1, 1]) b.box({ size: [0.05, 0.1, 0.06], at: [sx * 0.22, 0.55, 0], color: P.metalDark });
+      b.box({ size: [0.06, 0.06, 0.02], at: [0.28, 0.36, 0.255], mat: "glow", glow: 1.4, color: "#FF5A3C" });
+    });
+  }
+
+  const dir = (v: Vec3): Vec3 => r4(rotatePoint(v, [tilt, 0, 0]));
+  m.anchor("screen_center", r4(panel([0, H / 2, depth])));
+  m.light({ name: "screen", at: r4(panel([0, H / 2 - h * 0.1, depth + o.light.out])), color: "#AFC6E6", intensity: o.light.intensity, range: o.light.range });
+  m.meta = {
+    screen: {
+      center: r4(panel([0, H / 2, depth + 0.01])),
+      size: [rn(w), rn(h)],
+      normal: dir([0, 0, 1]),
+      up: dir([0, 1, 0]),
+      tilt,
+      note: "flat rectangle (model space) for the runtime picture; the GLB glass behind it is dark matte",
+    },
+    mount: {
+      lift,
+      housing: [rn(W), rn(H), depth],
+      note: "pivot = floor point under the bottom-centre of the housing's back plane; that plane lies on the rock face",
+    },
+  };
+  return m;
+}
+
+/**
+ * The main cave's screen: 9.6 x 5.4 m on the flat rock face cut into the back-left wall
+ * (tools/models/groups/caves.ts SCREEN_WALL: the face leans 0.18 m per metre = 10.204 deg).
+ */
+const WALL_SCREEN: WallScreenSpec = {
+  name: "tl_furn_wall_screen_v01",
+  w: 9.6,
+  lift: 2.0,
+  tilt: 10.204,
+  bezel: 0.14,
+  depth: 0.4,
+  rimBack: 0.8,
+  rim: 0.42,
+  speakers: true,
+  battery: [-2.6, 0, 1.4],
+  light: { intensity: 1.3, range: 12, out: 2.6 },
+  budget: 1400,
+  notes:
+    "Big wall screen bolted onto the flat rock face of the main cave's back-left wall: 9.6 x 5.4 m picture (16:9) in a dark " +
+    "housing 0.4 m deep, leaning 10.2 deg forward with the rock face, bottom edge 2 m above the floor. A rim of wall-coloured " +
+    "rock around it (ledge under it), iron corner brackets, two chains into the rock, two speakers, a cable down to a battery " +
+    "box on the floor. No frame or legs. The glass is a dark matte quad; meta.screen gives the rectangle (centre, size, " +
+    "normal, up) the runtime lays its live picture on, 6 mm in front; meta.mount explains the pivot.",
+};
+
+/**
+ * The quest board of Hang Quest: planks on the flat back wall of the rock niche (side cave "a"), where
+ * the small match screen used to hang. Pinned with paper notes; the stall sign above names it.
+ */
+function questBoard(): Model {
+  const W = 2.2,
+    H = 1.3,
+    LIFT = 0.95,
+    TILT = 10,
+    D = 0.07;
+  const m = new Model("tl_furn_quest_board_v01", {
+    budget: 850,
+    notes:
+      "Quest board for the rock niche of a side cave: 2.2 x 1.3 m of rough planks in a darker frame, bottom edge 0.95 m " +
+      "above the floor, leaning 10 deg forward with the niche wall (which leans in above 2 m). Paper notes pinned on it " +
+      "(blank: no text), three with a crimson ribbon, iron nails; bolted flat to the rock. No posts or legs. " +
+      "Pivot: floor point under the bottom-centre of the board's back plane; +Z faces the room.",
+  });
+  const rng = new Rng(`${m.name}/shape`);
+  const g = m.geo;
+  g.push();
+  g.translate(0, LIFT, 0);
+  g.rotateX(TILT);
+  // five planks, slightly uneven
+  const n = 5;
+  for (let i = 0; i < n; i++) {
+    const ph = H / n;
+    const tone = mix(P.wood, i % 2 ? P.woodLight : P.woodDark, 0.25 + rng.range(0, 0.2));
+    g.box({
+      size: [W - rng.range(0, 0.05), ph - 0.012, D],
+      at: [rng.jitter(0.012), ph * (i + 0.5), D / 2],
+      chamfer: 0.008,
+      color: tone,
+      parts: { front: shade(tone, 1.04), top: shade(tone, 1.1), bottom: shade(tone, 0.72), back: shade(tone, 0.6) },
+      vary: 0.05,
+    });
+  }
+  // frame: two uprights and two rails lapping over the planks
+  const FRAME = shade(P.woodDark, 0.9);
+  for (const sx of [-1, 1])
+    g.box({ size: [0.11, H + 0.1, 0.05], at: [sx * (W / 2 - 0.03), H / 2, D + 0.02], chamfer: 0.01, color: FRAME, parts: { front: shade(FRAME, 1.12) }, vary: 0.05 });
+  for (const y of [0.02, H - 0.02])
+    g.box({ size: [W + 0.08, 0.1, 0.045], at: [0, y, D + 0.04], chamfer: 0.01, color: FRAME, parts: { front: shade(FRAME, 1.12), top: shade(FRAME, 1.2) }, vary: 0.05 });
+  // notes: [x, y, w, h, roll, ribbon]
+  const PAPER = mix(P.white, P.worn, 0.3);
+  const notes: [number, number, number, number, number, boolean][] = [
+    [-0.78, 0.92, 0.36, 0.44, 4, true],
+    [-0.34, 0.98, 0.3, 0.3, -6, false],
+    [0.06, 0.9, 0.4, 0.5, 2, true],
+    [0.52, 1.0, 0.28, 0.26, 7, false],
+    [0.84, 0.86, 0.3, 0.4, -3, false],
+    [-0.62, 0.4, 0.34, 0.3, -5, false],
+    [-0.16, 0.36, 0.3, 0.36, 5, false],
+    [0.3, 0.38, 0.36, 0.28, -2, true],
+    [0.76, 0.36, 0.26, 0.32, 6, false],
+  ];
+  for (const [x, y, w, h, roll, ribbon] of notes) {
+    const tone = mix(PAPER, P.cardboard, rng.range(0, 0.35));
+    g.box({ size: [w, h, 0.006], at: [x, y, D + 0.008], rot: [0, 0, roll], color: tone, parts: { front: shade(tone, 1.03) }, vary: 0.03 });
+    // a few ink lines (plain bars, no text), rolled with the note
+    const lines = Math.max(2, Math.round(h / 0.11));
+    const cr = Math.cos(roll * 0.0174533),
+      sr = Math.sin(roll * 0.0174533);
+    const onNote = (u: number, v: number): Vec3 => [x + u * cr - v * sr, y + u * sr + v * cr, D + 0.0125];
+    for (let k = 0; k < lines; k++) {
+      const v = h / 2 - 0.075 - (k * (h - 0.13)) / lines;
+      const u0 = -w / 2 + 0.035,
+        u1 = u0 + w * rng.range(0.45, 0.76);
+      g.quad(onNote(u0, v - 0.007), onNote(u1, v - 0.007), onNote(u1, v + 0.007), onNote(u0, v + 0.007), { color: shade(P.woodDark, 0.7) });
+    }
+    if (ribbon) g.box({ size: [0.05, 0.13, 0.004], at: [x + w / 2 - 0.06, y - h / 2 + 0.04, D + 0.014], rot: [0, 0, roll - 8], color: P.crimson, vary: 0.05 });
+    // nail
+    g.cylinder({ height: 0.02, radius: 0.014, sides: 6, at: [x, y + h / 2 - 0.035, D + 0.02], rot: [90, 0, 0], color: P.metalDark });
+  }
+  g.pop();
+  m.meta = { board: { width: W, height: H, lift: LIFT, tilt: TILT }, mount: { lift: LIFT, note: "hangs on the rock, no posts" } };
+  return m;
+}
+
+/**
+ * Rough counter: three top planks on corner posts, a front apron and end panels of upright
+ * boards, open at the back (host side) with a shelf. Centred on x = 0, front at z = zc + depth/2.
+ */
+function stallCounter(g: MeshBuilder, rng: Rng, o: { width: number; depth: number; height: number; zc: number }): void {
+  const { width: W, depth: D, height: H, zc } = o;
+  const topT = 0.045,
+    over = 0.045;
+  const bodyH = H - topT;
+  const zF = zc + D / 2 - over,
+    zB = zc - D / 2 + over,
+    xE = W / 2 - over;
+  const frame = wood(mix(WOOD_TOP, WOOD, 0.45), 0.06);
+  for (const sx of [-1, 1]) for (const z of [zF - 0.035, zB + 0.035]) g.box({ size: [0.07, bodyH, 0.07], at: [sx * (xE - 0.035), bodyH / 2, z], ...frame });
+  // front apron: upright boards of uneven length
+  const n = Math.round((2 * xE - 0.14) / 0.25);
+  const bw = (2 * xE - 0.14) / n;
+  for (let i = 0; i < n; i++) {
+    const drop = rng.range(0, 0.05);
+    g.box({
+      size: [bw - 0.012, bodyH - 0.03 - drop, 0.024],
+      at: [-xE + 0.07 + bw * (i + 0.5), (bodyH - 0.03 - drop) / 2 + 0.03 + drop, zF - 0.02],
+      ...wood(shade(mix(WOOD, WOOD_PANEL, rng.range(0.2, 0.8)), 1 + rng.jitter(0.05)), 0.05),
+    });
+  }
+  // end panels: two boards each
+  const ew = (zF - zB - 0.14) / 2;
+  for (const sx of [-1, 1])
+    for (let i = 0; i < 2; i++)
+      g.box({
+        size: [0.024, bodyH - 0.04 - rng.range(0, 0.04), ew - 0.012],
+        at: [sx * (xE - 0.02), (bodyH - 0.04) / 2 + 0.03, zB + 0.07 + ew * (i + 0.5)],
+        ...wood(shade(mix(WOOD, WOOD_PANEL, 0.55), 1 + rng.jitter(0.06)), 0.05),
+      });
+  // back: shelf and a low stretcher
+  g.plank({ size: [2 * xE - 0.1, 0.028, zF - zB - 0.1], at: [0, 0.42, (zF + zB) / 2], jitter: 0.05, ...wood(WOOD_DARK, 0.06) });
+  bar(g, [-xE + 0.05, 0.1, zB + 0.035], [xE - 0.05, 0.1, zB + 0.035], 0.045, wood(WOOD_DARK, 0.06));
+  // top: three long planks with a little overhang
+  const gapT = 0.008;
+  const pw = (D - 2 * gapT) / 3;
+  for (let k = 0; k < 3; k++)
+    g.plank({
+      size: [W + rng.jitter(0.04), topT, pw],
+      at: [rng.jitter(0.015), bodyH + topT / 2, zc - D / 2 + pw / 2 + k * (pw + gapT)],
+      jitter: 0.08,
+      ...wood(shade(WOOD_TOP, 1 + rng.jitter(0.06)), 0.05),
+    });
+}
+
+/** Tattered cloth runner laid over the counter top and hanging down its front. */
+function clothRunner(
+  g: MeshBuilder,
+  rng: Rng,
+  o: { x: number; width: number; top: number; zFront: number; lay: number; drop: number; color: Color; patch: Color },
+): void {
+  const n = 4;
+  const x0 = o.x - o.width / 2;
+  const zf = o.zFront + 0.012;
+  const xs = Array.from({ length: n + 1 }, (_, i) => x0 + (o.width * i) / n + (i > 0 && i < n ? rng.jitter(0.015) : 0));
+  const bot = xs.map((_, i) => o.top - o.drop * (i === 0 || i === n ? 0.82 : 1) * (1 + rng.jitter(0.14)));
+  for (let i = 0; i < n; i++) {
+    const c = shade(o.color, 1 + rng.jitter(0.05));
+    const y = o.top + 0.004;
+    // on the top, then over the edge
+    g.quad([xs[i], y, o.zFront - o.lay], [xs[i], y, zf], [xs[i + 1], y, zf], [xs[i + 1], y, o.zFront - o.lay], { mat: "cloth", color: shade(o.color, 1.04 + rng.jitter(0.03)) });
+    g.quad([xs[i], y, zf], [xs[i] + rng.jitter(0.01), bot[i], zf + 0.012], [xs[i + 1] + rng.jitter(0.01), bot[i + 1], zf + 0.012], [xs[i + 1], y, zf], { mat: "cloth", color: c });
+  }
+  // a sewn-on patch, a little crooked, on the hanging part
+  const px = o.x + o.width * 0.14,
+    py = o.top - o.drop * 0.5,
+    pw = o.width * 0.3,
+    ph = o.drop * 0.34;
+  g.extrude(rect(-pw / 2, -ph / 2, pw / 2, ph / 2), { depth: 0, at: [px, py, zf + 0.016], rot: [0, 0, rng.jitter(7)], mat: "cloth", color: o.patch });
+}
+
+/** Plain short-sleeved shirt outline hung by the shoulders (y = 0 at the shoulder line, 0.54 x 0.6 m). */
+const SHIRT: Vec2[] = [
+  [-0.16, 0.0],
+  [-0.06, 0.02],
+  [0.0, -0.035],
+  [0.06, 0.02],
+  [0.16, 0.0],
+  [0.27, -0.12],
+  [0.2, -0.19],
+  [0.15, -0.14],
+  [0.15, -0.6],
+  [-0.15, -0.6],
+  [-0.15, -0.14],
+  [-0.2, -0.19],
+  [-0.27, -0.12],
+];
+const SLEEVE = (s: number): Vec2[] => [
+  [s * 0.16, 0.0],
+  [s * 0.27, -0.12],
+  [s * 0.2, -0.19],
+  [s * 0.15, -0.14],
+  [s * 0.105, -0.04],
+];
+/** A plain garment facing +Z (no logo, no text): body, optional sleeve / side-stripe / hem colours. */
+function garment(g: MeshBuilder, o: { body: Color; sleeves?: Color; sides?: Color; band?: Color }): void {
+  g.extrude(SHIRT, { depth: 0, mat: "cloth", color: o.body, vary: 0.04 });
+  if (o.sleeves) for (const s of [-1, 1]) g.extrude(SLEEVE(s), { depth: 0, at: [0, 0, 0.004], mat: "cloth", color: o.sleeves });
+  if (o.sides) for (const s of [-1, 1]) g.extrude(rect(s * 0.125 - 0.025, -0.58, s * 0.125 + 0.025, -0.17), { depth: 0, at: [0, 0, 0.004], mat: "cloth", color: o.sides });
+  if (o.band) g.extrude(rect(-0.15, -0.6, 0.15, -0.545), { depth: 0, at: [0, 0, 0.004], mat: "cloth", color: o.band });
+}
+
+/** Stack of folded clothes: slabs of the given colours, bottom centre at `at`. */
+function foldedStack(g: MeshBuilder, rng: Rng, at: Vec3, colors: Color[], size: Vec2 = [0.3, 0.23]): void {
+  let y = at[1];
+  for (const c of colors) {
+    const t = rng.range(0.036, 0.05);
+    g.box({
+      size: [size[0] * (1 + rng.jitter(0.05)), t, size[1] * (1 + rng.jitter(0.05))],
+      at: [at[0] + rng.jitter(0.012), y + t / 2, at[2] + rng.jitter(0.012)],
+      rot: [0, rng.jitter(7), 0],
+      color: c,
+      parts: { top: shade(c, 1.06), bottom: shade(c, 0.75) },
+      vary: 0.04,
+    });
+    y += t + 0.002;
+  }
+}
+
+function stallCheckin(): Model {
+  const name = "tl_furn_stall_checkin_v01";
+  const m = new Model(name, {
+    budget: 1500,
+    notes:
+      "Check-in stall, faces +Z (the visitor): rough plank counter 1.8 x 0.68 x 0.9 m with a tattered crimson runner, " +
+      "an open ledger and pencil, a hand bell, a stamp with its ink pad and a box of cards; behind it (z = -1.05) the " +
+      "stall sign on two posts, from which two booms carry a small patched crimson awning over the host's place " +
+      "(root of the host ~0.62 m behind the counter centre). Anchors: host, lantern (counter top, left end), " +
+      "counter_top. meta.sign as on tl_sign_stall_*; meta.postColliders = the two sign posts (the placement table adds one " +
+      "convex footprint around counter + host). Pivot = counter centre, not the bounds centre.",
+  });
+  const g = m.geo;
+  const rng = new Rng(`${name}/shape`);
+  const H = 0.9,
+    W = 1.8,
+    D = 0.68,
+    zc = 0.03;
+  stallCounter(g, rng, { width: W, depth: D, height: H, zc });
+  clothRunner(g, rng, { x: 0.12, width: 0.74, top: H, zFront: zc + D / 2, lay: 0.2, drop: 0.5, color: mix(P.crimson, P.crimsonFaded, 0.5), patch: P.worn });
+
+  // open ledger + pencil
+  g.group({ at: [-0.36, H, 0.0], rot: [0, 9, 0] }, (b) => {
+    b.box({ size: [0.46, 0.014, 0.32], at: [0, 0.007, 0], color: P.crimsonDark, vary: 0.04 });
+    for (const s of [-1, 1]) {
+      b.box({ size: [0.212, 0.026, 0.29], at: [s * 0.109, 0.026, 0], rot: [0, 0, s * 3.5], color: P.paper, parts: { top: shade(P.paper, 1.05), side: shade(P.paper, 0.8) }, vary: 0.03 });
+      // ruled lines (marks only, not lettering)
+      for (let i = 0; i < 4; i++) {
+        const z = -0.1 + i * 0.058,
+          x0 = s * 0.03,
+          x1 = s * (0.12 + rng.range(0.02, 0.07)),
+          y = 0.0405 + 0.0035;
+        b.quad([x0, y, z], [x0, y, z + 0.012], [x1, y + s * 0.0001, z + 0.012], [x1, y, z], { color: mix(P.shadow, P.paper, 0.35) });
+      }
+    }
+    b.tube(
+      [
+        [0.02, 0.05, 0.11],
+        [0.17, 0.047, 0.05],
+      ],
+      { radius: 0.007, sides: 4, color: P.torch, parts: { cap: P.shadow } },
+    );
+  });
+  // hand bell
+  const brass = mix(P.torch, P.rust, 0.55);
+  g.cylinder({ height: 0.075, radius: 0.058, radiusTop: 0.026, sides: 6, at: [0.3, H + 0.0375, -0.12], color: brass, parts: { top: shade(brass, 1.15) }, vary: 0.06 });
+  g.cylinder({ height: 0.07, radius: 0.013, sides: 5, at: [0.3, H + 0.11, -0.12], ...wood(WOOD_DARK, 0.04) });
+  // stamp and ink pad
+  g.box({ size: [0.13, 0.022, 0.095], at: [0.56, H + 0.011, -0.16], rot: [0, -14, 0], color: P.metalDark, parts: { top: P.crimsonDark } });
+  g.cylinder({ height: 0.025, radius: 0.03, sides: 6, at: [0.66, H + 0.0125, -0.02], color: P.shadow });
+  g.cylinder({ height: 0.075, radius: 0.017, radiusTop: 0.022, sides: 6, at: [0.66, H + 0.0625, -0.02], ...wood(WOOD_TOP, 0.05) });
+  // box of cards
+  g.group({ at: [0.66, H, 0.2], rot: [0, 12, 0] }, (b) => {
+    b.box({ size: [0.2, 0.075, 0.13], at: [0, 0.0375, 0], ...wood(mix(WOOD, WOOD_PANEL, 0.4), 0.06) });
+    for (let i = 0; i < 4; i++)
+      b.box({ size: [0.16, 0.085, 0.006], at: [rng.jitter(0.008), 0.075, -0.04 + i * 0.027], rot: [rng.jitter(7), 0, 0], color: i === 2 ? mix(P.crimsonFaded, P.paper, 0.3) : shade(P.paper, 1 + rng.jitter(0.05)) });
+  });
+
+  // sign behind the host; its posts carry the awning booms
+  const zS = -1.05;
+  const f = signFrame(g, rng, { width: 2.3, z: zS, rag: 1 });
+  const zTip = 0.2,
+    yRear = 2.19,
+    yTip = 2.05;
+  for (const s of [-1, 1]) {
+    const x = s * (2.3 / 2 + 0.16);
+    g.tube(
+      [
+        [x, yRear + 0.02, zS - 0.14],
+        [x + s * 0.02, yTip, zTip + 0.06],
+      ],
+      { radius: 0.034, sides: 6, ...wood(mix(WOOD, WOOD_DARK, 0.2), 0.06) },
+    );
+    g.cylinder({ height: 0.09, radius: 0.07, sides: 6, at: [x, yRear + 0.005, zS], color: ROPE, vary: 0.06 });
+    // stay rope from the post top to the boom tip
+    g.tube(
+      [
+        [x, f.postTop - 0.06, zS + 0.03],
+        [x + s * 0.02, yTip + 0.03, zTip],
+      ],
+      { radius: 0.009, sides: 4, color: ROPE, vary: 0.05 },
+    );
+  }
+  const aw = 2.3 + 0.26,
+    ad = zTip - (zS + 0.04);
+  const slope = (yRear - yTip) / ad;
+  const sagA = 0.1;
+  g.cloth({
+    size: [aw, ad],
+    seg: [8, 4],
+    pin: "x",
+    sag: sagA,
+    noise: 0.012,
+    tear: 0.3,
+    tearEdges: "+z",
+    patches: 2,
+    patchColor: [TARP_WORN, mix(TARP_WORN, P.wornDark, 0.45)],
+    displace: (_x, z) => -slope * z,
+    at: [0, (yRear + yTip) / 2 + 0.035, (zS + 0.04 + zTip) / 2],
+    color: (fc) => (fc.center[0] < -0.45 ? shade(mix(TARP, P.crimson, 0.3), 0.92) : fc.center[0] > 0.7 ? mix(TARP, P.worn, 0.12) : TARP),
+    vary: 0.05,
+  });
+  // tatters hanging from the front edge
+  for (let i = 0; i < 7; i++) {
+    const u = (i + 0.5) / 7;
+    const x = -aw / 2 + aw * u + rng.jitter(0.05);
+    const y = yTip + 0.035 - sagA * (1 - (2 * u - 1) ** 2);
+    const w = rng.range(0.09, 0.2),
+      len = rng.range(0.07, 0.2);
+    g.quad([x - w / 2, y, zTip], [x - w / 2 + rng.jitter(0.02), y - len, zTip + 0.02], [x + w / 2 + rng.jitter(0.02), y - len * rng.range(0.5, 1), zTip + 0.02], [x + w / 2, y, zTip], {
+      mat: "cloth",
+      color: shade(i % 3 === 1 ? TARP_WORN : TARP, 1 + rng.jitter(0.06)),
+    });
+  }
+
+  m.anchor("host", [0, 0, -0.62]);
+  m.anchor("lantern", [-0.74, H, 0.14]);
+  m.anchor("counter_top", [0, H, zc]);
+  m.anchor("board_center", [0, f.faces[0].center[1], zS]);
+  m.meta = {
+    sign: signMeta(f),
+    counter: { width: W, depth: D, height: H, centerZ: zc },
+    awning: { front: zTip, rear: zS + 0.04, height: [yTip, yRear] },
+    postColliders: postColliders(f),
+  };
+  return m;
+}
+
+function stallApparel(): Model {
+  const name = "tl_furn_stall_apparel_v01";
+  const m = new Model(name, {
+    budget: 1500,
+    notes:
+      "Apparel stall, faces +Z: plank counter 1.9 x 0.7 x 0.9 m with a worn-white runner, three stacks of folded " +
+      "clothes and a small keyboard; behind it (z = -1.15) the stall sign whose posts also carry a clothes rail " +
+      "with four plain garments on wooden hangers (crimson jersey, worn-white tee with black sleeves, black tee, " +
+      "faded crimson tee: no logos, no text); a cross-pole stand with a display jersey at the left end and a crate of " +
+      "folded stock at the right. Anchors: host, counter_top. meta.sign as on tl_sign_stall_*; meta.postColliders = the " +
+      "two sign posts (the placement table adds one convex footprint around counter + host). Pivot = counter centre.",
+  });
+  const g = m.geo;
+  const rng = new Rng(`${name}/shape`);
+  const H = 0.9,
+    W = 1.9,
+    D = 0.7,
+    zc = 0.03;
+  stallCounter(g, rng, { width: W, depth: D, height: H, zc });
+  clothRunner(g, rng, { x: -0.3, width: 0.66, top: H, zFront: zc + D / 2, lay: 0.24, drop: 0.42, color: mix(P.charcoal, P.earth, 0.25), patch: mix(P.worn, P.wornDark, 0.3) });
+
+  const red = mix(P.crimson, P.crimsonFaded, 0.3),
+    faded = mix(P.crimsonFaded, P.worn, 0.18),
+    white = mix(P.worn, P.white, 0.5),
+    black = mix(P.black, P.charcoal, 0.4);
+  foldedStack(g, rng, [-0.62, H + 0.006, 0.0], [red, white, black]);
+  foldedStack(g, rng, [0.56, H, -0.06], [white, red, white, faded]);
+  foldedStack(g, rng, [0.6, H, 0.19], [black, red], [0.26, 0.18]);
+  // small keyboard (the shop's hand-held prop): dark slab, lighter key rows
+  g.group({ at: [0.08, H, 0.14], rot: [0, -8, 0] }, (b) => {
+    b.box({ size: [0.36, 0.022, 0.125], at: [0, 0.011, 0], color: P.charcoal, vary: 0.04 });
+    for (let r = 0; r < 3; r++) {
+      const z = -0.04 + r * 0.036;
+      b.quad([-0.165, 0.0235, z], [-0.165, 0.0235, z + 0.024], [0.165 - r * 0.02, 0.0235, z + 0.024], [0.165 - r * 0.02, 0.0235, z], { color: mix(P.metalDark, P.plastic, 0.3 + r * 0.08) });
+    }
+  });
+
+  // sign + clothes rail on the same posts
+  const zS = -1.15;
+  const f = signFrame(g, rng, { width: 2.3, z: zS, rag: -1 });
+  const xp = 2.3 / 2 + 0.16;
+  const railY = 1.86,
+    railZ = zS + 0.085;
+  const railAt = (x: number): Vec3 => [x, railY - 0.03 * (1 - (x / xp) ** 2) + (x / xp) * 0.012, railZ];
+  g.tube([railAt(-xp - 0.12), railAt(0), railAt(xp + 0.1)], { radius: 0.028, sides: 6, ...wood(mix(WOOD_TOP, WOOD, 0.5), 0.06) });
+  for (const s of [-1, 1]) g.cylinder({ height: 0.09, radius: 0.07, sides: 6, at: [s * xp, railY, zS + 0.02], color: ROPE, vary: 0.06 });
+  const rack: { x: number; body: Color; sleeves?: Color; sides?: Color; band?: Color }[] = [
+    { x: -0.86, body: red, sides: P.worn },
+    { x: -0.29, body: white, sleeves: black, band: red },
+    { x: 0.29, body: black, sleeves: red },
+    { x: 0.86, body: faded, sleeves: white },
+  ];
+  for (const it of rack) {
+    const p = railAt(it.x);
+    const yaw = rng.jitter(11),
+      roll = rng.jitter(3);
+    g.group({ at: [p[0], p[1] - 0.028, p[2]], rot: [0, yaw, roll] }, (b) => {
+      // hanger: hook + shoulder bar
+      b.tube(
+        [
+          [0, 0.03, 0],
+          [0, -0.05, 0],
+        ],
+        { radius: 0.008, sides: 4, color: P.metalDark },
+      );
+      b.tube(
+        [
+          [-0.2, -0.085, 0],
+          [0, -0.05, 0],
+          [0.2, -0.085, 0],
+        ],
+        { radius: 0.012, sides: 4, ...wood(WOOD_TOP, 0.05) },
+      );
+      b.group({ at: [0, -0.062, 0.014], rot: [-3, 0, 0] }, (c) => garment(c, it));
+    });
+  }
+
+  // display stand at the left end: cross foot, pole, shoulder bar with a jersey
+  g.group({ at: [-1.32, 0, 0.3], rot: [0, 22, 0] }, (b) => {
+    const st = wood(mix(WOOD, WOOD_DARK, 0.25), 0.06);
+    bar(b, [-0.24, 0.03, 0], [0.24, 0.03, 0], 0.055, st);
+    bar(b, [0, 0.035, -0.22], [0, 0.035, 0.22], 0.055, st);
+    pole(b, [0, 0.05, 0], [0.01, 1.5, 0], [0.034, 0.028], st, 6, 20);
+    bar(b, [-0.2, 1.41, 0], [0.2, 1.41, 0], 0.04, st);
+    b.group({ at: [0, 1.435, 0.03] }, (c) => garment(c, { body: red, sleeves: black, sides: P.worn }));
+    b.group({ at: [0, 1.435, -0.03], rot: [0, 180, 0] }, (c) => garment(c, { body: shade(red, 0.9), sleeves: black }));
+  });
+  // crate of stock at the right end
+  g.group({ at: [1.3, 0, 0.12], rot: [0, -14, 0] }, (b) => {
+    const cw = 0.5,
+      ch = 0.44,
+      cd = 0.42;
+    for (let k = 0; k < 3; k++)
+      b.box({ size: [cw - (k === 1 ? 0.05 : 0.04), ch / 3, cd - (k === 1 ? 0.05 : 0.04)], at: [0, ch / 6 + (k * ch) / 3, 0], ...wood(shade(WOOD_PANEL, 1 + rng.jitter(0.08)), 0.05) });
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) b.box({ size: [0.06, ch + 0.01, 0.06], at: [sx * (cw / 2 - 0.03), (ch + 0.01) / 2, sz * (cd / 2 - 0.03)], ...wood(mix(WOOD_TOP, WOOD, 0.35), 0.06) });
+    foldedStack(b, rng, [-0.04, ch, 0.0], [faded, white, red], [0.34, 0.26]);
+  });
+
+  m.anchor("host", [0, 0, -0.6]);
+  m.anchor("counter_top", [0, H, zc]);
+  m.anchor("board_center", [0, f.faces[0].center[1], zS]);
+  m.meta = {
+    sign: signMeta(f),
+    counter: { width: W, depth: D, height: H, centerZ: zc },
+    postColliders: postColliders(f),
+  };
+  return m;
+}
+
+/* =========================================================================================
  * Group entry
  * ========================================================================================= */
 
@@ -1514,5 +2389,12 @@ export default function build(): Model[] {
     clothesline(),
     ropeCordon(),
     rugWorn(),
+    stallSign("tl_sign_stall_v01", 2.3, -1),
+    stallSign("tl_sign_stall_wide_v01", 3.0, 1),
+    caveGate(),
+    wallScreen(WALL_SCREEN),
+    questBoard(),
+    stallCheckin(),
+    stallApparel(),
   ];
 }

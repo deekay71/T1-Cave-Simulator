@@ -1,6 +1,14 @@
 # Dedicated shrine prototype — 2026-11-10
 
-> Implementation snapshot, not a current deployment report. Read [Opus visual handoff](opus-visual-handoff.md) first. Later stall work supersedes the old campfire shrine portal: the current entrance is at the back wall, (0, -15.8).
+> Implementation snapshot, not a current deployment report. Read [Opus visual handoff](opus-visual-handoff.md) first.
+>
+> **Đã thay thế (2026-11-11), đọc phần này trước:**
+> - Cửa vào không còn ở cạnh lửa trại (4, 4) hay (0, −15,8): hang lớn đã rộng ra, cửa điện thờ nằm trong hầm cửa hang phía sau, khung cửa ở (0, −22,45), chỗ đứng bấm E ở (0, −19,9); về hang thì đứng lại ở (0, −17,7).
+> - Đảo điện thờ dời từ (48, 0) sang **(120, 0)** để tránh hai hang nhỏ phía đông; `isInShrine` = x > 80. Hình học khác (ghế 3 m / 5 m, đi được r 8) giữ nguyên.
+> - Điện thờ giờ là một **hang đá** (grotto) dựng từ GLB, không còn là hình khối procedural: tượng thần (idol) trên bệ, vòng dây thừng, cờ, nến, ghế đá, cổng gỗ; cửa phía hang lớn là cửa gỗ hai cánh có biển "ĐIỆN THỜ FAKER" (`apps/web/src/world/shrine.ts`). Nó dùng lại vỏ hang cũ `environment/tl_env_cave_*`, nên các GLB đó phải ở lại repo.
+> - **2026-11-12:** thêm vòng ghế thứ ba. `SHRINE_SEATS` giờ có **35 ghế**: 8 ghế ở 3 m, 12 ghế ở 5 m và 15 ghế vòng rìa ở 7 m (lưới 18 ô cách nhau 20°, bỏ trống 3 ô phía lối vào +Z). Tượng Faker đổi sang tư thế **"Silent"** (ngón trỏ tay phải đặt lên môi, tay trái buông), không còn cầm cốc; **cúp vô địch** là model riêng `tl_env_shrine_trophy_v01` (phát sáng, không logo/chữ) lơ lửng ở neo `trophy` (y = 3,75 m) trên đầu tượng, xoay 36°/s, nhấp nhô ±7 cm, kèm một đèn omni xanh nhạt nhịp thở. Vùng chặn camera của tượng cao lên 4,9 m.
+> - Tượng Faker và bốn chủ sạp là **chân dung cách điệu low-poly** của năm tuyển thủ theo yêu cầu của người dùng ngày 2026-11-11 (xem `docs/art-direction.md`), không logo, không dấu nhà tài trợ; câu "no claim of likeness" bên dưới là của bản cũ.
+> - Camera trên đảo vẫn là hình trụ quanh tâm đảo (r 14); trong hang là hợp các phòng (`docs/cameras-and-layout.md`).
 
 ## Player flow
 

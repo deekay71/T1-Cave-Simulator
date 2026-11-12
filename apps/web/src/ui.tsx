@@ -8,10 +8,10 @@ import {
   type MouseEvent,
 } from "react";
 import { createRoot } from "react-dom/client";
-import { ROOM_CAPACITY } from "@te-liet/shared";
+import { ROOM_CAPACITY, SCREEN_SPOT } from "@te-liet/shared";
 import { StallPanel, RankPanel, ResidentHUD } from "./stalls/StallPanel.js";
 import { CAVE_STALLS, CAVE_STALL_RADIUS, stallApproach, type CaveStallId } from "../../../packages/shared/src/stalls.js";
-import { SHRINE_PORTAL } from "../../../packages/shared/src/shrine.js";
+import { SHRINE_PORTAL, isInShrine } from "../../../packages/shared/src/shrine.js";
 import { ShrinePanel, type ShrineView, type ShrineAction } from "./activities/ShrinePanel.js";
 import { AltarPanel, type AltarView } from "./activities/AltarPanel.js";
 import { MatchPanel } from "./matches/MatchPanel.js";
@@ -35,6 +35,8 @@ type Snapshot = {
   prompt: { id: string; name: string } | null;
   /** API yêu cầu mã mời (close test): hiện ô nhập mã trong form vào hang. */
   needInvite: boolean;
+  /** Thông báo dưới nút đăng nhập (ví dụ: Google chưa mở). */
+  loginNotice: string;
 };
 let state: Snapshot = {
   connected: false,
@@ -48,6 +50,7 @@ let state: Snapshot = {
   destination: null,
   prompt: null,
   needInvite: false,
+  loginNotice: "",
 };
 
 /**
@@ -149,6 +152,8 @@ const MOVES: readonly [key: string, label: string][] = [
 ];
 export type Actions = {
   join: (name: string, invite: string) => void;
+  /** Nút Google ở màn đăng nhập. Chưa có đăng nhập Google thật: chỉ báo qua ui.loginNotice. */
+  google: () => void;
   /** Gửi chat: 0 khi đã gửi, nếu không thì số ms phải chờ (giới hạn tần suất của khách). */
   chat: (text: string) => number;
   emote: (name: EmoteName) => void;
@@ -372,6 +377,135 @@ function LeaveButton({ leave }: { leave: () => void }) {
   );
 }
 
+/** Chữ G bốn màu, vẽ tay bằng bốn cung tròn và một thanh ngang. */
+function GoogleMark() {
+  return (
+    <svg className="slab-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" strokeWidth="4.2">
+      <path d="M18.8 7.24A8.3 8.3 0 0 0 4.81 7.85" stroke="#EA4335" />
+      <path d="M4.81 7.85A8.3 8.3 0 0 0 5.2 16.76" stroke="#FBBC05" />
+      <path d="M5.2 16.76A8.3 8.3 0 0 0 18.8 16.76" stroke="#34A853" />
+      <path d="M18.8 16.76A8.3 8.3 0 0 0 20.3 12" stroke="#4285F4" />
+      <path d="M12 12H21.6" stroke="#4285F4" />
+    </svg>
+  );
+}
+function GamepadIcon() {
+  return (
+    <svg className="slab-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path
+        fill="currentColor"
+        fillRule="evenodd"
+        d="M7.2 6h9.6c2.5 0 4.2 1.7 4.7 4.3l.9 5.1c.3 1.9-.8 3.3-2.4 3.3-1 0-1.8-.5-2.5-1.3L16.2 16H7.8l-1.3 1.4c-.7.8-1.5 1.3-2.5 1.3-1.6 0-2.7-1.4-2.4-3.3l.9-5.1C3 7.7 4.7 6 7.2 6zM7 9v1.6H5.4v1.8H7V14h1.8v-1.6h1.6v-1.8H8.8V9zM15.3 12.7a1.2 1.2 0 1 0 0 2.4 1.2 1.2 0 0 0 0-2.4zM17.8 9.7a1.2 1.2 0 1 0 0 2.4 1.2 1.2 0 0 0 0-2.4z"
+      />
+    </svg>
+  );
+}
+
+/**
+ * Màn đăng nhập (design/concepts/login-low-poly): tựa game bằng chữ + CSS, hai phiến nút. "Chơi thử"
+ * mở ngay tại chỗ bước nhập tên (và mã mời khi API đòi) rồi vào hang như trước; "Google" chưa có
+ * đăng nhập thật nên chỉ gọi actions.google() để hiện thông báo. Luôn được gắn (ẩn khi đã vào hang)
+ * để tên, mã mời và bước đang mở còn nguyên khi rời hang quay lại.
+ */
+function LoginPanel({ s, actions }: { s: Snapshot; actions: Actions }) {
+  const [name, setName] = useState("Người trong hang");
+  const [invite, setInvite] = useState(initialInvite);
+  const [guest, setGuest] = useState(false);
+  const nameRef = useRef<HTMLInputElement>(null);
+  const guestRef = useRef<HTMLButtonElement>(null);
+  const wasGuest = useRef(false);
+  // mở bước nhập tên: con trỏ vào ô tên (chọn sẵn chữ); quay lại: focus về nút Chơi thử
+  useEffect(() => {
+    if (guest) {
+      nameRef.current?.focus();
+      nameRef.current?.select();
+    } else if (wasGuest.current) guestRef.current?.focus();
+    wasGuest.current = guest;
+  }, [guest]);
+  if (s.connected) return null;
+  return (
+    <section className={guest ? "login guest" : "login"} aria-labelledby="login-title">
+      <h1 id="login-title" className="login-title">
+        <span className="login-title-main">Tê Liệt</span>
+        <span className="login-title-sub">Cave Simulator</span>
+        <svg className="login-brush" viewBox="0 0 300 30" aria-hidden="true" focusable="false">
+          <path d="M6 15 C60 5 150 2 292 8 C230 8 150 11 96 17 C150 14 220 14 262 17 C190 17 120 21 62 27 C96 20 60 19 6 15Z" />
+          <path d="M20 24 C70 17 120 15 176 15 C130 19 80 23 34 29Z" />
+        </svg>
+      </h1>
+      {guest ? (
+        <form
+          className="login-guest"
+          onSubmit={(e) => {
+            e.preventDefault();
+            actions.join(name, invite);
+          }}
+          onKeyDown={(e) => {
+            if (e.key !== "Escape" || s.busy) return;
+            e.stopPropagation();
+            setGuest(false);
+          }}
+        >
+          <label htmlFor="name">Tên trong hang</label>
+          <input
+            ref={nameRef}
+            id="name"
+            maxLength={24}
+            autoComplete="nickname"
+            enterKeyHint="go"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+          />
+          {(s.needInvite || invite !== "") && (
+            <>
+              <label htmlFor="invite">Mã mời</label>
+              <input
+                id="invite"
+                maxLength={64}
+                autoComplete="off"
+                value={invite}
+                onChange={(e) => setInvite(e.target.value)}
+                required={s.needInvite}
+              />
+            </>
+          )}
+          <button className="slab slab-crimson" disabled={s.busy}>
+            <span>{s.busy ? "Đang tìm chỗ…" : "Vào hang →"}</span>
+          </button>
+          <button type="button" className="login-back" disabled={s.busy} onClick={() => setGuest(false)}>
+            ← Quay lại
+          </button>
+        </form>
+      ) : (
+        <div className="login-actions">
+          <button type="button" className="slab slab-stone" aria-describedby="login-notice" onClick={actions.google}>
+            <GoogleMark />
+            <span>Google</span>
+            <span className="slab-tag">Sắp có</span>
+          </button>
+          <button
+            ref={guestRef}
+            type="button"
+            className="slab slab-crimson"
+            onClick={() => {
+              ui.set({ loginNotice: "" });
+              setGuest(true);
+            }}
+          >
+            <GamepadIcon />
+            <span>Chơi thử</span>
+          </button>
+        </div>
+      )}
+      <p id="login-notice" className="login-notice" role="status" aria-live="polite">
+        {guest ? "" : s.loginNotice}
+      </p>
+      <small aria-live="polite">{s.status}</small>
+    </section>
+  );
+}
+
 export function mountUI(actions: Actions) {
   function Overlay() {
     const s = useSyncExternalStore((cb) => {
@@ -388,16 +522,18 @@ export function mountUI(actions: Actions) {
       return () => { if (previous?.isConnected) previous.focus(); };
     }, [s.panel]);
     const isStall = CAVE_STALLS.some(stall => stall.id === s.panel);
-    const destination = s.destination === "altar" ? {id:"altar",name:"Điện thờ",...SHRINE_PORTAL} : CAVE_STALLS.find(stall=>stall.id===s.destination);
-    const target = destination && (destination.id === "altar" ? destination : stallApproach(destination as (typeof CAVE_STALLS)[number]));
-    const [name, setName] = useState("Người trong hang");
-    const [invite, setInvite] = useState(initialInvite);
+    const destination = s.destination === "altar" ? {id:"altar",name:"Điện thờ",...SHRINE_PORTAL} : s.destination === "screen" ? {id:"screen",name:"Màn hình lớn",...SCREEN_SPOT} : CAVE_STALLS.find(stall=>stall.id===s.destination);
+    const target = destination && (destination.id === "altar" || destination.id === "screen" ? destination : stallApproach(destination as (typeof CAVE_STALLS)[number]));
     return (
       <>
-        <header>
-          <div className="brand">
-            TÊ LIỆT<span>HANG TRÚ THUA</span>
-          </div>
+        <header className={s.connected ? undefined : "at-login"}>
+          {s.connected ? (
+            <div className="brand">
+              TÊ LIỆT<span>HANG TRÚ THUA</span>
+            </div>
+          ) : (
+            <span />
+          )}
           <div className="header-right">
             <div className="presence">
               <i />
@@ -408,53 +544,7 @@ export function mountUI(actions: Actions) {
             {s.connected && <LeaveButton leave={actions.leave} />}
           </div>
         </header>
-        {!s.connected && (
-          <section className="welcome">
-            <p className="eyebrow">THUA THÌ VỀ HANG.</p>
-            <h1>
-              Ở đây,
-              <br />
-              không ai hỏi tỉ số.
-            </h1>
-            <p>
-              Một đốm lửa. Vài người cùng cảnh.
-              <br />
-              Ngồi lại một chút rồi tính.
-            </p>
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                actions.join(name, invite);
-              }}
-            >
-              <label htmlFor="name">Tên trong hang</label>
-              <input
-                id="name"
-                maxLength={24}
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-              />
-              {(s.needInvite || invite !== "") && (
-                <>
-                  <label htmlFor="invite">Mã mời</label>
-                  <input
-                    id="invite"
-                    maxLength={64}
-                    autoComplete="off"
-                    value={invite}
-                    onChange={(e) => setInvite(e.target.value)}
-                    required={s.needInvite}
-                  />
-                </>
-              )}
-              <button disabled={s.busy}>
-                {s.busy ? "Đang tìm chỗ…" : "Vào hang →"}
-              </button>
-            </form>
-            <small aria-live="polite">{s.status}</small>
-          </section>
-        )}
+        <LoginPanel s={s} actions={actions} />
         {s.connected && (
           <>
             <ResidentHUD />
@@ -471,7 +561,7 @@ export function mountUI(actions: Actions) {
                 {!touch && <kbd>E</kbd>} Vào {s.prompt.name}
               </button>
             )}
-            {s.position.x > 25 && !s.panel && <div className={s.shrineSeat ? "shrine-quick seated" : "shrine-quick"} role="group" aria-label="Thao tác điện thờ">
+            {isInShrine(s.position) && !s.panel && <div className={s.shrineSeat ? "shrine-quick seated" : "shrine-quick"} role="group" aria-label="Thao tác điện thờ">
               {s.shrineSeat ? <><strong>Đang ngồi hướng về tượng</strong><button onClick={() => actions.shrine({action:"gesture",gesture:"pray"})}>🙏 Giơ tay cầu nguyện</button><button onClick={() => actions.shrine({action:"gesture",gesture:"bow"})}>Cúi lạy</button><button onClick={() => actions.shrine({action:"stand"})}>Đứng dậy</button></> : <><span>Chọn ghế đá còn trống</span>{s.nearbyShrineSeat && <button onClick={() => actions.shrine({action:"sit",seatId:s.nearbyShrineSeat!.id})}>Ngồi {s.nearbyShrineSeat.label}</button>}</>}
               <button onClick={() => actions.shrine({action:"exit"})}>Về hang</button>
             </div>}
@@ -550,7 +640,7 @@ export function mountUI(actions: Actions) {
               className={isStall ? "panel stall-dialog" : "panel"}
               role="dialog"
               aria-modal="true"
-              aria-label={isStall ? CAVE_STALLS.find(stall=>stall.id===s.panel)!.name : s.panel === "map" ? "Các sạp trong hang" : s.panel === "rest" ? "Hạng và nhân dạng" : "Điện thờ"}
+              aria-label={isStall ? CAVE_STALLS.find(stall=>stall.id===s.panel)!.name : s.panel === "map" ? "Các sạp trong hang" : s.panel === "rest" ? "Hạng và nhân dạng" : s.panel === "screen" ? "Lịch đấu T1" : "Điện thờ"}
               onClick={(e) => e.stopPropagation()}
             >
               <button
@@ -560,10 +650,10 @@ export function mountUI(actions: Actions) {
               >
                 Đóng ✕
               </button>
-              {isStall ? <StallPanel id={s.panel as CaveStallId} onClose={()=>ui.set({panel:null})}/> : s.panel === "rest" ? <RankPanel onClose={()=>ui.set({panel:null})}/> : s.panel === "map" ? <>
+              {isStall ? <StallPanel id={s.panel as CaveStallId} onClose={()=>ui.set({panel:null})} onVisit={actions.visit}/> : s.panel === "screen" ? <div className="screen-panel"><p className="eyebrow">MÀN HÌNH LỚN · HANG LỚN</p><h2>Lịch đấu T1</h2><MatchPanel/></div> : s.panel === "rest" ? <RankPanel onClose={()=>ui.set({panel:null})}/> : s.panel === "map" ? <>
                 <p className="eyebrow">ĐI MỘT VÒNG QUANH HANG</p><h2>Gặp nhau ở sạp.</h2>
                 <p className="map-intro">Mỗi sạp có một vòng sáng. Đi vào vòng rồi bấm E hoặc chạm nút để trò chuyện. Chọn một sạp bên dưới để theo dõi khoảng cách.</p>
-                <div className="map-grid">{[...CAVE_STALLS.map(stall=>({...stall,...stallApproach(stall)})),{id:"altar",name:"ĐIỆN THỜ",npc:"Tượng Faker",...SHRINE_PORTAL}].map(stall=>{const distance=Math.hypot(s.position.x-stall.x,s.position.z-stall.z);return <button key={stall.id} onClick={()=>actions.visit(stall.id)}><b>{stall.name}</b><small>{stall.npc} · {Math.ceil(distance)} m</small><small>{distance <= (stall.id==='altar'?3:CAVE_STALL_RADIUS)?'Vào ngay →':'Chỉ đường →'}</small></button>;})}</div>
+                <div className="map-grid">{[...CAVE_STALLS.map(stall=>({...stall,...stallApproach(stall)})),{id:"altar",name:"ĐIỆN THỜ",npc:"Tượng Faker",...SHRINE_PORTAL},{id:"screen",name:"MÀN HÌNH LỚN",npc:"Lịch đấu T1",...SCREEN_SPOT}].map(stall=>{const distance=Math.hypot(s.position.x-stall.x,s.position.z-stall.z);return <button key={stall.id} onClick={()=>actions.visit(stall.id)}><b>{stall.name}</b><small>{stall.npc} · {Math.ceil(distance)} m</small><small>{distance <= (stall.id==='altar'||stall.id==='screen'?3:CAVE_STALL_RADIUS)?'Vào ngay →':'Chỉ đường →'}</small></button>;})}</div>
               </> : <ShrinePanel state={s.shrine} self={s.selfId} position={s.position} seated={s.shrineSeat} act={actions.shrine} />}
 
             </section>

@@ -4,6 +4,11 @@
  * (packages/shared/src/layout.ts), which is also where the server's collision comes from: what
  * players see and what they bump into are the same data.
  *
+ * The world is five caves: the big communal cave around the campfire and four small side caves
+ * joined to it by short walk-through tunnels (shell: the "caves" model group, placed by
+ * CAVE_SHELL_PIECES / HUB_CAVES of the shared layout). Every side cave has its own warm fill light
+ * and a focal light at its rock niche, where the stall stands.
+ *
  * createWorld(app) owns the single camera (ACES + sRGB, clear colour, fog, clip planes), the scene
  * lighting and every model of the cave. It registers its own update handler (flame, ember and
  * light flicker, sparks, NPC breathing, water glints, the quality monitor), creates no player
@@ -22,9 +27,11 @@
  */
 import * as pc from "playcanvas";
 import {
-  CAVE_SHELL,
+  CAVE_SHELL_PIECES,
+  HUB_CAVES,
   HUB_LANDMARKS,
   HUB_PLACEMENTS,
+  frameToCave,
   type LandmarkId,
   type Placement,
   type PoseJoint,
@@ -44,6 +51,7 @@ import { hubViews, type CameraView } from "./world/views.js";
 import { createWaterGlints, type GlintSource } from "./world/water.js";
 import { buildShrine } from "./world/shrine.js";
 import { buildCaveStalls } from "./world/stalls.js";
+import { buildBigScreen, type ScreenDemo } from "./world/bigScreen.js";
 
 export type { LandmarkId } from "@te-liet/shared";
 export type { CameraView } from "./world/views.js";
@@ -70,7 +78,7 @@ export interface World {
   camera: pc.Entity;
   /** Resolves when every GLB is loaded and placed; failures are reported, never block. */
   ready: Promise<void>;
-  /** Camera presets: concept, spawn, campfire, memory, tv, rest, living, quiz, exit, overview. */
+  /** Camera presets (world/views.ts): concept, spawn, overview, the zones, every side cave and tunnel. */
   views: Record<string, CameraView>;
   /** Put the camera at a preset (dev / screenshots). */
   setView(name: string): boolean;
@@ -95,11 +103,14 @@ export interface WorldOptions {
   quality?: Quality | "auto";
   /** Freeze flicker and idles at this time in seconds (deterministic screenshots). */
   time?: number;
+  /** Canned picture on the big wall screen instead of the match feed (dev preview, screenshots). */
+  screen?: ScreenDemo;
 }
 
 /* ------------------------------------------------------------------ look */
 
 const GROUPS = [
+  "caves",
   "environment",
   "fire",
   "furniture",
@@ -126,8 +137,11 @@ const LOOK = {
   exposure: 1.15,
   /** sRGB; slightly cool so the big rock faces keep their facets without turning orange. */
   ambient: [0.27, 0.27, 0.3] as const,
-  /** Warm haze: far walls fade toward a lit brown, not toward black. */
-  fog: { color: "#2A1A12", start: 16, end: 70 },
+  /**
+   * Warm haze: far walls fade toward a lit brown, not toward black. The main cave is ~47 m across
+   * (wall to wall), so the haze starts beyond the fire group and leaves the far wall readable.
+   */
+  fog: { color: "#2A1A12", start: 20, end: 88 },
   /** Dim cool light from above the spawn: keeps the far walls' facets and lowers the saturation. */
   fill: {
     color: [0.62, 0.68, 0.9] as const,
@@ -137,31 +151,45 @@ const LOOK = {
   post: { bloom: 0.07, bloomThreshold: 0.55, vignette: 0.32 },
   /** Unshadowed warm bounce over the hall (the fire lighting the cave as a whole). */
   bounce: {
-    at: [0, 5, -1] as const,
+    at: [0, 5.5, -1] as const,
     color: "#FFE4CC",
     intensity: 0.45,
-    range: 28,
+    range: 34,
   },
-  /** Warm lights high up near the walls: the big faceted walls of board 01 read far from the fire. */
+  /**
+   * Warm lights high up near the walls (wall face ~23.4 m at the floor, leaning in to ~21 m at
+   * 9 m): the big faceted walls of board 01 read far from the fire. They sit ~6 m in front of the
+   * rock, between the tunnel mouths, so each lights one stretch of wall.
+   */
   walls: [
-    { at: [0, 7, -12], intensity: 0.85, range: 16 },
-    { at: [-11.5, 6.5, -3], intensity: 0.85, range: 16 },
-    { at: [11.5, 6.5, -3], intensity: 0.85, range: 16 },
+    // Behind the exit (the backdrop of board 01) and its two back corners.
+    { at: [0, 7.5, -15], intensity: 0.85, range: 19 },
+    { at: [-9, 8, -17], intensity: 0.9, range: 15 },
+    { at: [9, 8, -17], intensity: 0.9, range: 15 },
+    // Left and right walls (between the back and front tunnel mouths).
+    { at: [-15, 7, 0], intensity: 0.85, range: 19 },
+    { at: [15, 7, 0], intensity: 0.85, range: 19 },
     // Behind the spawn: lights the wall a player sees on turning round, less the foreground floor.
-    { at: [-8, 6.5, 9], intensity: 0.7, range: 16 },
-    { at: [8, 6.5, 9], intensity: 0.7, range: 16 },
-    // The back corners behind the memory wall and the rest corner (the backdrop of board 01).
-    { at: [-7, 7.5, -14.5], intensity: 0.9, range: 12 },
-    { at: [7, 7.5, -14.5], intensity: 0.9, range: 12 },
+    { at: [-8, 7, 14], intensity: 0.7, range: 18 },
+    { at: [8, 7, 14], intensity: 0.7, range: 18 },
   ] as const,
   /** Pale warm: the rock's own ochre does the rest (a deeper orange oversaturates the walls). */
   wallColor: "#FFDCC4",
   /** Warm light on the exit sign above the tunnel mouth (the focal point at the back). */
   sign: {
-    at: [0, 4.2, -16.4] as const,
+    at: [0, 4.2, -20.5] as const,
     color: "#FFC78C",
     intensity: 1,
     range: 4.5,
+  },
+  /**
+   * Per side cave (walk radius 7 m, rock ceiling 5.1-7.2 m): a soft warm fill under the ceiling at
+   * the cave centre, so the small cave reads beyond its torches, and a focal light in front of the
+   * rock niche (niche-frame z, i.e. metres from the centre toward the niche) on the stall.
+   */
+  side: {
+    fill: { y: 3.6, intensity: 0.85, range: 12.5 },
+    focal: { z: -4.9, y: 2.7, color: "#FFD2A0", intensity: 0.95, range: 7 },
   },
 };
 
@@ -225,6 +253,28 @@ const LIGHT_LOOK: Record<string, LightLook> = {
     range: 3.5,
     flicker: 0.07,
     hz: 4.5,
+  },
+  /** The big wall screen: a cool wash over the rocks and the floor in front of it. */
+  tl_furn_wall_screen_v01: {
+    color: "#A9C2E8",
+    intensity: 1.3,
+    range: 13,
+    flicker: 0.03,
+    hz: 3.1,
+  },
+  tl_furn_wall_screen_small_v01: {
+    color: "#A9C2E8",
+    intensity: 0.9,
+    range: 5,
+    flicker: 0.03,
+    hz: 3.4,
+  },
+  tl_env_shrine_candles_v01: {
+    color: "#FFB65C",
+    intensity: 0.9,
+    range: 3.2,
+    flicker: 0.12,
+    hz: 2.2,
   },
 };
 /** Glow materials that are not flames (coals, embers, lantern glass, CRT) flicker at this rate. */
@@ -341,7 +391,7 @@ export function createWorld(app: pc.AppBase, opts: WorldOptions = {}): World {
     clearColor: new pc.Color().fromString(LOOK.clear),
     fov: 52,
     nearClip: 0.1,
-    farClip: 110,
+    farClip: 130,
   });
   const cam = camera.camera!;
   cam.toneMapping = pc.TONEMAP_ACES;
@@ -404,9 +454,13 @@ export function createWorld(app: pc.AppBase, opts: WorldOptions = {}): World {
     camera.setPosition(v.pos[0], v.pos[1], v.pos[2]);
     camera.lookAt(v.look[0], v.look[1], v.look[2]);
     if (v.fov) cam.fov = v.fov;
-    // Views from above the dome hide the ceiling (its single-sided faces would show as cracks).
+    // Views from above the dome hide the ceilings of all five caves and the tunnel roofs (their
+    // single-sided faces would show as cracks), and may switch the haze off (the overview stands
+    // ~80 m away, beyond the fog).
     ceilingWanted = v.ceiling ?? true;
     for (const e of overhead) e.enabled = ceilingWanted;
+    fog.type = (v.fog ?? true) ? pc.FOG_LINEAR : pc.FOG_NONE;
+    cam.fog = fog;
     return true;
   };
   setView("concept");
@@ -417,8 +471,12 @@ export function createWorld(app: pc.AppBase, opts: WorldOptions = {}): World {
   app.scene.lighting.shadowsEnabled = true;
   const root = new pc.Entity("hang-tru-thua");
   app.root.addChild(root);
-  buildShrine(app, root);
-  buildCaveStalls(app, root, withNpcs);
+  const shrine = buildShrine(app, root, { time: opts.time });
+  const stallSigns = buildCaveStalls(app, root, withNpcs);
+  const bigScreen = buildBigScreen(app, root, {
+    demo: opts.screen,
+    frozen: opts.time !== undefined,
+  });
   const fill = new pc.Entity("cave-fill");
   fill.addComponent("light", {
     type: "directional",
@@ -462,6 +520,12 @@ export function createWorld(app: pc.AppBase, opts: WorldOptions = {}): World {
     LOOK.sign.intensity,
     LOOK.sign.range,
   );
+  for (const c of HUB_CAVES) {
+    const { fill: f, focal } = LOOK.side;
+    omni(`cave-fill-${c.id}`, [c.x, f.y, c.z], LOOK.wallColor, f.intensity, f.range);
+    const at = frameToCave({ x: c.x, z: c.z, yaw: c.nicheYaw }, 0, focal.z);
+    omni(`cave-focal-${c.id}`, [at.x, focal.y, at.z], focal.color, focal.intensity, focal.range);
+  }
 
   const animators: ((t: number) => void)[] = [];
   // Auto quality: average frame time over SLOW_WINDOW s windows once the cave stands.
@@ -490,6 +554,9 @@ export function createWorld(app: pc.AppBase, opts: WorldOptions = {}): World {
       overhead.push(...built.overhead);
       for (const e of overhead) e.enabled = ceilingWanted;
     })
+    .then(() => shrine.ready)
+    .then(() => stallSigns.ready)
+    .then(() => bigScreen.ready)
     .catch((err: unknown) =>
       report(
         `world build failed: ${err instanceof Error ? (err.stack ?? err.message) : String(err)}`,
@@ -513,7 +580,7 @@ export function createWorld(app: pc.AppBase, opts: WorldOptions = {}): World {
 }
 
 interface Built {
-  /** The ceiling and the stalactites placed under it. */
+  /** The ceilings of the five caves, the tunnel roofs and any stalactites placed under them. */
   overhead: pc.Entity[];
 }
 
@@ -540,7 +607,7 @@ async function build(
     }
     return p;
   };
-  for (const id of CAVE_SHELL) void load(id);
+  for (const piece of CAVE_SHELL_PIECES) void load(piece.asset);
   for (const p of placements) {
     void load(p.asset);
     if (p.npc?.hold) void load(p.npc.hold.asset);
@@ -558,15 +625,24 @@ async function build(
   root.addChild(lights);
   const built: Built = { overhead: [] };
 
-  // Cave shell: authored in cave space, single-sided, receives the fire's shadows but never casts.
-  const shellJobs = CAVE_SHELL.map(async (id) => {
-    const res = await load(id);
+  // Cave shell (main cave in cave space; tunnels and side caves by the shared recipe):
+  // single-sided, receives the fire's shadows but never casts. A piece's ceiling is either the
+  // whole model or a child node; both are collected so views from above can hide them.
+  const shellJobs = CAVE_SHELL_PIECES.map(async (piece, i) => {
+    const res = await load(piece.asset);
     if (!res) return;
     const e = instantiateModel(res, false);
-    e.name = id.slice(id.indexOf("/") + 1);
+    e.name = `${piece.asset.slice(piece.asset.indexOf("/") + 1)}#${i}`;
+    e.setLocalPosition(piece.x, 0, piece.z);
+    e.setLocalEulerAngles(0, piece.yaw, 0);
     shared.apply(e);
     shell.addChild(e);
-    if (id.endsWith("_ceiling_v01")) built.overhead.push(e);
+    if (piece.overhead === true) built.overhead.push(e);
+    else if (piece.overhead) {
+      const top = e.findByName(piece.overhead);
+      if (top instanceof pc.Entity) built.overhead.push(top);
+      else report(`${piece.asset}: ceiling node "${piece.overhead}" not found`);
+    }
   });
 
   const manifests = await manifestsP;

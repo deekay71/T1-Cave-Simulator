@@ -6,7 +6,7 @@
 
 1. Client lấy guest/account JWT qua HTTPS. Colyseus joinOrCreate xác thực trước khi nhận avatar. Reservation có TTL do Colyseus quản lý; auth chậm không giữ ghế vô hạn.
 2. Matchmaker tìm `hub_v1` đúng region/build/privacy. Foundation mới có một public pool, chưa filter region/private ACL.
-3. Room tạo state rỗng, clock simulation 50 ms, patch 100 ms, tối đa 30 client. Đủ ghế thì framework khóa admission; rời ghế thì có thể nhận người mới.
+3. Room tạo state rỗng, clock simulation 50 ms, patch 50 ms, tối đa 30 client. Đủ ghế thì framework khóa admission; rời ghế thì có thể nhận người mới.
 4. `onJoin`: avatar xuất hiện ở spawn. `onDrop`: đánh dấu offline, ngừng input, giữ seat 15 giây qua allowReconnection. SDK 0.17 hỗ trợ reconnect; cần test mất mạng thật trước release. `onReconnect` phục hồi connected; input cũ bị xóa.
 5. `onLeave`: xóa avatar/input/rate buckets. Room rỗng dùng auto-dispose mặc định, không giữ hàng nghìn phòng idle. Đích có AFK warning 5 phút, kick 10 phút; chưa implement.
 6. Deploy đích: đặt worker DRAINING, loại khỏi lựa chọn create-room, lock room mới join, báo client countdown, cho minigame hoàn thành (deadline 120 giây), chuyển người chơi sang room mới có xác thực; sau deadline đóng WS. Foundation chỉ có graceful shutdown mặc định của Colyseus, **không** có handoff/drain coordinator.
@@ -22,7 +22,7 @@ Không đưa cùng room sang process khác bằng Redis. Nếu cần continuity 
 | C→S | chat | string trim 1–240 ký tự | 2/s |
 | C→S | emote | wave/laugh/cheer | 2/s |
 | C→S→C | ping/pong | timestamp hữu hạn | 2/s |
-| S→C | state | players: name, x, z, seq, connected | patch 10 Hz |
+| S→C | state | players: name, x, z, seq, connected | patch 20 Hz |
 | S→C | chat | name, text | room scope |
 | S→C | emote | session id, emote | room scope |
 

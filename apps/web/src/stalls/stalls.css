@@ -2,3 +2,18 @@
 @media(max-width:800px){.panel.stall-dialog{position:relative;width:calc(100vw - 20px);max-height:calc(100dvh - 20px);border-radius:14px}.stall-layout{grid-template-columns:27% 73%;height:calc(100dvh - 22px)}.npc-stage{padding:18px 14px}.npc-kicker{left:14px;font-size:7px;letter-spacing:1px}.npc-portrait{width:180%;left:-40%;top:20%}.npc-caption h2{font-size:30px}.npc-caption p{font-size:11px}.fan-art-note{font-size:7px}.stall-content{padding:54px 20px 22px}.stall-title{font-size:23px}.cave-catalog{grid-template-columns:repeat(2,1fr)}.attendance-grid{grid-template-columns:repeat(5,1fr)}.resident-hud{left:20px;top:84px}.destination-hint{top:150px;left:20px}}
 @media(max-width:540px){.stall-layout{display:block;overflow:auto}.npc-stage{height:135px;min-height:135px;display:block;padding:18px;overflow:hidden;border-right:0;border-bottom:1px solid #ffffff17}.npc-kicker,.fan-art-note{display:none}.npc-portrait{height:210px;width:165px;top:6px;left:0}.npc-caption{background:none;margin:0;padding:0 48px 0 125px}.npc-caption>small{font-size:8px}.npc-caption h2{font-size:26px;margin:5px 0 8px}.npc-caption p{font-size:9px;line-height:1.5;margin:0}.stall-content{overflow:visible;padding:20px 18px 26px}.stall-title{font-size:22px;margin-bottom:14px}.preview-strip{font-size:9px!important;padding:8px 10px}.attendance-grid{grid-template-columns:repeat(6,1fr);gap:5px}.attendance-grid>div{padding:9px 1px}.attendance-grid small{font-size:7px}.attendance-grid span{font-size:6px}.wallet-row{margin:12px 0}.wallet-row b{font-size:21px}.experience-strip{margin:10px 0 16px;padding:12px}.cave-catalog{grid-template-columns:repeat(2,1fr)}.item-illustration{height:90px}.resident-hud{top:76px;left:14px;padding:6px 10px}.resident-medal{font-size:16px}.resident-hud strong{font-size:10px}.resident-hud small{font-size:8px}.destination-hint{top:130px;left:14px;font-size:10px;padding:8px;max-width:210px}.map-grid{grid-template-columns:1fr}.quiz-session h3{font-size:19px}.quiz-result{flex-direction:column}.rank-road article{gap:10px;padding:10px}.rank-road h3{font-size:14px}.shortcuts{max-width:calc(100vw - 28px)}.shortcuts button{font-size:10px}}
 @media(prefers-reduced-motion:reduce){.npc-portrait{animation:none}}
+
+/* Bảng quest (Hang Quest) */
+.quest-list{list-style:none;margin:0 0 18px;padding:0;display:grid;gap:8px}
+.quest{display:grid;grid-template-columns:28px 1fr auto;gap:12px;align-items:center;padding:12px 14px;border-radius:12px;background:#ffffff0a;border:1px solid #ffffff14}
+.quest.done{background:#ffffff05;border-color:var(--stall-accent,#b3b7e0);opacity:.78}
+.quest-mark{display:grid;place-items:center;width:28px;height:28px;border-radius:50%;border:1px solid #ffffff33;font-weight:800;color:var(--stall-accent,#b3b7e0)}
+.quest.done .quest-mark{background:var(--stall-accent,#b3b7e0);color:#17151a;border-color:transparent}
+.quest b{display:block;font-size:14px}
+.quest.done b{text-decoration:line-through;text-decoration-color:#ffffff66}
+.quest small{display:block;font-size:11px;color:#a2988d;margin-top:2px}
+.quest small.quest-reward{color:var(--stall-accent,#b3b7e0)}
+.quest-side{display:grid;gap:6px;justify-items:end;font-size:12px;font-variant-numeric:tabular-nums}
+.quest-side button{font-size:11px;padding:6px 10px;white-space:nowrap}
+@media(max-width:540px){.quest{grid-template-columns:24px 1fr}.quest-side{grid-column:2;justify-items:start}}
+.screen-panel{max-width:760px}

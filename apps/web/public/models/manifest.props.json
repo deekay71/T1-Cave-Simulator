@@ -906,6 +906,629 @@
       "poses": {},
       "meta": {},
       "bytes": 6684
+    },
+    {
+      "name": "tl_veh_oxygen_trolley_v01",
+      "file": "props/tl_veh_oxygen_trolley_v01.glb",
+      "url": "/models/props/tl_veh_oxygen_trolley_v01.glb",
+      "triangles": 1106,
+      "trianglesByMaterial": {
+        "tl_matte": 1106
+      },
+      "budget": 2000,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -0.17,
+          0,
+          -0.196
+        ],
+        "max": [
+          0.17,
+          1.0432,
+          0.1217
+        ]
+      },
+      "size": [
+        0.34,
+        1.0432,
+        0.3176
+      ],
+      "nodes": [
+        "tl_veh_oxygen_trolley_v01",
+        "wheel_l",
+        "wheel_r"
+      ],
+      "emissive": [],
+      "materials": [
+        "tl_matte"
+      ],
+      "notes": "Rank 'Te Tho' player gear: the sage-green oxygen cylinder (x0.85, gauge toward -Z, hose outlet toward -X) strapped with cloth bands onto a rough two-wheel hand trolley: dark metal rails, wooden rungs and toe plate, cloth-wrapped handle bar. Stands upright on its wheels + two rear feet. PULLED toward +Z: tilt the whole model about the axle line (anchor axle, rot X > 0 leans the handle toward +Z) and spin wheel_l / wheel_r about local X by distance / 0.085 rad. Anchors: axle, handle (grip centre), hose_out (start of the flexible hose).",
+      "anchors": {
+        "axle": [
+          0,
+          0.085,
+          0.03
+        ],
+        "handle": [
+          0,
+          0.985,
+          0.1
+        ],
+        "hose_out": [
+          -0.0595,
+          0.982,
+          -0.078
+        ],
+        "top": [
+          0,
+          1.0432,
+          -0.078
+        ]
+      },
+      "lights": [],
+      "poses": {
+        "rolling": {
+          "wheel_l": [
+            70,
+            0,
+            0
+          ],
+          "wheel_r": [
+            70,
+            0,
+            0
+          ]
+        }
+      },
+      "collider": {
+        "type": "box",
+        "center": [
+          0,
+          0.52,
+          -0.04
+        ],
+        "size": [
+          0.34,
+          1.04,
+          0.32
+        ]
+      },
+      "meta": {
+        "wheelRadius": 0.085,
+        "pulledToward": "+Z",
+        "tiltAbout": "axle"
+      },
+      "bytes": 89720
+    },
+    {
+      "name": "tl_prop_oxygen_hose_flex_v01",
+      "file": "props/tl_prop_oxygen_hose_flex_v01.glb",
+      "url": "/models/props/tl_prop_oxygen_hose_flex_v01.glb",
+      "triangles": 192,
+      "trianglesByMaterial": {
+        "tl_matte": 192
+      },
+      "budget": 500,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -0.009,
+          0,
+          -0.0077
+        ],
+        "max": [
+          0.009,
+          1,
+          0.0095
+        ]
+      },
+      "size": [
+        0.0181,
+        1,
+        0.0172
+      ],
+      "nodes": [
+        "tl_prop_oxygen_hose_flex_v01",
+        "seg_00",
+        "seg_01",
+        "seg_02",
+        "seg_03",
+        "seg_04",
+        "seg_05",
+        "seg_06",
+        "seg_07",
+        "seg_08",
+        "seg_09",
+        "seg_10",
+        "seg_11"
+      ],
+      "emissive": [],
+      "materials": [
+        "tl_matte"
+      ],
+      "notes": "ATTACHMENT, not a floor prop: 12 unit segments (nodes seg_00..seg_11, each a thin tube from its origin to +Y 1 m). The runtime lays them along a curve every frame: position = sample i, +Y aimed at sample i+1, scale Y = the distance (rank 'Te Tho': trolley hose_out -> nasal cannula).",
+      "anchors": {},
+      "lights": [],
+      "poses": {},
+      "meta": {
+        "segments": 12,
+        "radius": 0.0095
+      },
+      "bytes": 22464
+    },
+    {
+      "name": "tl_wear_cannula_v01",
+      "file": "props/tl_wear_cannula_v01.glb",
+      "url": "/models/props/tl_wear_cannula_v01.glb",
+      "triangles": 92,
+      "trianglesByMaterial": {
+        "tl_matte": 92
+      },
+      "budget": 300,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -0.1629,
+          -0.043,
+          0.0129
+        ],
+        "max": [
+          0.1629,
+          0.113,
+          0.1914
+        ]
+      },
+      "size": [
+        0.3257,
+        0.156,
+        0.1786
+      ],
+      "nodes": [
+        "tl_wear_cannula_v01",
+        "fit_head"
+      ],
+      "emissive": [],
+      "materials": [
+        "tl_matte"
+      ],
+      "notes": "WEARABLE (node fit_head: parent it to the rig's head joint with a zero local transform): thin nasal cannula under the nose, along the cheeks, over the ears and joined under the chin (anchor inlet, head-joint space), same path as the one modelled on tl_char_fan_oxygen_v01 (do not add it to that variant).",
+      "anchors": {
+        "inlet": [
+          0,
+          -0.04,
+          0.094
+        ]
+      },
+      "lights": [],
+      "poses": {},
+      "meta": {
+        "fit": {
+          "fit_head": "head"
+        }
+      },
+      "bytes": 8308
+    },
+    {
+      "name": "tl_prop_crutch_v01",
+      "file": "props/tl_prop_crutch_v01.glb",
+      "url": "/models/props/tl_prop_crutch_v01.glb",
+      "triangles": 336,
+      "trianglesByMaterial": {
+        "tl_matte": 336
+      },
+      "budget": 500,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -0.052,
+          -0.005,
+          -0.13
+        ],
+        "max": [
+          0.056,
+          1.27,
+          0.13
+        ]
+      },
+      "size": [
+        0.108,
+        1.275,
+        0.26
+      ],
+      "nodes": [
+        "tl_prop_crutch_v01"
+      ],
+      "emissive": [],
+      "materials": [
+        "tl_matte"
+      ],
+      "notes": "Rank 'Te Nang' player gear, used twice: patched wooden underarm crutch, 1.27 m. PIVOT AT THE TIP (origin), shaft along +Y, the two struts and the cloth-wrapped underarm pad lie in the YZ plane (pad along Z); the taped hand grip joins the struts at y 0.82 (anchor grip). Tennis-ball foot, tape wraps, a splint tied to the lower leg. Aim +Y from the planted tip to the armpit; the hand goes on the grip between the struts.",
+      "anchors": {
+        "tip": [
+          0,
+          0,
+          0
+        ],
+        "grip": [
+          0,
+          0.82,
+          0
+        ],
+        "pad": [
+          0,
+          1.27,
+          0
+        ]
+      },
+      "lights": [],
+      "poses": {},
+      "meta": {
+        "length": 1.27,
+        "gripHeight": 0.82,
+        "padLength": 0.26
+      },
+      "bytes": 29480
+    },
+    {
+      "name": "tl_prop_bed_casters_v01",
+      "file": "props/tl_prop_bed_casters_v01.glb",
+      "url": "/models/props/tl_prop_bed_casters_v01.glb",
+      "triangles": 448,
+      "trianglesByMaterial": {
+        "tl_matte": 448
+      },
+      "budget": 700,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -0.464,
+          0.004,
+          -1.063
+        ],
+        "max": [
+          0.464,
+          0.115,
+          1.014
+        ]
+      },
+      "size": [
+        0.928,
+        0.111,
+        2.077
+      ],
+      "nodes": [
+        "tl_prop_bed_casters_v01",
+        "caster_fl",
+        "caster_fl_wheel",
+        "caster_fr",
+        "caster_fr_wheel",
+        "caster_rl",
+        "caster_rl_wheel",
+        "caster_rr",
+        "caster_rr_wheel"
+      ],
+      "emissive": [],
+      "materials": [
+        "tl_matte"
+      ],
+      "notes": "ATTACHMENT for tl_veh_metal_bed_v01 (rank 'Te Liet' rolling bed): four swivel casters under the posts. Raise the bed by 0.115 m (meta.lift) and give this model the bed's floor transform. Nodes caster_fl / caster_fr / caster_rl / caster_rr (f = feet end +Z, l = +X) swivel about local Y at the post (yaw 0 = rolling toward +Z, the wheel trails 0.036 m behind); their children caster_*_wheel spin about local X by distance / 0.052 rad.",
+      "anchors": {
+        "bed_floor": [
+          0,
+          0.115,
+          0
+        ]
+      },
+      "lights": [],
+      "poses": {},
+      "meta": {
+        "lift": 0.115,
+        "wheelRadius": 0.052,
+        "trail": 0.036,
+        "posts": [
+          0.429,
+          0.979
+        ]
+      },
+      "bytes": 43416
+    },
+    {
+      "name": "tl_wear_tshirt_v01",
+      "file": "props/tl_wear_tshirt_v01.glb",
+      "url": "/models/props/tl_wear_tshirt_v01.glb",
+      "triangles": 390,
+      "trianglesByMaterial": {
+        "tl_matte": 390
+      },
+      "budget": 600,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -0.241,
+          -0.1999,
+          -0.156
+        ],
+        "max": [
+          0.241,
+          0.394,
+          0.164
+        ]
+      },
+      "size": [
+        0.482,
+        0.5939,
+        0.32
+      ],
+      "nodes": [
+        "tl_wear_tshirt_v01",
+        "fit_spine",
+        "fit_arm_upper_l",
+        "fit_arm_upper_r"
+      ],
+      "emissive": [],
+      "materials": [
+        "tl_matte"
+      ],
+      "notes": "WEARABLE shop look (ao thun: loose worn-white T-shirt, short sleeves, sewn patches, frayed hem). Nodes fit_<joint> are authored in that rig joint's local space: parent each to the joint (manifest meta.fit) with a zero local transform. Sits >= 8 mm outside every base outfit; one look at a time.",
+      "anchors": {},
+      "lights": [],
+      "poses": {},
+      "meta": {
+        "fit": {
+          "fit_spine": "spine",
+          "fit_arm_upper_l": "arm_upper_l",
+          "fit_arm_upper_r": "arm_upper_r"
+        }
+      },
+      "bytes": 33696
+    },
+    {
+      "name": "tl_wear_jersey_v01",
+      "file": "props/tl_wear_jersey_v01.glb",
+      "url": "/models/props/tl_wear_jersey_v01.glb",
+      "triangles": 300,
+      "trianglesByMaterial": {
+        "tl_matte": 300
+      },
+      "budget": 600,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -0.241,
+          -0.1701,
+          -0.156
+        ],
+        "max": [
+          0.241,
+          0.394,
+          0.164
+        ]
+      },
+      "size": [
+        0.482,
+        0.5641,
+        0.32
+      ],
+      "nodes": [
+        "tl_wear_jersey_v01",
+        "fit_spine",
+        "fit_arm_upper_l",
+        "fit_arm_upper_r"
+      ],
+      "emissive": [],
+      "materials": [
+        "tl_matte"
+      ],
+      "notes": "WEARABLE shop look (ao dau: faded-crimson match jersey, black side panels and shoulders, worn-white trim). Nodes fit_<joint> are authored in that rig joint's local space: parent each to the joint (manifest meta.fit) with a zero local transform. Sits >= 8 mm outside every base outfit; one look at a time.",
+      "anchors": {},
+      "lights": [],
+      "poses": {},
+      "meta": {
+        "fit": {
+          "fit_spine": "spine",
+          "fit_arm_upper_l": "arm_upper_l",
+          "fit_arm_upper_r": "arm_upper_r"
+        }
+      },
+      "bytes": 24080
+    },
+    {
+      "name": "tl_wear_tank_top_v01",
+      "file": "props/tl_wear_tank_top_v01.glb",
+      "url": "/models/props/tl_wear_tank_top_v01.glb",
+      "triangles": 160,
+      "trianglesByMaterial": {
+        "tl_matte": 160
+      },
+      "budget": 600,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -0.24,
+          -0.164,
+          -0.156
+        ],
+        "max": [
+          0.24,
+          0.396,
+          0.164
+        ]
+      },
+      "size": [
+        0.48,
+        0.56,
+        0.32
+      ],
+      "nodes": [
+        "tl_wear_tank_top_v01",
+        "fit_spine"
+      ],
+      "emissive": [],
+      "materials": [
+        "tl_matte"
+      ],
+      "notes": "WEARABLE shop look (ao ba lo: charcoal tank top with a crimson chest stripe, crimson piping and straps, sewn patches). Nodes fit_<joint> are authored in that rig joint's local space: parent each to the joint (manifest meta.fit) with a zero local transform. Sits >= 8 mm outside every base outfit; one look at a time.",
+      "anchors": {},
+      "lights": [],
+      "poses": {},
+      "meta": {
+        "fit": {
+          "fit_spine": "spine"
+        }
+      },
+      "bytes": 13040
+    },
+    {
+      "name": "tl_wear_shorts_v01",
+      "file": "props/tl_wear_shorts_v01.glb",
+      "url": "/models/props/tl_wear_shorts_v01.glb",
+      "triangles": 330,
+      "trianglesByMaterial": {
+        "tl_matte": 330
+      },
+      "budget": 600,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -0.201,
+          -0.2495,
+          -0.125
+        ],
+        "max": [
+          0.201,
+          0.086,
+          0.139
+        ]
+      },
+      "size": [
+        0.402,
+        0.3355,
+        0.264
+      ],
+      "nodes": [
+        "tl_wear_shorts_v01",
+        "fit_hips",
+        "fit_leg_upper_l",
+        "fit_leg_upper_r"
+      ],
+      "emissive": [],
+      "materials": [
+        "tl_matte"
+      ],
+      "notes": "WEARABLE shop look (quan dui rach: faded-crimson ragged shorts, worn-white side stripes, sewn patch). Nodes fit_<joint> are authored in that rig joint's local space: parent each to the joint (manifest meta.fit) with a zero local transform. Sits >= 8 mm outside every base outfit; one look at a time.",
+      "anchors": {},
+      "lights": [],
+      "poses": {},
+      "meta": {
+        "fit": {
+          "fit_hips": "hips",
+          "fit_leg_upper_l": "leg_upper_l",
+          "fit_leg_upper_r": "leg_upper_r"
+        }
+      },
+      "bytes": 32456
+    },
+    {
+      "name": "tl_wear_glasses_v01",
+      "file": "props/tl_wear_glasses_v01.glb",
+      "url": "/models/props/tl_wear_glasses_v01.glb",
+      "triangles": 200,
+      "trianglesByMaterial": {
+        "tl_matte": 200
+      },
+      "budget": 600,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -0.178,
+          0.101,
+          -0.0152
+        ],
+        "max": [
+          0.178,
+          0.183,
+          0.202
+        ]
+      },
+      "size": [
+        0.356,
+        0.082,
+        0.2172
+      ],
+      "nodes": [
+        "tl_wear_glasses_v01",
+        "fit_head"
+      ],
+      "emissive": [],
+      "materials": [
+        "tl_matte"
+      ],
+      "notes": "WEARABLE shop look (kinh co vu: chunky black frames with dark lenses, taped bridge, crimson temple tips). Nodes fit_<joint> are authored in that rig joint's local space: parent each to the joint (manifest meta.fit) with a zero local transform. Sits >= 8 mm outside every base outfit; one look at a time.",
+      "anchors": {},
+      "lights": [],
+      "poses": {},
+      "meta": {
+        "fit": {
+          "fit_head": "head"
+        }
+      },
+      "bytes": 15588
+    },
+    {
+      "name": "tl_prop_keyboard_v01",
+      "file": "props/tl_prop_keyboard_v01.glb",
+      "url": "/models/props/tl_prop_keyboard_v01.glb",
+      "triangles": 522,
+      "trianglesByMaterial": {
+        "tl_matte": 522
+      },
+      "budget": 600,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -0.172,
+          -0.1019,
+          -0.146
+        ],
+        "max": [
+          0.2479,
+          0.357,
+          0.171
+        ]
+      },
+      "size": [
+        0.4198,
+        0.4588,
+        0.317
+      ],
+      "nodes": [
+        "tl_prop_keyboard_v01",
+        "sling"
+      ],
+      "emissive": [],
+      "materials": [
+        "tl_matte"
+      ],
+      "notes": "Shop look 'ban phim cam tay': small worn mechanical keyboard lying flat, 0.34 W x 0.03 H x 0.125 D, keys up (+Y), the space bar toward +Z (the typist). Chunky worn-white keys, a crimson cluster, one missing key, taped corner, cable stub at the back. Pivot bottom centre. Node sling is a rope loop for carrying it across the back: parent it to the rig's spine with a zero local transform (hide it when the keyboard lies on a lap / a bed).",
+      "anchors": {
+        "carry": [
+          0,
+          0.012,
+          -0.0625
+        ],
+        "keys": [
+          0,
+          0.03,
+          0
+        ]
+      },
+      "lights": [],
+      "poses": {},
+      "meta": {
+        "sling": "spine"
+      },
+      "bytes": 45116
     }
   ]
 }

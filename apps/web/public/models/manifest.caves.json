@@ -1,0 +1,1830 @@
+{
+  "group": "caves",
+  "version": 1,
+  "generator": "tools/models/build.ts",
+  "assets": [
+    {
+      "name": "tl_cave_main_floor_v01",
+      "file": "caves/tl_cave_main_floor_v01.glb",
+      "url": "/models/caves/tl_cave_main_floor_v01.glb",
+      "triangles": 647,
+      "trianglesByMaterial": {
+        "tl_matte": 647
+      },
+      "budget": 1100,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -25.1999,
+          0.0111,
+          -25.1869
+        ],
+        "max": [
+          25.1787,
+          0.5691,
+          25.1971
+        ]
+      },
+      "size": [
+        50.3786,
+        0.558,
+        50.384
+      ],
+      "nodes": [
+        "tl_cave_main_floor_v01"
+      ],
+      "emissive": [],
+      "materials": [
+        "tl_matte"
+      ],
+      "notes": "Main cave floor disc r=25.2 m, cave space (origin = campfire, place at 0,0,0). Flat (0.006..0.035) for r < 21 and inside the strips of the five openings; rises to ~0.5 m under the wall foot. meta.walk / meta.layout / meta.ceilingAt describe the whole multi-cave world for the integrator.",
+      "anchors": {
+        "campfire": [
+          0,
+          0,
+          0
+        ],
+        "spawn": [
+          0,
+          0,
+          11
+        ]
+      },
+      "lights": [],
+      "poses": {},
+      "collider": {
+        "type": "cylinder",
+        "center": [
+          0,
+          -0.25,
+          0
+        ],
+        "radius": 25.2,
+        "height": 0.5
+      },
+      "meta": {
+        "space": "cave",
+        "place": {
+          "at": [
+            0,
+            0,
+            0
+          ],
+          "rotY": 0
+        },
+        "radius": 25.2,
+        "flatRadius": 21,
+        "wallRadius": {
+          "mean": 23.4361,
+          "min": 22.7649
+        },
+        "screenWall": {
+          "theta": 118.78,
+          "bearing": 208.78,
+          "halfWidth": 5.3,
+          "r0": 23,
+          "slope": 0.18,
+          "tilt": 10.204,
+          "flatTo": 9.6102,
+          "note": "flat rock face for the big wall screen: a plane facing the origin at `theta` (bearing = theta + 90 in the layout's convention: 0 = +Z, 90 = +X), r0 m from the axis at the floor, leaning inward `slope` m per metre (tilt deg), 2 * halfWidth m wide, flat from the floor to flatTo m"
+        },
+        "heightNote": "y in [0.006, 0.035] for r < 21 and in the opening strips; ~0.25 m at r = 24, ~0.5 m at r = 25.2",
+        "angleConvention": "theta around +Y from +X toward -Z; dir = (cos t, 0, -sin t)",
+        "walk": {
+          "main": {
+            "x": 0,
+            "z": 0,
+            "r": 20
+          },
+          "sides": [
+            {
+              "id": "ne_back",
+              "x": 32,
+              "z": -18.5,
+              "r": 7
+            },
+            {
+              "id": "nw_back",
+              "x": -32,
+              "z": -18.5,
+              "r": 7
+            },
+            {
+              "id": "nw_front",
+              "x": -32,
+              "z": 18.5,
+              "r": 7
+            },
+            {
+              "id": "ne_front",
+              "x": 32,
+              "z": 18.5,
+              "r": 7
+            }
+          ],
+          "tunnels": [
+            {
+              "id": "ne_back",
+              "from": {
+                "x": 16.9684,
+                "z": -9.8099
+              },
+              "to": {
+                "x": 26.3183,
+                "z": -15.2153
+              },
+              "r": 1.7
+            },
+            {
+              "id": "nw_back",
+              "from": {
+                "x": -16.9684,
+                "z": -9.8099
+              },
+              "to": {
+                "x": -26.3183,
+                "z": -15.2153
+              },
+              "r": 1.7
+            },
+            {
+              "id": "nw_front",
+              "from": {
+                "x": -16.9684,
+                "z": 9.8099
+              },
+              "to": {
+                "x": -26.3183,
+                "z": 15.2153
+              },
+              "r": 1.7
+            },
+            {
+              "id": "ne_front",
+              "from": {
+                "x": 16.9684,
+                "z": 9.8099
+              },
+              "to": {
+                "x": 26.3183,
+                "z": 15.2153
+              },
+              "r": 1.7
+            }
+          ],
+          "bodyRadius": 0.35,
+          "solidMargin": 0.3,
+          "cameraMargin": 0.6
+        },
+        "openings": [
+          {
+            "id": "exit",
+            "kind": "exit",
+            "theta": 90,
+            "dir": [
+              0,
+              0,
+              -1
+            ],
+            "mouth": [
+              0,
+              0,
+              -23.4
+            ],
+            "width": 3.5,
+            "shoulders": [
+              2.9,
+              2.9
+            ],
+            "apex": 3.6,
+            "apexOffset": 0,
+            "wallModule": 1
+          },
+          {
+            "id": "ne_back",
+            "kind": "side",
+            "theta": 30.0333,
+            "dir": [
+              0.8657,
+              0,
+              -0.5005
+            ],
+            "mouth": [
+              20.2582,
+              0,
+              -11.7118
+            ],
+            "width": 5,
+            "shoulders": [
+              3.2612,
+              2.9
+            ],
+            "apex": 3.8005,
+            "apexOffset": 0.4587,
+            "wallModule": 0
+          },
+          {
+            "id": "nw_back",
+            "kind": "side",
+            "theta": 149.9667,
+            "dir": [
+              -0.8657,
+              0,
+              -0.5005
+            ],
+            "mouth": [
+              -20.2582,
+              0,
+              -11.7118
+            ],
+            "width": 5,
+            "shoulders": [
+              3.2899,
+              2.9
+            ],
+            "apex": 3.8965,
+            "apexOffset": 0.7571,
+            "wallModule": 2
+          },
+          {
+            "id": "nw_front",
+            "kind": "side",
+            "theta": 210.0333,
+            "dir": [
+              -0.8657,
+              0,
+              0.5005
+            ],
+            "mouth": [
+              -20.2582,
+              0,
+              11.7118
+            ],
+            "width": 5,
+            "shoulders": [
+              2.9,
+              3.3224
+            ],
+            "apex": 3.8238,
+            "apexOffset": -0.7471,
+            "wallModule": 3
+          },
+          {
+            "id": "ne_front",
+            "kind": "side",
+            "theta": 329.9667,
+            "dir": [
+              0.8657,
+              0,
+              0.5005
+            ],
+            "mouth": [
+              20.2582,
+              0,
+              11.7118
+            ],
+            "width": 5,
+            "shoulders": [
+              2.9,
+              3.3656
+            ],
+            "apex": 3.8666,
+            "apexOffset": -0.6251,
+            "wallModule": 5
+          }
+        ],
+        "layout": {
+          "recipe": "u = unit(side centre); rotY = atan2(-u.x, -u.z) deg (= theta - 90); side cave at the side centre; tunnel at u * (23.4 + |centre| - 8.6) / 2; both use setEulerAngles(0, rotY, 0) so local +Z points at the origin",
+          "tunnelLength": 4.3628,
+          "mainMouthDist": 23.4,
+          "sideMouthDist": 28.3628,
+          "placements": [
+            {
+              "id": "ne_back",
+              "theta": 30.0333,
+              "rotY": -59.9667,
+              "side": {
+                "asset": "tl_cave_side_a_v01",
+                "at": [
+                  32,
+                  0,
+                  -18.5
+                ]
+              },
+              "tunnel": {
+                "asset": "tl_cave_tunnel_a_v01",
+                "at": [
+                  22.4064,
+                  0,
+                  -12.9537
+                ]
+              }
+            },
+            {
+              "id": "nw_back",
+              "theta": 149.9667,
+              "rotY": 59.9667,
+              "side": {
+                "asset": "tl_cave_side_b_v01",
+                "at": [
+                  -32,
+                  0,
+                  -18.5
+                ]
+              },
+              "tunnel": {
+                "asset": "tl_cave_tunnel_b_v01",
+                "at": [
+                  -22.4064,
+                  0,
+                  -12.9537
+                ]
+              }
+            },
+            {
+              "id": "nw_front",
+              "theta": 210.0333,
+              "rotY": 120.0333,
+              "side": {
+                "asset": "tl_cave_side_a_v01",
+                "at": [
+                  -32,
+                  0,
+                  18.5
+                ]
+              },
+              "tunnel": {
+                "asset": "tl_cave_tunnel_a_v01",
+                "at": [
+                  -22.4064,
+                  0,
+                  12.9537
+                ]
+              }
+            },
+            {
+              "id": "ne_front",
+              "theta": 329.9667,
+              "rotY": -120.0333,
+              "side": {
+                "asset": "tl_cave_side_b_v01",
+                "at": [
+                  32,
+                  0,
+                  18.5
+                ]
+              },
+              "tunnel": {
+                "asset": "tl_cave_tunnel_b_v01",
+                "at": [
+                  22.4064,
+                  0,
+                  12.9537
+                ]
+              }
+            }
+          ]
+        },
+        "torches": [
+          {
+            "id": "torch_ne_back_a",
+            "at": [
+              16.5247,
+              0,
+              -14.1737
+            ],
+            "rotY": -49.3794,
+            "room": "main"
+          },
+          {
+            "id": "torch_ne_back_b",
+            "at": [
+              20.5287,
+              0,
+              -7.2478
+            ],
+            "rotY": -70.554,
+            "room": "main"
+          },
+          {
+            "id": "torch_wall_000",
+            "at": [
+              22.9396,
+              0,
+              0
+            ],
+            "rotY": -90,
+            "room": "main"
+          },
+          {
+            "id": "torch_nw_back_a",
+            "at": [
+              -20.5287,
+              0,
+              -7.2478
+            ],
+            "rotY": 70.554,
+            "room": "main"
+          },
+          {
+            "id": "torch_nw_back_b",
+            "at": [
+              -16.5247,
+              0,
+              -14.1737
+            ],
+            "rotY": 49.3794,
+            "room": "main"
+          },
+          {
+            "id": "torch_nw_front_a",
+            "at": [
+              -16.5247,
+              0,
+              14.1737
+            ],
+            "rotY": 130.6206,
+            "room": "main"
+          },
+          {
+            "id": "torch_nw_front_b",
+            "at": [
+              -20.5287,
+              0,
+              7.2478
+            ],
+            "rotY": 109.446,
+            "room": "main"
+          },
+          {
+            "id": "torch_wall_180",
+            "at": [
+              -22.1313,
+              0,
+              0
+            ],
+            "rotY": 90,
+            "room": "main"
+          },
+          {
+            "id": "torch_wall_251",
+            "at": [
+              -7.3853,
+              0,
+              21.4485
+            ],
+            "rotY": 161,
+            "room": "main"
+          },
+          {
+            "id": "torch_wall_289",
+            "at": [
+              7.2127,
+              0,
+              20.9472
+            ],
+            "rotY": 199,
+            "room": "main"
+          },
+          {
+            "id": "torch_ne_front_a",
+            "at": [
+              20.5287,
+              0,
+              7.2478
+            ],
+            "rotY": 250.554,
+            "room": "main"
+          },
+          {
+            "id": "torch_ne_front_b",
+            "at": [
+              16.5247,
+              0,
+              14.1737
+            ],
+            "rotY": 229.3794,
+            "room": "main"
+          },
+          {
+            "id": "ne_back_torch_mouth_a",
+            "at": [
+              28.8076,
+              0,
+              -12.034
+            ],
+            "rotY": 153.7234,
+            "room": "ne_back"
+          },
+          {
+            "id": "ne_back_torch_mouth_b",
+            "at": [
+              24.8036,
+              0,
+              -18.9599
+            ],
+            "rotY": 86.3432,
+            "room": "ne_back"
+          },
+          {
+            "id": "ne_back_torch_niche_a",
+            "at": [
+              35.8861,
+              0,
+              -25.2399
+            ],
+            "rotY": -29.9667,
+            "room": "ne_back"
+          },
+          {
+            "id": "ne_back_torch_niche_b",
+            "at": [
+              39.78,
+              0,
+              -18.5045
+            ],
+            "rotY": -89.9667,
+            "room": "ne_back"
+          },
+          {
+            "id": "nw_back_torch_mouth_a",
+            "at": [
+              -24.8036,
+              0,
+              -18.9599
+            ],
+            "rotY": -86.3432,
+            "room": "nw_back"
+          },
+          {
+            "id": "nw_back_torch_mouth_b",
+            "at": [
+              -28.8076,
+              0,
+              -12.034
+            ],
+            "rotY": -153.7234,
+            "room": "nw_back"
+          },
+          {
+            "id": "nw_back_torch_niche_a",
+            "at": [
+              -38.1335,
+              0,
+              -13.7137
+            ],
+            "rotY": 127.9667,
+            "room": "nw_back"
+          },
+          {
+            "id": "nw_back_torch_niche_b",
+            "at": [
+              -39.2118,
+              0,
+              -21.4186
+            ],
+            "rotY": 67.9667,
+            "room": "nw_back"
+          },
+          {
+            "id": "nw_front_torch_mouth_a",
+            "at": [
+              -28.8076,
+              0,
+              12.034
+            ],
+            "rotY": -26.2766,
+            "room": "nw_front"
+          },
+          {
+            "id": "nw_front_torch_mouth_b",
+            "at": [
+              -24.8036,
+              0,
+              18.9599
+            ],
+            "rotY": -93.6568,
+            "room": "nw_front"
+          },
+          {
+            "id": "nw_front_torch_niche_a",
+            "at": [
+              -35.8861,
+              0,
+              25.2399
+            ],
+            "rotY": 150.0333,
+            "room": "nw_front"
+          },
+          {
+            "id": "nw_front_torch_niche_b",
+            "at": [
+              -39.78,
+              0,
+              18.5045
+            ],
+            "rotY": 90.0333,
+            "room": "nw_front"
+          },
+          {
+            "id": "ne_front_torch_mouth_a",
+            "at": [
+              24.8036,
+              0,
+              18.9599
+            ],
+            "rotY": 93.6568,
+            "room": "ne_front"
+          },
+          {
+            "id": "ne_front_torch_mouth_b",
+            "at": [
+              28.8076,
+              0,
+              12.034
+            ],
+            "rotY": 26.2766,
+            "room": "ne_front"
+          },
+          {
+            "id": "ne_front_torch_niche_a",
+            "at": [
+              38.1335,
+              0,
+              13.7137
+            ],
+            "rotY": -52.0333,
+            "room": "ne_front"
+          },
+          {
+            "id": "ne_front_torch_niche_b",
+            "at": [
+              39.2118,
+              0,
+              21.4186
+            ],
+            "rotY": -112.0333,
+            "room": "ne_front"
+          }
+        ],
+        "ceilingAt": {
+          "note": "cameraTop = highest camera position the shells are checked against (camera up to 0.6 m outside the walk discs, 0.15 m padding). rock = lowest rock over the room's walk discs + 0.6 m (main: hanging cones; tunnel: arch stones at the two mouths, the tube roof itself is >= 3.15 m; side: stalactite tips inside r < 7, the wall leans in above 3.35 m). apex / wallJunction describe the visible ceiling.",
+          "main": {
+            "cameraTop": 9,
+            "rock": 10.0646,
+            "apex": 16.5,
+            "wallJunction": 13.5
+          },
+          "tunnel": {
+            "cameraTop": 2.6,
+            "rock": 2.95,
+            "apex": 3.85
+          },
+          "side": {
+            "cameraTop": 3.2,
+            "rock": 4.25,
+            "apex": 7.2,
+            "wallJunction": 5.75
+          }
+        }
+      },
+      "bytes": 74880
+    },
+    {
+      "name": "tl_cave_main_wall_00_v01",
+      "file": "caves/tl_cave_main_wall_00_v01.glb",
+      "url": "/models/caves/tl_cave_main_wall_00_v01.glb",
+      "triangles": 566,
+      "trianglesByMaterial": {
+        "tl_matte": 566
+      },
+      "budget": 1200,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          10.1449,
+          -0.15,
+          -20.7847
+        ],
+        "max": [
+          24.3702,
+          15.1092,
+          0
+        ]
+      },
+      "size": [
+        14.2253,
+        15.2592,
+        20.7847
+      ],
+      "nodes": [
+        "tl_cave_main_wall_00_v01"
+      ],
+      "emissive": [],
+      "materials": [
+        "tl_matte"
+      ],
+      "notes": "Main cave wall module 0 of 6: theta in [0, 60) deg (theta around +Y from +X toward -Z). Cave space: place at 0,0,0 with no rotation; the 6 modules close the ring (inner face ~23.4 m at the floor, leaning to ~20 m at 14.8 m). Contains the mouth of the tunnel to side cave \"ne_back\" (5.0 m wide, 3.8 m apex) with its rock arch and collar.",
+      "anchors": {
+        "mouth_ne_back": [
+          20.2582,
+          0,
+          -11.7118
+        ],
+        "torch_ne_back_a": [
+          16.5247,
+          0,
+          -14.1737
+        ],
+        "torch_ne_back_b": [
+          20.5287,
+          0,
+          -7.2478
+        ],
+        "torch_wall_000": [
+          22.9396,
+          0,
+          0
+        ]
+      },
+      "lights": [],
+      "poses": {},
+      "meta": {
+        "space": "cave",
+        "place": {
+          "at": [
+            0,
+            0,
+            0
+          ],
+          "rotY": 0
+        },
+        "segment": 0,
+        "segments": 6,
+        "thetaStart": 0,
+        "thetaEnd": 60,
+        "angleConvention": "theta around +Y from +X toward -Z; dir = (cos t, 0, -sin t)",
+        "wallRadiusMin": 22.8246,
+        "openings": [
+          "ne_back"
+        ],
+        "torchRotY": {
+          "torch_ne_back_a": -49.3794,
+          "torch_ne_back_b": -70.554,
+          "torch_wall_000": -90
+        }
+      },
+      "bytes": 61312
+    },
+    {
+      "name": "tl_cave_main_wall_01_v01",
+      "file": "caves/tl_cave_main_wall_01_v01.glb",
+      "url": "/models/caves/tl_cave_main_wall_01_v01.glb",
+      "triangles": 617,
+      "trianglesByMaterial": {
+        "tl_matte": 617
+      },
+      "budget": 1200,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -11.5026,
+          0,
+          -30.1318
+        ],
+        "max": [
+          12,
+          15.0482,
+          -17.1281
+        ]
+      },
+      "size": [
+        23.5026,
+        15.0482,
+        13.0037
+      ],
+      "nodes": [
+        "tl_cave_main_wall_01_v01"
+      ],
+      "emissive": [],
+      "materials": [
+        "tl_matte"
+      ],
+      "notes": "Main cave wall module 1 of 6: theta in [60, 120) deg (theta around +Y from +X toward -Z). Cave space: place at 0,0,0 with no rotation; the 6 modules close the ring (inner face ~23.4 m at the floor, leaning to ~20 m at 14.8 m). Contains the exit passage (3.5 x 3.6 m mouth at z=-23.4, 6.4 m deep, dead end).",
+      "anchors": {
+        "tunnel_mouth": [
+          0,
+          0,
+          -23.4
+        ],
+        "tunnel_end": [
+          1.4798,
+          0,
+          -29.5
+        ],
+        "tunnel_frame": [
+          0,
+          0,
+          -22.45
+        ],
+        "sign_rock": [
+          0.2,
+          5.2,
+          -22.55
+        ],
+        "tunnel_torch": [
+          0.595,
+          1.8,
+          -27.6
+        ]
+      },
+      "lights": [],
+      "poses": {},
+      "meta": {
+        "space": "cave",
+        "place": {
+          "at": [
+            0,
+            0,
+            0
+          ],
+          "rotY": 0
+        },
+        "segment": 1,
+        "segments": 6,
+        "thetaStart": 60,
+        "thetaEnd": 120,
+        "angleConvention": "theta around +Y from +X toward -Z; dir = (cos t, 0, -sin t)",
+        "wallRadiusMin": 22.8311,
+        "openings": [
+          "exit"
+        ],
+        "torchRotY": {},
+        "tunnel": {
+          "mouthZ": -23.4,
+          "width": 3.5,
+          "shoulder": 2.9,
+          "apex": 3.6,
+          "depth": 6.4
+        }
+      },
+      "bytes": 67456
+    },
+    {
+      "name": "tl_cave_main_wall_02_v01",
+      "file": "caves/tl_cave_main_wall_02_v01.glb",
+      "url": "/models/caves/tl_cave_main_wall_02_v01.glb",
+      "triangles": 540,
+      "trianglesByMaterial": {
+        "tl_matte": 540
+      },
+      "budget": 1200,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -24.7234,
+          -0.15,
+          -21.9537
+        ],
+        "max": [
+          -9.8889,
+          15.109,
+          0.2807
+        ]
+      },
+      "size": [
+        14.8345,
+        15.259,
+        22.2344
+      ],
+      "nodes": [
+        "tl_cave_main_wall_02_v01"
+      ],
+      "emissive": [],
+      "materials": [
+        "tl_matte"
+      ],
+      "notes": "Main cave wall module 2 of 6: theta in [120, 180) deg (theta around +Y from +X toward -Z). Cave space: place at 0,0,0 with no rotation; the 6 modules close the ring (inner face ~23.4 m at the floor, leaning to ~20 m at 14.8 m). Contains the mouth of the tunnel to side cave \"nw_back\" (5.0 m wide, 3.8 m apex) with its rock arch and collar.",
+      "anchors": {
+        "mouth_nw_back": [
+          -20.2582,
+          0,
+          -11.7118
+        ],
+        "torch_nw_back_a": [
+          -20.5287,
+          0,
+          -7.2478
+        ],
+        "torch_nw_back_b": [
+          -16.5247,
+          0,
+          -14.1737
+        ]
+      },
+      "lights": [],
+      "poses": {},
+      "meta": {
+        "space": "cave",
+        "place": {
+          "at": [
+            0,
+            0,
+            0
+          ],
+          "rotY": 0
+        },
+        "segment": 2,
+        "segments": 6,
+        "thetaStart": 120,
+        "thetaEnd": 180,
+        "angleConvention": "theta around +Y from +X toward -Z; dir = (cos t, 0, -sin t)",
+        "wallRadiusMin": 22.9425,
+        "openings": [
+          "nw_back"
+        ],
+        "torchRotY": {
+          "torch_nw_back_a": 70.554,
+          "torch_nw_back_b": 49.3794
+        }
+      },
+      "bytes": 58476
+    },
+    {
+      "name": "tl_cave_main_wall_03_v01",
+      "file": "caves/tl_cave_main_wall_03_v01.glb",
+      "url": "/models/caves/tl_cave_main_wall_03_v01.glb",
+      "triangles": 534,
+      "trianglesByMaterial": {
+        "tl_matte": 534
+      },
+      "budget": 1200,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -24.4715,
+          -0.15,
+          0
+        ],
+        "max": [
+          -10.2181,
+          15.0709,
+          21.1408
+        ]
+      },
+      "size": [
+        14.2535,
+        15.2209,
+        21.1408
+      ],
+      "nodes": [
+        "tl_cave_main_wall_03_v01"
+      ],
+      "emissive": [],
+      "materials": [
+        "tl_matte"
+      ],
+      "notes": "Main cave wall module 3 of 6: theta in [180, 240) deg (theta around +Y from +X toward -Z). Cave space: place at 0,0,0 with no rotation; the 6 modules close the ring (inner face ~23.4 m at the floor, leaning to ~20 m at 14.8 m). Contains the mouth of the tunnel to side cave \"nw_front\" (5.0 m wide, 3.8 m apex) with its rock arch and collar.",
+      "anchors": {
+        "mouth_nw_front": [
+          -20.2582,
+          0,
+          11.7118
+        ],
+        "torch_nw_front_a": [
+          -16.5247,
+          0,
+          14.1737
+        ],
+        "torch_nw_front_b": [
+          -20.5287,
+          0,
+          7.2478
+        ],
+        "torch_wall_180": [
+          -22.1313,
+          0,
+          0
+        ]
+      },
+      "lights": [],
+      "poses": {},
+      "meta": {
+        "space": "cave",
+        "place": {
+          "at": [
+            0,
+            0,
+            0
+          ],
+          "rotY": 0
+        },
+        "segment": 3,
+        "segments": 6,
+        "thetaStart": 180,
+        "thetaEnd": 240,
+        "angleConvention": "theta around +Y from +X toward -Z; dir = (cos t, 0, -sin t)",
+        "wallRadiusMin": 22.7649,
+        "openings": [
+          "nw_front"
+        ],
+        "torchRotY": {
+          "torch_nw_front_a": 130.6206,
+          "torch_nw_front_b": 109.446,
+          "torch_wall_180": 90
+        }
+      },
+      "bytes": 57832
+    },
+    {
+      "name": "tl_cave_main_wall_04_v01",
+      "file": "caves/tl_cave_main_wall_04_v01.glb",
+      "url": "/models/caves/tl_cave_main_wall_04_v01.glb",
+      "triangles": 340,
+      "trianglesByMaterial": {
+        "tl_matte": 340
+      },
+      "budget": 1200,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -12.2057,
+          0,
+          16.9956
+        ],
+        "max": [
+          11.4744,
+          15.0924,
+          24.5952
+        ]
+      },
+      "size": [
+        23.68,
+        15.0924,
+        7.5997
+      ],
+      "nodes": [
+        "tl_cave_main_wall_04_v01"
+      ],
+      "emissive": [],
+      "materials": [
+        "tl_matte"
+      ],
+      "notes": "Main cave wall module 4 of 6: theta in [240, 300) deg (theta around +Y from +X toward -Z). Cave space: place at 0,0,0 with no rotation; the 6 modules close the ring (inner face ~23.4 m at the floor, leaning to ~20 m at 14.8 m).",
+      "anchors": {
+        "torch_wall_251": [
+          -7.3853,
+          0,
+          21.4485
+        ],
+        "torch_wall_289": [
+          7.2127,
+          0,
+          20.9472
+        ]
+      },
+      "lights": [],
+      "poses": {},
+      "meta": {
+        "space": "cave",
+        "place": {
+          "at": [
+            0,
+            0,
+            0
+          ],
+          "rotY": 0
+        },
+        "segment": 4,
+        "segments": 6,
+        "thetaStart": 240,
+        "thetaEnd": 300,
+        "angleConvention": "theta around +Y from +X toward -Z; dir = (cos t, 0, -sin t)",
+        "wallRadiusMin": 22.8322,
+        "openings": [],
+        "torchRotY": {
+          "torch_wall_251": 161,
+          "torch_wall_289": 199
+        }
+      },
+      "bytes": 38316
+    },
+    {
+      "name": "tl_cave_main_wall_05_v01",
+      "file": "caves/tl_cave_main_wall_05_v01.glb",
+      "url": "/models/caves/tl_cave_main_wall_05_v01.glb",
+      "triangles": 556,
+      "trianglesByMaterial": {
+        "tl_matte": 556
+      },
+      "budget": 1200,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          9.8124,
+          -0.15,
+          -0.1882
+        ],
+        "max": [
+          24.6163,
+          15.0791,
+          20.8256
+        ]
+      },
+      "size": [
+        14.8039,
+        15.2291,
+        21.0139
+      ],
+      "nodes": [
+        "tl_cave_main_wall_05_v01"
+      ],
+      "emissive": [],
+      "materials": [
+        "tl_matte"
+      ],
+      "notes": "Main cave wall module 5 of 6: theta in [300, 360) deg (theta around +Y from +X toward -Z). Cave space: place at 0,0,0 with no rotation; the 6 modules close the ring (inner face ~23.4 m at the floor, leaning to ~20 m at 14.8 m). Contains the mouth of the tunnel to side cave \"ne_front\" (5.0 m wide, 3.8 m apex) with its rock arch and collar.",
+      "anchors": {
+        "mouth_ne_front": [
+          20.2582,
+          0,
+          11.7118
+        ],
+        "torch_ne_front_a": [
+          20.5287,
+          0,
+          7.2478
+        ],
+        "torch_ne_front_b": [
+          16.5247,
+          0,
+          14.1737
+        ]
+      },
+      "lights": [],
+      "poses": {},
+      "meta": {
+        "space": "cave",
+        "place": {
+          "at": [
+            0,
+            0,
+            0
+          ],
+          "rotY": 0
+        },
+        "segment": 5,
+        "segments": 6,
+        "thetaStart": 300,
+        "thetaEnd": 360,
+        "angleConvention": "theta around +Y from +X toward -Z; dir = (cos t, 0, -sin t)",
+        "wallRadiusMin": 22.851,
+        "openings": [
+          "ne_front"
+        ],
+        "torchRotY": {
+          "torch_ne_front_a": 250.554,
+          "torch_ne_front_b": 229.3794
+        }
+      },
+      "bytes": 60440
+    },
+    {
+      "name": "tl_cave_main_ceiling_v01",
+      "file": "caves/tl_cave_main_ceiling_v01.glb",
+      "url": "/models/caves/tl_cave_main_ceiling_v01.glb",
+      "triangles": 1108,
+      "trianglesByMaterial": {
+        "tl_matte": 1108
+      },
+      "budget": 1600,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -25.5703,
+          10.0646,
+          -25.5955
+        ],
+        "max": [
+          25.5521,
+          17.6992,
+          25.5842
+        ]
+      },
+      "size": [
+        51.1224,
+        7.6346,
+        51.1797
+      ],
+      "nodes": [
+        "tl_cave_main_ceiling_v01"
+      ],
+      "emissive": [],
+      "materials": [
+        "tl_matte"
+      ],
+      "notes": "Irregular main cave ceiling, cave space (place at 0,0,0): 16.5 m at the centre, meets the leaning walls at ~13.5 m, rim r=25.6 m hidden behind the walls. Faces point down (single-sided). Includes 12 massive hanging rock cones and 30 merged stalactites; nothing hangs below 9.5 m.",
+      "anchors": {},
+      "lights": [],
+      "poses": {},
+      "meta": {
+        "space": "cave",
+        "place": {
+          "at": [
+            0,
+            0,
+            0
+          ],
+          "rotY": 0
+        },
+        "apexY": 16.5,
+        "rimRadius": 25.6,
+        "lowestRock": 10.0646,
+        "heightNote": "ceiling y ~= 16.5 - 5.4 * (r / 25.6)^2.5 (+-0.5 m noise inside r = 16)"
+      },
+      "bytes": 127440
+    },
+    {
+      "name": "tl_cave_tunnel_a_v01",
+      "file": "caves/tl_cave_tunnel_a_v01.glb",
+      "url": "/models/caves/tl_cave_tunnel_a_v01.glb",
+      "triangles": 106,
+      "trianglesByMaterial": {
+        "tl_matte": 106
+      },
+      "budget": 500,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -3.75,
+          -0.2,
+          -2.1814
+        ],
+        "max": [
+          3.75,
+          4.9,
+          2.1814
+        ]
+      },
+      "size": [
+        7.5,
+        5.1,
+        4.3628
+      ],
+      "nodes": [
+        "tl_cave_tunnel_a_v01",
+        "tl_cave_tunnel_a_roof"
+      ],
+      "emissive": [],
+      "materials": [
+        "tl_matte"
+      ],
+      "notes": "Tunnel passage A: natural rock tube along local Z (+Z toward the main cave), 4.36 m long, clear half width >= 2.5 m up to 2.75 m, apex ~3.9-4.2 m, earth floor at y = 0.05. Both ends flare (hidden inside the collars of the two shells). Place at the midpoint between the mouth planes with the side cave's rotY (meta.place). Roof facets are in the child node tl_cave_tunnel_a_roof.",
+      "anchors": {
+        "end_main": [
+          0,
+          0,
+          2.1814
+        ],
+        "end_side": [
+          0,
+          0,
+          -2.1814
+        ],
+        "center": [
+          0,
+          0,
+          0
+        ]
+      },
+      "lights": [],
+      "poses": {},
+      "meta": {
+        "space": "local",
+        "variant": "a",
+        "place": {
+          "recipe": "at = u * (23.4 + |side centre| - 8.6) / 2 (midpoint of the two mouth planes), rotY = atan2(-u.x, -u.z) deg with u = unit(side centre): local +Z points at the origin",
+          "instances": [
+            {
+              "id": "ne_back",
+              "at": [
+                22.4064,
+                0,
+                -12.9537
+              ],
+              "rotY": -59.9667,
+              "suggested": true
+            },
+            {
+              "id": "nw_back",
+              "at": [
+                -22.4064,
+                0,
+                -12.9537
+              ],
+              "rotY": 59.9667,
+              "suggested": false
+            },
+            {
+              "id": "nw_front",
+              "at": [
+                -22.4064,
+                0,
+                12.9537
+              ],
+              "rotY": 120.0333,
+              "suggested": true
+            },
+            {
+              "id": "ne_front",
+              "at": [
+                22.4064,
+                0,
+                12.9537
+              ],
+              "rotY": -120.0333,
+              "suggested": false
+            }
+          ]
+        },
+        "length": 4.3628,
+        "clearHalfWidth": 2.5,
+        "floorY": 0.05,
+        "ceilingAt": {
+          "cameraTop": 2.6,
+          "rock": 2.85,
+          "apex": 3.85
+        },
+        "roofNode": "tl_cave_tunnel_a_roof"
+      },
+      "bytes": 13096
+    },
+    {
+      "name": "tl_cave_tunnel_b_v01",
+      "file": "caves/tl_cave_tunnel_b_v01.glb",
+      "url": "/models/caves/tl_cave_tunnel_b_v01.glb",
+      "triangles": 140,
+      "trianglesByMaterial": {
+        "tl_matte": 140
+      },
+      "budget": 500,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -3.75,
+          -0.2,
+          -2.1814
+        ],
+        "max": [
+          3.7865,
+          4.9,
+          2.1814
+        ]
+      },
+      "size": [
+        7.5365,
+        5.1,
+        4.3628
+      ],
+      "nodes": [
+        "tl_cave_tunnel_b_v01",
+        "tl_cave_tunnel_b_roof"
+      ],
+      "emissive": [],
+      "materials": [
+        "tl_matte"
+      ],
+      "notes": "Tunnel passage B: natural rock tube along local Z (+Z toward the main cave), 4.36 m long, clear half width >= 2.5 m up to 2.75 m, apex ~3.9-4.2 m, earth floor at y = 0.05. Both ends flare (hidden inside the collars of the two shells). Place at the midpoint between the mouth planes with the side cave's rotY (meta.place). Roof facets are in the child node tl_cave_tunnel_b_roof.",
+      "anchors": {
+        "end_main": [
+          0,
+          0,
+          2.1814
+        ],
+        "end_side": [
+          0,
+          0,
+          -2.1814
+        ],
+        "center": [
+          0,
+          0,
+          0
+        ]
+      },
+      "lights": [],
+      "poses": {},
+      "meta": {
+        "space": "local",
+        "variant": "b",
+        "place": {
+          "recipe": "at = u * (23.4 + |side centre| - 8.6) / 2 (midpoint of the two mouth planes), rotY = atan2(-u.x, -u.z) deg with u = unit(side centre): local +Z points at the origin",
+          "instances": [
+            {
+              "id": "ne_back",
+              "at": [
+                22.4064,
+                0,
+                -12.9537
+              ],
+              "rotY": -59.9667,
+              "suggested": false
+            },
+            {
+              "id": "nw_back",
+              "at": [
+                -22.4064,
+                0,
+                -12.9537
+              ],
+              "rotY": 59.9667,
+              "suggested": true
+            },
+            {
+              "id": "nw_front",
+              "at": [
+                -22.4064,
+                0,
+                12.9537
+              ],
+              "rotY": 120.0333,
+              "suggested": false
+            },
+            {
+              "id": "ne_front",
+              "at": [
+                22.4064,
+                0,
+                12.9537
+              ],
+              "rotY": -120.0333,
+              "suggested": true
+            }
+          ]
+        },
+        "length": 4.3628,
+        "clearHalfWidth": 2.5,
+        "floorY": 0.05,
+        "ceilingAt": {
+          "cameraTop": 2.6,
+          "rock": 2.85,
+          "apex": 3.85
+        },
+        "roofNode": "tl_cave_tunnel_b_roof"
+      },
+      "bytes": 16916
+    },
+    {
+      "name": "tl_cave_side_a_v01",
+      "file": "caves/tl_cave_side_a_v01.glb",
+      "url": "/models/caves/tl_cave_side_a_v01.glb",
+      "triangles": 1223,
+      "trianglesByMaterial": {
+        "tl_matte": 1223
+      },
+      "budget": 1800,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -11.1492,
+          -0.15,
+          -12.3277
+        ],
+        "max": [
+          11.1652,
+          7.7448,
+          11.1998
+        ]
+      },
+      "size": [
+        22.3144,
+        7.8948,
+        23.5276
+      ],
+      "nodes": [
+        "tl_cave_side_a_v01",
+        "tl_cave_side_a_ceiling"
+      ],
+      "emissive": [],
+      "materials": [
+        "tl_matte"
+      ],
+      "notes": "Side cave A (floor + wall + arch in the root, ceiling in the child node tl_cave_side_a_ceiling). Local frame: centre at the origin, the one opening faces +Z with its mouth plane at z = +8.6 (5.0 m wide, 3.8 m apex). Wall inner face ~8.6 m at the floor, never closer than 7.75 m below 3.3 m; ceiling apex 7.2 m. Place at a side centre with rotY so local +Z points at the world origin (meta.place).",
+      "anchors": {
+        "center": [
+          0,
+          0,
+          0
+        ],
+        "mouth": [
+          0,
+          0,
+          8.6
+        ],
+        "torch_mouth_a": [
+          4,
+          0,
+          6
+        ],
+        "torch_mouth_b": [
+          -4,
+          0,
+          6
+        ],
+        "niche": [
+          0,
+          0.85,
+          -9.4
+        ],
+        "focal": [
+          0,
+          0,
+          -7.2
+        ],
+        "torch_niche_a": [
+          -3.89,
+          0,
+          -6.7377
+        ],
+        "torch_niche_b": [
+          3.89,
+          0,
+          -6.7377
+        ]
+      },
+      "lights": [],
+      "poses": {},
+      "collider": {
+        "type": "cylinder",
+        "center": [
+          0,
+          -0.25,
+          0
+        ],
+        "radius": 11.2,
+        "height": 0.5
+      },
+      "meta": {
+        "space": "local",
+        "variant": "a",
+        "place": {
+          "recipe": "at = side centre; rotY = atan2(-u.x, -u.z) deg with u = unit(side centre): local +Z points at the origin",
+          "instances": [
+            {
+              "id": "ne_back",
+              "at": [
+                32,
+                0,
+                -18.5
+              ],
+              "rotY": -59.9667,
+              "suggested": true
+            },
+            {
+              "id": "nw_back",
+              "at": [
+                -32,
+                0,
+                -18.5
+              ],
+              "rotY": 59.9667,
+              "suggested": false
+            },
+            {
+              "id": "nw_front",
+              "at": [
+                -32,
+                0,
+                18.5
+              ],
+              "rotY": 120.0333,
+              "suggested": true
+            },
+            {
+              "id": "ne_front",
+              "at": [
+                32,
+                0,
+                18.5
+              ],
+              "rotY": -120.0333,
+              "suggested": false
+            }
+          ]
+        },
+        "opening": {
+          "mouth": [
+            0,
+            0,
+            8.6
+          ],
+          "dir": [
+            0,
+            0,
+            1
+          ],
+          "width": 5,
+          "shoulders": [
+            2.9,
+            3.3179
+          ],
+          "apex": 3.9315,
+          "apexOffset": -0.4796
+        },
+        "wallRadius": {
+          "mean": 8.8732,
+          "min": 8.3419
+        },
+        "wallRadiusMin": 8.3419,
+        "floorRadius": 11.2,
+        "flatRadius": 7.6,
+        "nicheTheta": 90,
+        "nicheRotY": 0,
+        "ceilingAt": {
+          "cameraTop": 3.2,
+          "rock": 5.1118,
+          "apex": 7.2,
+          "wallJunction": 5.75
+        },
+        "ceilingNode": "tl_cave_side_a_ceiling"
+      },
+      "bytes": 135148
+    },
+    {
+      "name": "tl_cave_side_b_v01",
+      "file": "caves/tl_cave_side_b_v01.glb",
+      "url": "/models/caves/tl_cave_side_b_v01.glb",
+      "triangles": 1317,
+      "trianglesByMaterial": {
+        "tl_matte": 1317
+      },
+      "budget": 1800,
+      "overBudget": false,
+      "bounds": {
+        "min": [
+          -11.153,
+          -0.15,
+          -11.1968
+        ],
+        "max": [
+          11.1602,
+          7.7252,
+          11.1969
+        ]
+      },
+      "size": [
+        22.3132,
+        7.8752,
+        22.3936
+      ],
+      "nodes": [
+        "tl_cave_side_b_v01",
+        "tl_cave_side_b_ceiling"
+      ],
+      "emissive": [],
+      "materials": [
+        "tl_matte"
+      ],
+      "notes": "Side cave B (floor + wall + arch in the root, ceiling in the child node tl_cave_side_b_ceiling). Local frame: centre at the origin, the one opening faces +Z with its mouth plane at z = +8.6 (5.0 m wide, 3.8 m apex). Wall inner face ~8.6 m at the floor, never closer than 7.75 m below 3.3 m; ceiling apex 7.2 m. Place at a side centre with rotY so local +Z points at the world origin (meta.place).",
+      "anchors": {
+        "center": [
+          0,
+          0,
+          0
+        ],
+        "mouth": [
+          0,
+          0,
+          8.6
+        ],
+        "torch_mouth_a": [
+          4,
+          0,
+          6
+        ],
+        "torch_mouth_b": [
+          -4,
+          0,
+          6
+        ],
+        "niche": [
+          -5.7872,
+          0.85,
+          -7.4073
+        ],
+        "focal": [
+          -4.4328,
+          0,
+          -5.6737
+        ],
+        "torch_niche_a": [
+          -7.2135,
+          0,
+          -2.9144
+        ],
+        "torch_niche_b": [
+          -1.0828,
+          0,
+          -7.7043
+        ]
+      },
+      "lights": [],
+      "poses": {},
+      "collider": {
+        "type": "cylinder",
+        "center": [
+          0,
+          -0.25,
+          0
+        ],
+        "radius": 11.2,
+        "height": 0.5
+      },
+      "meta": {
+        "space": "local",
+        "variant": "b",
+        "place": {
+          "recipe": "at = side centre; rotY = atan2(-u.x, -u.z) deg with u = unit(side centre): local +Z points at the origin",
+          "instances": [
+            {
+              "id": "ne_back",
+              "at": [
+                32,
+                0,
+                -18.5
+              ],
+              "rotY": -59.9667,
+              "suggested": false
+            },
+            {
+              "id": "nw_back",
+              "at": [
+                -32,
+                0,
+                -18.5
+              ],
+              "rotY": 59.9667,
+              "suggested": true
+            },
+            {
+              "id": "nw_front",
+              "at": [
+                -32,
+                0,
+                18.5
+              ],
+              "rotY": 120.0333,
+              "suggested": false
+            },
+            {
+              "id": "ne_front",
+              "at": [
+                32,
+                0,
+                18.5
+              ],
+              "rotY": -120.0333,
+              "suggested": true
+            }
+          ]
+        },
+        "opening": {
+          "mouth": [
+            0,
+            0,
+            8.6
+          ],
+          "dir": [
+            0,
+            0,
+            1
+          ],
+          "width": 5,
+          "shoulders": [
+            2.9,
+            3.2591
+          ],
+          "apex": 3.9483,
+          "apexOffset": -0.4645
+        },
+        "wallRadius": {
+          "mean": 8.9875,
+          "min": 8.3298
+        },
+        "wallRadiusMin": 8.3298,
+        "floorRadius": 11.2,
+        "flatRadius": 7.6,
+        "nicheTheta": 128,
+        "nicheRotY": 38,
+        "ceilingAt": {
+          "cameraTop": 3.2,
+          "rock": 5.0603,
+          "apex": 7.2,
+          "wallJunction": 5.75
+        },
+        "ceilingNode": "tl_cave_side_b_ceiling"
+      },
+      "bytes": 145140
+    }
+  ]
+}
