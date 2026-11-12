@@ -12,6 +12,7 @@
     "spike": "tsx scripts/spike.ts",
     "bots": "tsx scripts/bots.ts",
     "keys": "tsx scripts/gen-ticket-keys.ts",
+    "admin:account": "tsx scripts/admin-account.ts",
     "db:migrate": "tsx scripts/migrate.ts",
     "start:api": "node dist/server/api.mjs",
     "start:game": "node dist/server/game.mjs",

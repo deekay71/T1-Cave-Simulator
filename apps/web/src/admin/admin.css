@@ -22,6 +22,10 @@ code,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12p
 .login form{width:min(380px,100%);display:grid;gap:14px;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:28px}
 .login h1{margin:0;font-size:22px}
 .login small{color:var(--muted)}
+.login{align-content:center;gap:14px}
+.token-login{width:min(380px,100%);color:var(--muted);font-size:13px}
+.token-login summary{cursor:pointer;padding:4px 2px}
+.token-login form{margin-top:10px;padding:18px 20px}
 /* shell */
 .shell{display:grid;grid-template-columns:220px 1fr;min-height:100vh}
 aside{border-right:1px solid var(--line);padding:22px 14px;display:flex;flex-direction:column;gap:22px;position:sticky;top:0;height:100vh}
@@ -86,6 +90,12 @@ tr.dim td{opacity:.5}
 .options label input[type=radio]{width:auto;accent-color:var(--ok)}
 .options label span{color:var(--muted);font-size:12px;font-weight:700}
 .options label.correct input:not([type=radio]){border-color:var(--ok)}
+/* accounts */
+.row-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+.row-head h3{margin:0;flex:1}
+.row-head input{width:min(280px,100%)}
+.panel.password{display:grid;gap:12px;max-width:420px}
+.panel.password h3{margin:0}
 .notice{border-radius:10px;padding:10px 14px;border:1px solid var(--line);background:var(--panel)}
 .notice.ok{border-color:#8fc79a66}
 .notice.error{border-color:#e2847c66}

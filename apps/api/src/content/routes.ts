@@ -9,30 +9,29 @@
  * - GET  /v1/admin/live                 người chơi đang online, thống kê (hỏi cổng quản trị của game).
  * - GET  /v1/admin/youtube?url=…        video YouTube có cho nhúng không, tên video (hỏi oEmbed của YouTube).
  *
- * /v1/admin/* cần header `Authorization: Bearer <ADMIN_TOKEN>`. Không đặt ADMIN_TOKEN (hoặc ngắn hơn
- * 16 ký tự) thì trang quản trị tắt hẳn (503). So sánh token theo thời gian hằng.
+ * /v1/admin/* cần phiên của một tài khoản quản trị, hoặc header `Authorization: Bearer <ADMIN_TOKEN>`
+ * (admin/guard.ts).
  */
-import { createHash, timingSafeEqual } from 'node:crypto';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { QuestList, VideoList, publicContent, youtubeId } from '@te-liet/shared';
 import type { ContentStore } from './store.js';
+import { adminGuard } from '../admin/guard.js';
 
-const digest = (s: string) => createHash('sha256').update(s).digest();
 const BODY_LIMIT = 256 * 1024;
 
-export async function registerContentRoutes(app: FastifyInstance, store: ContentStore, opts: { adminToken?: string; gameAdminUrl?: string; fetch?: typeof fetch } = {}) {
-  const get = opts.fetch ?? fetch;
-  const token = opts.adminToken?.trim() ?? '';
-  const enabled = token.length >= 16;
-  const expected = digest(token);
+export interface ContentRoutesOptions {
+  adminToken?: string;
+  /** Phiên đăng nhập hiện tại là tài khoản quản trị (accounts/routes.ts). */
+  isAdmin?: (req: FastifyRequest) => Promise<boolean>;
+  webOrigin?: string;
+  gameAdminUrl?: string;
+  fetch?: typeof fetch;
+}
 
-  const guard = async (req: FastifyRequest, reply: FastifyReply) => {
-    if (!enabled) return reply.code(503).send({ error: 'Trang quản trị chưa bật (đặt ADMIN_TOKEN cho API).' });
-    const header = req.headers.authorization ?? '';
-    const given = header.startsWith('Bearer ') ? header.slice(7).trim() : '';
-    if (!given || !timingSafeEqual(digest(given), expected)) return reply.code(401).send({ error: 'Sai mã quản trị.' });
-  };
+export async function registerContentRoutes(app: FastifyInstance, store: ContentStore, opts: ContentRoutesOptions = {}) {
+  const get = opts.fetch ?? fetch;
+  const guard = adminGuard({ token: opts.adminToken, isAdmin: opts.isAdmin, webOrigin: opts.webOrigin });
   const invalid = (reply: FastifyReply, error: z.ZodError) =>
     reply.code(400).send({ error: 'Dữ liệu không hợp lệ', issues: error.issues.slice(0, 20).map((i) => ({ path: i.path.join('.'), message: i.message })) });
 

@@ -8,7 +8,8 @@ import {
   type MouseEvent,
 } from "react";
 import { createRoot } from "react-dom/client";
-import { HUB_LANDMARKS, ROOM_CAPACITY, SCREEN_SPOT } from "@te-liet/shared";
+import { HUB_LANDMARKS, PASSWORD_MIN, ROOM_CAPACITY, SCREEN_SPOT, type AccountView } from "@te-liet/shared";
+import { renderGoogleButton } from "./auth/google.js";
 import { loadDone } from "./stalls/quests.js";
 import { content, offContent } from "./content/api.js";
 import { StallPanel, RankPanel, ResidentHUD } from "./stalls/StallPanel.js";
@@ -43,10 +44,16 @@ type Snapshot = {
   screenSound: "none" | "off" | "on";
   /** Điểm tương tác ở gần (bấm E hoặc chạm nút để mở bảng). */
   prompt: { id: string; name: string } | null;
-  /** API yêu cầu mã mời (close test): hiện ô nhập mã trong form vào hang. */
+  /** API yêu cầu mã mời (close test): hiện ô nhập mã trong form vào hang / tạo tài khoản. */
   needInvite: boolean;
-  /** Thông báo dưới nút đăng nhập (ví dụ: Google chưa mở). */
+  /** Thông báo dưới nút đăng nhập (lỗi đăng nhập, Google chưa bật…). */
   loginNotice: string;
+  /** Tài khoản đang đăng nhập (cookie phiên), null khi chưa đăng nhập hoặc chơi thử. */
+  account: AccountView | null;
+  /** Đã hỏi API xong /v1/auth/me (trước đó màn đăng nhập chưa biết hiện gì). */
+  authReady: boolean;
+  /** OAuth client ID khi máy chủ bật đăng nhập Google. */
+  google: string | null;
 };
 let state: Snapshot = {
   connected: false,
@@ -65,6 +72,9 @@ let state: Snapshot = {
   prompt: null,
   needInvite: false,
   loginNotice: "",
+  account: null,
+  authReady: false,
+  google: null,
 };
 
 /**
@@ -211,9 +221,15 @@ const MOVES: readonly [key: string, label: string][] = [
   ["d", "Sang phải"],
 ];
 export type Actions = {
+  /** Chơi thử (khách): tên tự chọn, không có tài khoản. */
   join: (name: string, invite: string) => void;
-  /** Nút Google ở màn đăng nhập. Chưa có đăng nhập Google thật: chỉ báo qua ui.loginNotice. */
-  google: () => void;
+  /** Vào hang bằng tài khoản đang đăng nhập. */
+  enter: () => void;
+  /** Đăng nhập / tạo tài khoản nhanh, xong thì vào hang luôn. */
+  signIn: (mode: "login" | "signup", form: { username: string; password: string; name?: string; invite?: string }) => void;
+  /** Nút Google trả về ID token: gửi cho API, xong thì vào hang luôn. */
+  googleCredential: (credential: string, invite: string) => void;
+  signOut: () => void;
   /** Gửi chat: 0 khi đã gửi, nếu không thì số ms phải chờ (giới hạn tần suất của khách). */
   chat: (text: string) => number;
   emote: (name: EmoteName) => void;
@@ -467,30 +483,232 @@ function GamepadIcon() {
   );
 }
 
+function KeyIcon() {
+  return (
+    <svg className="slab-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path
+        fill="currentColor"
+        fillRule="evenodd"
+        d="M8 5.5a6.5 6.5 0 0 1 6.2 8.5H22v3h-2v3h-3v-3h-2.8A6.5 6.5 0 1 1 8 5.5zm0 4a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5z"
+      />
+    </svg>
+  );
+}
+
 /**
- * Màn đăng nhập (design/concepts/login-low-poly): tựa game bằng chữ + CSS, hai phiến nút. "Chơi thử"
- * mở ngay tại chỗ bước nhập tên (và mã mời khi API đòi) rồi vào hang như trước; "Google" chưa có
- * đăng nhập thật nên chỉ gọi actions.google() để hiện thông báo. Luôn được gắn (ẩn khi đã vào hang)
- * để tên, mã mời và bước đang mở còn nguyên khi rời hang quay lại.
+ * Nút Google chính thức (Google vẽ trong iframe của họ, rộng bằng cột nút). Không tải được thư viện
+ * (mạng, trình chặn quảng cáo) thì hiện phiến xám kèm thông báo.
+ */
+function GoogleSlot({ clientId, invite, actions }: { clientId: string; invite: string; actions: Actions }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const inviteRef = useRef(invite);
+  inviteRef.current = invite;
+  const [failed, setFailed] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    let live = true;
+    renderGoogleButton(el, clientId, el.clientWidth || 252, (credential) => actions.googleCredential(credential, inviteRef.current)).catch(() => {
+      if (live) setFailed(true);
+    });
+    return () => {
+      live = false;
+    };
+  }, [clientId, actions]);
+  if (failed)
+    return (
+      <button type="button" className="slab" aria-disabled="true" onClick={() => ui.set({ loginNotice: "Không tải được nút Google (mạng hoặc trình chặn quảng cáo). Dùng Tài khoản hoặc Chơi thử nhé." })}>
+        <GoogleMark />
+        <span>Google</span>
+        <span className="slab-tag">Lỗi tải</span>
+      </button>
+    );
+  return <div ref={ref} className="login-google" aria-label="Đăng nhập bằng Google" />;
+}
+
+type LoginMode = "home" | "guest" | "account";
+
+/**
+ * Màn đăng nhập (design/concepts/login-low-poly): tựa game bằng chữ + CSS, các phiến nút.
+ *
+ * - Chưa đăng nhập: Google (nút chính thức, khi máy chủ bật), Tài khoản (đăng nhập / tạo nhanh bằng
+ *   tên + mật khẩu), Chơi thử (khách, chỉ cần tên). Đăng nhập xong là vào hang luôn.
+ * - Đã đăng nhập (cookie phiên còn hạn): chào theo tên, "Vào hang", "Đăng xuất".
+ *
+ * Luôn được gắn (ẩn khi đã vào hang) để tên, mã mời và bước đang mở còn nguyên khi rời hang quay lại.
  */
 function LoginPanel({ s, actions }: { s: Snapshot; actions: Actions }) {
   const [name, setName] = useState("Người trong hang");
   const [invite, setInvite] = useState(initialInvite);
-  const [guest, setGuest] = useState(false);
-  const nameRef = useRef<HTMLInputElement>(null);
-  const guestRef = useRef<HTMLButtonElement>(null);
-  const wasGuest = useRef(false);
-  // mở bước nhập tên: con trỏ vào ô tên (chọn sẵn chữ); quay lại: focus về nút Chơi thử
+  const [mode, setMode] = useState<LoginMode>("home");
+  const [tab, setTab] = useState<"login" | "signup">("login");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [caveName, setCaveName] = useState("");
+  const firstRef = useRef<HTMLInputElement>(null);
+  const backTo = useRef<LoginMode>("home");
+  const homeRef = useRef<HTMLDivElement>(null);
+  // mở một bước: con trỏ vào ô đầu; quay lại: focus về nút vừa bấm
   useEffect(() => {
-    if (guest) {
-      nameRef.current?.focus();
-      nameRef.current?.select();
-    } else if (wasGuest.current) guestRef.current?.focus();
-    wasGuest.current = guest;
-  }, [guest]);
+    if (mode !== "home") {
+      firstRef.current?.focus();
+      if (mode === "guest") firstRef.current?.select();
+    } else if (backTo.current !== "home") {
+      homeRef.current?.querySelector<HTMLButtonElement>(`[data-step="${backTo.current}"]`)?.focus();
+    }
+    backTo.current = mode;
+  }, [mode]);
+  // đăng nhập xong (hoặc đăng xuất) thì về màn chính
+  useEffect(() => {
+    setMode("home");
+    setPassword("");
+  }, [s.account?.id]);
   if (s.connected) return null;
+  const open = (next: LoginMode) => {
+    ui.set({ loginNotice: "" });
+    setMode(next);
+  };
+  const back = () => {
+    if (s.busy) return;
+    ui.set({ loginNotice: "" });
+    setMode("home");
+  };
+  const escape = (e: React.KeyboardEvent) => {
+    if (e.key !== "Escape" || s.busy) return;
+    e.stopPropagation();
+    back();
+  };
+  const inviteField = (required: boolean) =>
+    (s.needInvite || invite !== "") && (
+      <>
+        <label htmlFor="invite">Mã mời</label>
+        <input id="invite" maxLength={64} autoComplete="off" value={invite} onChange={(e) => setInvite(e.target.value)} required={required && s.needInvite} />
+      </>
+    );
+  let body;
+  if (mode === "guest") {
+    body = (
+      <form
+        className="login-guest"
+        onSubmit={(e) => {
+          e.preventDefault();
+          actions.join(name, invite);
+        }}
+        onKeyDown={escape}
+      >
+        <label htmlFor="name">Tên trong hang</label>
+        <input ref={firstRef} id="name" maxLength={24} autoComplete="nickname" enterKeyHint="go" value={name} onChange={(e) => setName(e.target.value)} required />
+        {inviteField(true)}
+        <button className="slab slab-crimson" disabled={s.busy}>
+          <span>{s.busy ? "Đang tìm chỗ…" : "Vào hang →"}</span>
+        </button>
+        <button type="button" className="login-back" disabled={s.busy} onClick={back}>
+          ← Quay lại
+        </button>
+      </form>
+    );
+  } else if (mode === "account") {
+    const signup = tab === "signup";
+    body = (
+      <form
+        className="login-guest login-account"
+        onSubmit={(e) => {
+          e.preventDefault();
+          actions.signIn(tab, { username, password, ...(signup && caveName.trim() ? { name: caveName } : {}), ...(signup && invite.trim() ? { invite } : {}) });
+        }}
+        onKeyDown={escape}
+      >
+        <div className="login-tabs" role="group" aria-label="Chọn cách vào">
+          <button type="button" aria-pressed={!signup} onClick={() => { ui.set({ loginNotice: "" }); setTab("login"); }}>Đăng nhập</button>
+          <button type="button" aria-pressed={signup} onClick={() => { ui.set({ loginNotice: "" }); setTab("signup"); }}>Tạo tài khoản</button>
+        </div>
+        <label htmlFor="username">Tên đăng nhập</label>
+        <input
+          ref={firstRef}
+          id="username"
+          maxLength={24}
+          autoComplete="username"
+          autoCapitalize="none"
+          spellCheck={false}
+          pattern={signup ? "[A-Za-z0-9][A-Za-z0-9._\\-]{2,23}" : undefined}
+          title={signup ? "3–24 ký tự: chữ không dấu, số, dấu . _ -" : undefined}
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          required
+        />
+        <label htmlFor="password">Mật khẩu</label>
+        <input
+          id="password"
+          type="password"
+          maxLength={128}
+          minLength={signup ? PASSWORD_MIN : undefined}
+          autoComplete={signup ? "new-password" : "current-password"}
+          enterKeyHint={signup ? "next" : "go"}
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+        />
+        {signup && (
+          <>
+            <label htmlFor="cave-name">Tên trong hang <span className="login-hint">(không bắt buộc)</span></label>
+            <input id="cave-name" maxLength={24} autoComplete="nickname" placeholder={username.trim() || "Giống tên đăng nhập"} value={caveName} onChange={(e) => setCaveName(e.target.value)} />
+            {inviteField(true)}
+          </>
+        )}
+        <button className="slab slab-crimson" disabled={s.busy}>
+          <span>{s.busy ? "Đang vào…" : signup ? "Tạo & vào hang →" : "Đăng nhập →"}</span>
+        </button>
+        <button type="button" className="login-back" disabled={s.busy} onClick={back}>
+          ← Quay lại
+        </button>
+      </form>
+    );
+  } else if (s.account) {
+    body = (
+      <div className="login-actions" ref={homeRef}>
+        <p className="login-who">
+          Chào <b>{s.account.name}</b>
+          <span>{s.account.provider === "google" ? "Tài khoản Google" : `@${s.account.username}`}{s.account.role === "admin" ? " · quản trị" : ""}</span>
+        </p>
+        <button type="button" className="slab slab-crimson" disabled={s.busy} onClick={actions.enter}>
+          <span>{s.busy ? "Đang tìm chỗ…" : "Vào hang →"}</span>
+        </button>
+        <button type="button" className="login-back" disabled={s.busy} onClick={actions.signOut}>
+          Đăng xuất
+        </button>
+      </div>
+    );
+  } else {
+    body = (
+      <div className="login-actions" ref={homeRef}>
+        {s.google ? (
+          <GoogleSlot clientId={s.google} invite={invite} actions={actions} />
+        ) : (
+          <button
+            type="button"
+            className="slab"
+            aria-disabled="true"
+            aria-describedby="login-notice"
+            onClick={() => ui.set({ loginNotice: s.authReady ? "Máy chủ này chưa bật đăng nhập Google. Dùng Tài khoản hoặc Chơi thử nhé." : "Đang hỏi máy chủ…" })}
+          >
+            <GoogleMark />
+            <span>Google</span>
+            <span className="slab-tag">Chưa bật</span>
+          </button>
+        )}
+        <button type="button" className="slab" data-step="account" onClick={() => open("account")}>
+          <KeyIcon />
+          <span>Tài khoản</span>
+        </button>
+        <button type="button" className="slab slab-crimson" data-step="guest" onClick={() => open("guest")}>
+          <GamepadIcon />
+          <span>Chơi thử</span>
+        </button>
+      </div>
+    );
+  }
   return (
-    <section className={guest ? "login guest" : "login"} aria-labelledby="login-title">
+    <section className={`login ${mode}`} aria-labelledby="login-title">
       <h1 id="login-title" className="login-title">
         <span className="login-title-main">Tê Liệt</span>
         <span className="login-title-sub">Cave Simulator</span>
@@ -499,73 +717,9 @@ function LoginPanel({ s, actions }: { s: Snapshot; actions: Actions }) {
           <path d="M20 24 C70 17 120 15 176 15 C130 19 80 23 34 29Z" />
         </svg>
       </h1>
-      {guest ? (
-        <form
-          className="login-guest"
-          onSubmit={(e) => {
-            e.preventDefault();
-            actions.join(name, invite);
-          }}
-          onKeyDown={(e) => {
-            if (e.key !== "Escape" || s.busy) return;
-            e.stopPropagation();
-            setGuest(false);
-          }}
-        >
-          <label htmlFor="name">Tên trong hang</label>
-          <input
-            ref={nameRef}
-            id="name"
-            maxLength={24}
-            autoComplete="nickname"
-            enterKeyHint="go"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-          />
-          {(s.needInvite || invite !== "") && (
-            <>
-              <label htmlFor="invite">Mã mời</label>
-              <input
-                id="invite"
-                maxLength={64}
-                autoComplete="off"
-                value={invite}
-                onChange={(e) => setInvite(e.target.value)}
-                required={s.needInvite}
-              />
-            </>
-          )}
-          <button className="slab slab-crimson" disabled={s.busy}>
-            <span>{s.busy ? "Đang tìm chỗ…" : "Vào hang →"}</span>
-          </button>
-          <button type="button" className="login-back" disabled={s.busy} onClick={() => setGuest(false)}>
-            ← Quay lại
-          </button>
-        </form>
-      ) : (
-        <div className="login-actions">
-          <button type="button" className="slab slab-stone" aria-describedby="login-notice" onClick={actions.google}>
-            <GoogleMark />
-            <span>Google</span>
-            <span className="slab-tag">Sắp có</span>
-          </button>
-          <button
-            ref={guestRef}
-            type="button"
-            className="slab slab-crimson"
-            onClick={() => {
-              ui.set({ loginNotice: "" });
-              setGuest(true);
-            }}
-          >
-            <GamepadIcon />
-            <span>Chơi thử</span>
-          </button>
-        </div>
-      )}
+      {body}
       <p id="login-notice" className="login-notice" role="status" aria-live="polite">
-        {guest ? "" : s.loginNotice}
+        {s.loginNotice}
       </p>
       <small aria-live="polite">{s.status}</small>
     </section>

@@ -87,3 +87,9 @@ Bản local để review gameplay và bố cục, chưa deploy public. Trước 
 - **Màn hình lớn chia 3/4 + 1/4:** bên trái chiếu playlist clip do admin đặt (không tiếng, mọi người xem cùng lúc khi đủ thời lượng), bên phải lịch đấu T1. Không có clip thì hiện màn hình chờ.
 - **Trang quản trị `/admin.html`:** xem `docs/admin.md`.
 - **Link YouTube trên màn hình lớn:** playlist nhận link YouTube; trình phát nhúng chính thức được đặt khớp vào ô video (phía sau khung hình, nhìn qua một ô trong suốt nên người đứng trước vẫn che được), hiện khi ô video trên màn hình ≥ 200 × 200 px. Nút "Tiếng màn hình" bật tiếng cho riêng mình.
+
+## Cập nhật 2026-11-12 (tài khoản)
+
+- **Màn đăng nhập có ba cách vào:** Google (nút chính thức, cần `GOOGLE_CLIENT_ID` cho API), Tài khoản (đăng nhập / tạo nhanh bằng tên + mật khẩu) và Chơi thử như cũ. Đăng nhập xong vào hang luôn; tải lại trang vẫn còn đăng nhập 30 ngày. Mã mời chỉ cần khi tạo tài khoản mới. Chi tiết và cách bật Google: `docs/accounts.md`.
+- **Trang quản trị đăng nhập bằng tài khoản quản trị** (`npm run admin:account -- admin`, mật khẩu ghi vào tệp, không in ra màn hình). Thêm tab **Tài khoản**: danh sách người đã đăng ký, cách đăng nhập, lần đăng nhập cuối, đổi mật khẩu.
+- Bản chơi thử trên máy cá nhân lưu tài khoản ở `ACCOUNTS_FILE` (vd. `.local-host/accounts.json`); bản có Postgres chạy thêm `db/006_accounts.sql`.

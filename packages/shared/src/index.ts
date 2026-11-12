@@ -14,6 +14,7 @@ export * from "./rooms.js";
 export * from "./nav.js";
 export * from "./seats.js";
 export * from "./content.js";
+export * from "./accounts.js";
 
 /** Số ghế tối đa của một room hub. */
 export const ROOM_CAPACITY = 60;

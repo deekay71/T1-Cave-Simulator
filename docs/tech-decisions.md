@@ -21,7 +21,7 @@ Chỗ nào khác với `architecture.md`, `networking.md`, `data.md`, `deploymen
 | T4 | Di chuyển | Server quyết định vị trí. Dùng bộ netcode có sẵn của 0.18: `defineInput` + `setFixedTimestep` ở server; `room.input()` + `Predict` + `room.clock` ở client | Thay vòng "lấy input mới nhất mỗi tick" và lerp hiện tại |
 | T5 | Room | `hub_v1` tối đa 30 người (cập nhật 2026-11-10: nâng lên 60 cho close test, đo bằng bot). Minigame và quiz chạy **trong room hub** dưới dạng activity. Phòng riêng (mời bạn) là room riêng | Khác `networking.md` (đang tách room cho minigame/quiz) |
 | T6 | API | Fastify 5, bật `trustProxy` theo hạ tầng thật | Giữ, sửa cấu hình proxy |
-| T7 | Tài khoản | Better Auth chạy trên Fastify: guest (plugin anonymous), Google, Discord, liên kết tài khoản giữ tiến trình | Mới: thay kế hoạch tự viết refresh rotation |
+| T7 | Tài khoản | (cập nhật 2026-11-12) Tự viết gọn trên Fastify thay cho Better Auth: tên + mật khẩu (scrypt), Google bằng ID token của Google Identity Services, phiên cookie chỉ lưu băm; khách vẫn không có tài khoản. Xem 2.3 và `docs/accounts.md` | Mới: thay kế hoạch tự viết refresh rotation |
 | T8 | Vé vào game | JWT EdDSA hạn 60 s; API ký bằng khóa riêng, game chỉ giữ khóa công khai. Mỗi tài khoản một chỗ | Thay HS256 dùng chung, hạn 15 phút, dùng lại được |
 | T9 | Database | PostgreSQL, SQL thuần + `pg`; migrator chạy lần lượt `db/NNN_*.sql` | Giữ SQL; viết lại migrator, sửa schema (2.4) |
 | T10 | Redis | Presence/driver của Colyseus, rate limit dùng chung, ban/mute, chỗ ngồi theo tài khoản | Giữ, thêm khóa mới |
@@ -74,9 +74,11 @@ Nghiệm thu:
 
 ### 2.3 Tài khoản và vé vào game (T7, T8)
 
-**Tài khoản**
-- Better Auth quản lý user, session, OAuth (Google, Discord) và guest. Guest liên kết tài khoản thì giữ nguyên tiến trình.
-- Bảng `accounts` trở thành hồ sơ người chơi, khóa theo id user của Better Auth; bỏ bảng `sessions` tự viết. SQL schema của Better Auth được commit thành migration như mọi migration khác.
+**Tài khoản** (cập nhật 2026-11-12, thay kế hoạch Better Auth)
+- `apps/api/src/accounts/`: đăng ký nhanh bằng tên + mật khẩu (scrypt), đăng nhập Google bằng ID token của Google Identity Services (API tự xác minh chữ ký, không cần client secret hay trang callback), phiên 30 ngày trong cookie HttpOnly, server chỉ lưu SHA-256 của token. Quyền `player` / `admin`; quản trị chỉ tạo được bằng script trên máy chủ.
+- Lý do bỏ Better Auth lúc này: bản chơi thử chạy trên máy cá nhân không có Postgres (kho tài khoản phải chạy được bằng một tệp JSON), luồng OAuth chuyển hướng cần client secret và callback URL đổi theo mỗi link tunnel, và phần cần dùng chỉ là vài route nhỏ, test được trọn vẹn (`scripts/accounts.test.ts`).
+- Thành viên là `accounts.kind = 'member'`; Google nằm ở `accounts.auth_subject = 'google:<sub>'`; mật khẩu ở `account_passwords`; phiên ở `account_sessions` (`db/006_accounts.sql`). Khách (Chơi thử) chưa liên kết được với tài khoản: làm khi có tiến trình cần giữ.
+- Discord: chưa làm.
 
 **Vé vào game**
 - JWT EdDSA, gồm các claim `sub`, `name`, `trust`, hạn 60 s, có `kid` để xoay khóa. Game chỉ giữ khóa công khai.

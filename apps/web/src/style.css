@@ -347,6 +347,72 @@ header {
   text-align: center;
   text-shadow: 0 1px 3px #000e;
 }
+/* Nút Google chính thức (iframe của Google): giữ chỗ đúng cao một phiến để cột không nhảy khi nút hiện. */
+.login-google {
+  display: flex;
+  justify-content: center;
+  min-height: 44px;
+  filter: drop-shadow(0 7px 9px #000b);
+}
+.login-google:empty::before {
+  content: "Đang tải nút Google…";
+  align-self: center;
+  color: #d9cfc8;
+  font-size: 12px;
+  text-shadow: 0 1px 3px #000e;
+}
+/* Bước Tài khoản: dài hơn bước Chơi thử nên kéo cả cột lên và thu khoảng cách. */
+.login.account {
+  top: clamp(40px, 13vh, 160px);
+}
+.login.account .login-title {
+  margin-bottom: 14px;
+}
+.login-account {
+  gap: 10px;
+}
+.login-account input {
+  min-height: 42px;
+}
+.login-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  margin-bottom: 4px;
+  border: 1px solid #a79aa066;
+  background: #1c1920cc;
+}
+.login-tabs button {
+  min-height: 40px;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: #d9cfc8;
+  font-weight: 700;
+}
+.login-tabs button[aria-pressed="true"] {
+  background: #b7232c;
+  color: #fff4ea;
+}
+.login-hint {
+  color: #b9aea6;
+  font-weight: 500;
+}
+.login-who {
+  margin: 0 0 2px;
+  color: #f6eee2;
+  font-size: 17px;
+  text-align: center;
+  text-shadow: 0 1px 3px #000e;
+}
+.login-who span {
+  display: block;
+  margin-top: 4px;
+  color: #c9bdb4;
+  font-size: 12px;
+}
+.slab[aria-disabled="true"] {
+  opacity: 0.72;
+}
 /* Màn chuyển khi vào hang (login/scene.ts chỉnh opacity): đỏ ở giữa, đen ở rìa. */
 .login-veil {
   position: fixed;

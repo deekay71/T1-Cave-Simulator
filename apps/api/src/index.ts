@@ -10,6 +10,8 @@ import { registerProgressionRoutes, sendProgressionError } from './progression/r
 import { inviteMatches } from './invite.js';
 import { registerContentRoutes } from './content/routes.js';
 import { fileContentStore, pgContentStore } from './content/store.js';
+import { registerAccountRoutes } from './accounts/routes.js';
+import { fileAccountStore, PgAccountStore } from './accounts/store.js';
 
 /**
  * TRUST_PROXY: "true", số hop ("1" khi đứng sau một Nginx), hoặc danh sách IP/CIDR của proxy.
@@ -39,8 +41,17 @@ await app.register(rateLimit, { max: RATE_LIMIT_PER_MINUTE, timeWindow: '1 minut
 
 await registerMatchRoutes(app, db);
 const progression = await registerProgressionRoutes(app, db);
+const accounts = await registerAccountRoutes(app, db ? new PgAccountStore(db) : fileAccountStore(), {
+  issueTicket,
+  inviteCode: INVITE_CODE,
+  googleClientId: process.env.GOOGLE_CLIENT_ID,
+  webOrigin: process.env.WEB_ORIGIN,
+  adminToken: process.env.ADMIN_TOKEN,
+});
 await registerContentRoutes(app, db ? pgContentStore(db) : fileContentStore(), {
   adminToken: process.env.ADMIN_TOKEN,
+  isAdmin: accounts.isAdmin,
+  webOrigin: process.env.WEB_ORIGIN,
   gameAdminUrl: process.env.GAME_ADMIN_URL || 'http://127.0.0.1:9100',
 });
 

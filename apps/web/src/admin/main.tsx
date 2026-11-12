@@ -1,28 +1,37 @@
 /**
- * Admin hub (/admin.html): the playlist of the big wall screen, the T1 quests, and who is online.
- * Talks to the API's /v1/admin/* with the admin token (kept in sessionStorage for this tab only).
+ * Admin hub (/admin.html): the playlist of the big wall screen, the T1 quests, who is online and the
+ * player accounts. Sign in with an ADMIN account (session cookie set by the API, the same one the game
+ * uses), or with the API's ADMIN_TOKEN for scripts and emergencies (kept in sessionStorage for this
+ * tab only).
  */
 import { StrictMode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { QuestList, VIDEO_CATEGORIES, VideoList, youtubeId, type QuestDef, type QuestQuestion, type ScreenVideo } from "@te-liet/shared";
+import { PASSWORD_MIN, QuestList, VIDEO_CATEGORIES, VideoList, youtubeId, type AccountSummary, type AccountView, type QuestDef, type QuestQuestion, type ScreenVideo } from "@te-liet/shared";
 import { loadYouTubeApi } from "../world/youtubeScreen.js";
 import { apiRoot } from "../content/api.js";
+import { auth as accountApi, AuthError } from "../auth/client.js";
 import "./admin.css";
 
 const TOKEN_KEY = "tl.admin.token";
-type Tab = "live" | "videos" | "quests";
+type Tab = "live" | "videos" | "quests" | "accounts";
 interface Issue { path: string; message: string }
 class ApiError extends Error {
   constructor(message: string, readonly status: number, readonly issues: Issue[] = []) { super(message); }
 }
+/** Who is signed in to the hub: an admin account (cookie) or the ADMIN_TOKEN. */
+interface Auth { token: string | null; account: AccountView | null }
 
 function readToken(): string {
   try { return sessionStorage.getItem(TOKEN_KEY) ?? ""; } catch { return ""; }
 }
-async function call<T>(token: string, method: string, path: string, body?: unknown): Promise<T> {
+async function call<T>(auth: Auth, method: string, path: string, body?: unknown): Promise<T> {
   const res = await fetch(`${apiRoot()}${path}`, {
     method,
-    headers: { Authorization: `Bearer ${token}`, ...(body === undefined ? {} : { "Content-Type": "application/json" }) },
+    credentials: auth.token ? "omit" : "include",
+    headers: {
+      ...(auth.token ? { Authorization: `Bearer ${auth.token}` } : { "X-T1-Request": "1" }),
+      ...(body === undefined ? {} : { "Content-Type": "application/json" }),
+    },
     body: body === undefined ? undefined : JSON.stringify(body),
   });
   const data = await res.json().catch(() => ({}));
@@ -41,34 +50,54 @@ const fmtDuration = (s: number | null) => (s == null ? "—" : `${Math.floor(s /
 
 /* ------------------------------------------------------------------ login */
 
-function Login({ onToken }: { onToken: (t: string) => void }) {
-  const [value, setValue] = useState("");
-  const [error, setError] = useState("");
+function Login({ onAuth, notice }: { onAuth: (a: Auth) => void; notice: string }) {
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [token, setToken] = useState("");
+  const [error, setError] = useState(notice);
   const [busy, setBusy] = useState(false);
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  useEffect(() => setError(notice), [notice]);
+  const run = async (fn: () => Promise<void>) => {
     setBusy(true);
     setError("");
-    try {
-      await call(value.trim(), "GET", "/v1/admin/content");
-      try { sessionStorage.setItem(TOKEN_KEY, value.trim()); } catch { /* this tab only */ }
-      onToken(value.trim());
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Không đăng nhập được.");
-    } finally {
-      setBusy(false);
-    }
+    try { await fn(); } catch (err) { setError(err instanceof Error ? err.message : "Không đăng nhập được."); } finally { setBusy(false); }
+  };
+  const signIn = (e: React.FormEvent) => {
+    e.preventDefault();
+    void run(async () => {
+      const { account } = await accountApi.login({ username, password });
+      if (account.role !== "admin") throw new Error(`Tài khoản "${account.username ?? account.name}" không có quyền quản trị.`);
+      onAuth({ token: null, account });
+    });
+  };
+  const withToken = (e: React.FormEvent) => {
+    e.preventDefault();
+    void run(async () => {
+      const a = { token: token.trim(), account: null };
+      await call(a, "GET", "/v1/admin/content");
+      try { sessionStorage.setItem(TOKEN_KEY, a.token); } catch { /* this tab only */ }
+      onAuth(a);
+    });
   };
   return (
     <main className="login">
-      <form onSubmit={submit}>
+      <form onSubmit={signIn}>
         <p className="eyebrow">TÊ LIỆT · QUẢN TRỊ</p>
         <h1>Đăng nhập quản trị</h1>
-        <label>Mã quản trị<input type="password" autoFocus autoComplete="current-password" value={value} onChange={(e) => setValue(e.target.value)} /></label>
-        <button className="primary" disabled={busy || !value.trim()}>{busy ? "Đang kiểm tra…" : "Vào trang quản trị"}</button>
+        <label>Tên đăng nhập<input autoFocus autoComplete="username" autoCapitalize="none" spellCheck={false} value={username} onChange={(e) => setUsername(e.target.value)} /></label>
+        <label>Mật khẩu<input type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} /></label>
+        <button className="primary" disabled={busy || !username.trim() || !password}>{busy ? "Đang kiểm tra…" : "Vào trang quản trị"}</button>
         {error && <p className="error" role="alert">{error}</p>}
-        <small>Mã là biến ADMIN_TOKEN của API. Mã chỉ được nhớ trong tab này.</small>
+        <small>Chỉ tài khoản quản trị vào được. Tạo bằng <code>npm run admin:account</code> trên máy chủ.</small>
       </form>
+      <details className="token-login">
+        <summary>Dùng mã quản trị (ADMIN_TOKEN)</summary>
+        <form onSubmit={withToken}>
+          <label>Mã quản trị<input type="password" autoComplete="off" value={token} onChange={(e) => setToken(e.target.value)} /></label>
+          <button disabled={busy || !token.trim()}>Vào bằng mã</button>
+          <small>Mã chỉ được nhớ trong tab này.</small>
+        </form>
+      </details>
     </main>
   );
 }
@@ -81,13 +110,13 @@ interface Live {
   rooms: { roomId: string; players: { id: string; name: string; zone: string; seat: "cave" | "shrine" | null; connected: boolean; minutes: number }[] }[];
   recent: { name: string; at: number; leftAt: number | null }[];
 }
-function LiveTab({ token }: { token: string }) {
+function LiveTab({ auth }: { auth: Auth }) {
   const [live, setLive] = useState<Live | null>(null);
   const [error, setError] = useState("");
   const load = useCallback(async () => {
-    try { setLive(await call<Live>(token, "GET", "/v1/admin/live")); setError(""); }
+    try { setLive(await call<Live>(auth, "GET", "/v1/admin/live")); setError(""); }
     catch (err) { setError(err instanceof Error ? err.message : "Không tải được."); }
-  }, [token]);
+  }, [auth]);
   useEffect(() => {
     void load();
     const timer = setInterval(() => { if (!document.hidden) void load(); }, 5000);
@@ -179,14 +208,14 @@ function YoutubePreview({ id, onDuration, onResult }: { id: string; onDuration: 
   return <div className="yt-preview" ref={host} />;
 }
 
-function useProbe(token: string) {
+function useProbe(auth: Auth) {
   const [state, setState] = useState<Record<string, { ok: boolean; text: string; youtube?: string }>>({});
   const probe = (id: string, url: string, done: (duration: number) => void) => {
     if (!url) return;
     const yt = youtubeId(url);
     if (yt) {
       setState((s) => ({ ...s, [id]: { ok: true, text: "Đang hỏi YouTube…" } }));
-      call<{ embeddable: boolean; title?: string; author?: string; reason?: string }>(token, "GET", `/v1/admin/youtube?url=${encodeURIComponent(url)}`)
+      call<{ embeddable: boolean; title?: string; author?: string; reason?: string }>(auth, "GET", `/v1/admin/youtube?url=${encodeURIComponent(url)}`)
         .then((r) => setState((s) => ({ ...s, [id]: r.embeddable
           ? { ok: true, text: `Tìm thấy: ${r.title}${r.author ? ` · ${r.author}` : ""}. Đang phát thử…`, youtube: yt }
           : { ok: false, text: `Không nhúng được: ${r.reason}` } })))
@@ -214,18 +243,18 @@ function useProbe(token: string) {
   return { state, probe, set };
 }
 
-function VideosTab({ token }: { token: string }) {
+function VideosTab({ auth }: { auth: Auth }) {
   const [list, setList] = useState<ScreenVideo[] | null>(null);
   const [saved, setSaved] = useState("");
   const [notice, setNotice] = useState<{ ok: boolean; text: string; issues?: Issue[] } | null>(null);
   const [busy, setBusy] = useState(false);
   const [open, setOpen] = useState<string | null>(null);
-  const { state: probe, probe: runProbe, set: setProbe } = useProbe(token);
+  const { state: probe, probe: runProbe, set: setProbe } = useProbe(auth);
   const load = useCallback(async () => {
-    const doc = await call<{ videos: ScreenVideo[] }>(token, "GET", "/v1/admin/content");
+    const doc = await call<{ videos: ScreenVideo[] }>(auth, "GET", "/v1/admin/content");
     setList(doc.videos);
     setSaved(JSON.stringify(doc.videos));
-  }, [token]);
+  }, [auth]);
   useEffect(() => { void load().catch((err) => setNotice({ ok: false, text: String(err.message ?? err) })); }, [load]);
   const dirty = list !== null && JSON.stringify(list) !== saved;
   const set = (id: string, patch: Partial<ScreenVideo>) => setList((l) => l!.map((v) => (v.id === id ? { ...v, ...patch } : v)));
@@ -236,7 +265,7 @@ function VideosTab({ token }: { token: string }) {
     setBusy(true);
     setNotice(null);
     try {
-      const doc = await call<{ videos: ScreenVideo[] }>(token, "PUT", "/v1/admin/content/videos", { videos: list });
+      const doc = await call<{ videos: ScreenVideo[] }>(auth, "PUT", "/v1/admin/content/videos", { videos: list });
       setList(doc.videos);
       setSaved(JSON.stringify(doc.videos));
       setNotice({ ok: true, text: "Đã lưu. Màn hình trong game nhận danh sách mới trong vòng 3 phút (hoặc khi người chơi tải lại trang)." });
@@ -248,7 +277,7 @@ function VideosTab({ token }: { token: string }) {
   };
   const reset = async () => {
     if (!confirm("Bỏ danh sách đã lưu và quay về danh sách gợi ý mặc định?")) return;
-    const doc = await call<{ videos: ScreenVideo[] }>(token, "POST", "/v1/admin/content/reset", { section: "videos" });
+    const doc = await call<{ videos: ScreenVideo[] }>(auth, "POST", "/v1/admin/content/reset", { section: "videos" });
     setList(doc.videos);
     setSaved(JSON.stringify(doc.videos));
     setNotice({ ok: true, text: "Đã về danh sách mặc định." });
@@ -309,17 +338,17 @@ function VideosTab({ token }: { token: string }) {
 /* ------------------------------------------------------------------ quests */
 
 const blankQuestion = (): QuestQuestion => ({ prompt: "Câu hỏi mới?", options: ["Đáp án A", "Đáp án B", "Đáp án C", "Đáp án D"], answer: 0, note: "" });
-function QuestsTab({ token }: { token: string }) {
+function QuestsTab({ auth }: { auth: Auth }) {
   const [list, setList] = useState<QuestDef[] | null>(null);
   const [saved, setSaved] = useState("");
   const [open, setOpen] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<{ ok: boolean; text: string; issues?: Issue[] } | null>(null);
   const load = useCallback(async () => {
-    const doc = await call<{ quests: QuestDef[] }>(token, "GET", "/v1/admin/content");
+    const doc = await call<{ quests: QuestDef[] }>(auth, "GET", "/v1/admin/content");
     setList(doc.quests);
     setSaved(JSON.stringify(doc.quests));
-  }, [token]);
+  }, [auth]);
   useEffect(() => { void load().catch((err) => setNotice({ ok: false, text: String(err.message ?? err) })); }, [load]);
   const dirty = list !== null && JSON.stringify(list) !== saved;
   const check = useMemo(() => (list ? QuestList.safeParse(list) : null), [list]);
@@ -332,7 +361,7 @@ function QuestsTab({ token }: { token: string }) {
     setBusy(true);
     setNotice(null);
     try {
-      const doc = await call<{ quests: QuestDef[] }>(token, "PUT", "/v1/admin/content/quests", { quests: list });
+      const doc = await call<{ quests: QuestDef[] }>(auth, "PUT", "/v1/admin/content/quests", { quests: list });
       setList(doc.quests);
       setSaved(JSON.stringify(doc.quests));
       setNotice({ ok: true, text: "Đã lưu. Người chơi thấy bộ quest mới khi mở lại Bảng Quest (tối đa 3 phút, hoặc tải lại trang)." });
@@ -344,7 +373,7 @@ function QuestsTab({ token }: { token: string }) {
   };
   const reset = async () => {
     if (!confirm("Bỏ bộ quest đã lưu và quay về bộ mặc định?")) return;
-    const doc = await call<{ quests: QuestDef[] }>(token, "POST", "/v1/admin/content/reset", { section: "quests" });
+    const doc = await call<{ quests: QuestDef[] }>(auth, "POST", "/v1/admin/content/reset", { section: "quests" });
     setList(doc.quests);
     setSaved(JSON.stringify(doc.quests));
     setNotice({ ok: true, text: "Đã về bộ quest mặc định." });
@@ -416,40 +445,141 @@ function Notice({ ok, text, issues }: { ok: boolean; text: string; issues?: Issu
   return <div className={ok ? "notice ok" : "notice error"} role="status"><b>{text}</b>{issues?.length ? <ul>{issues.map((i, n) => <li key={n}><code>{i.path || "—"}</code> {i.message}</li>)}</ul> : null}</div>;
 }
 
+/* ------------------------------------------------------------------ accounts */
+
+const fmtDate = (iso: string | null) => (iso ? new Date(iso).toLocaleString("vi-VN", { dateStyle: "short", timeStyle: "short" }) : "—");
+
+function PasswordForm() {
+  const [current, setCurrent] = useState("");
+  const [next, setNext] = useState("");
+  const [again, setAgain] = useState("");
+  const [notice, setNotice] = useState<{ ok: boolean; text: string } | null>(null);
+  const [busy, setBusy] = useState(false);
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (next !== again) return setNotice({ ok: false, text: "Hai lần nhập mật khẩu mới không khớp." });
+    setBusy(true);
+    try {
+      await accountApi.changePassword(current, next);
+      setCurrent(""); setNext(""); setAgain("");
+      setNotice({ ok: true, text: "Đã đổi mật khẩu. Các phiên đăng nhập khác của tài khoản này đã bị đăng xuất." });
+    } catch (err) {
+      setNotice({ ok: false, text: err instanceof Error ? err.message : "Không đổi được mật khẩu." });
+    } finally { setBusy(false); }
+  };
+  return (
+    <form className="panel password" onSubmit={submit}>
+      <h3>Đổi mật khẩu của bạn</h3>
+      <label>Mật khẩu hiện tại<input type="password" autoComplete="current-password" value={current} onChange={(e) => setCurrent(e.target.value)} required /></label>
+      <label>Mật khẩu mới<input type="password" autoComplete="new-password" minLength={PASSWORD_MIN} value={next} onChange={(e) => setNext(e.target.value)} required /></label>
+      <label>Nhập lại mật khẩu mới<input type="password" autoComplete="new-password" minLength={PASSWORD_MIN} value={again} onChange={(e) => setAgain(e.target.value)} required /></label>
+      <button className="primary" disabled={busy}>{busy ? "Đang lưu…" : "Đổi mật khẩu"}</button>
+      {notice && <Notice {...notice} />}
+    </form>
+  );
+}
+
+function AccountsTab({ auth }: { auth: Auth }) {
+  const [list, setList] = useState<AccountSummary[] | null>(null);
+  const [error, setError] = useState("");
+  const [filter, setFilter] = useState("");
+  const load = useCallback(async () => {
+    try { setList((await call<{ accounts: AccountSummary[] }>(auth, "GET", "/v1/admin/accounts")).accounts); setError(""); }
+    catch (err) { setError(err instanceof Error ? err.message : "Không tải được."); }
+  }, [auth]);
+  useEffect(() => { void load(); }, [load]);
+  const q = filter.trim().toLowerCase();
+  const shown = (list ?? []).filter((a) => !q || [a.name, a.username ?? "", a.email ?? ""].some((v) => v.toLowerCase().includes(q)));
+  const google = list?.filter((a) => a.provider === "google").length ?? 0;
+  const day = Date.now() - 86_400_000;
+  return (
+    <section>
+      <header className="section-head"><h2>Tài khoản</h2><span>Người chơi đã đăng ký (khách Chơi thử không có tài khoản nên không nằm ở đây)</span></header>
+      {error && <p className="error" role="alert">{error}</p>}
+      <div className="cards">
+        <div className="card"><small>Tổng tài khoản</small><b>{list?.length ?? "—"}</b></div>
+        <div className="card"><small>Tên + mật khẩu / Google</small><b>{list ? `${list.length - google} / ${google}` : "—"}</b></div>
+        <div className="card"><small>Đăng nhập trong 24 giờ</small><b>{list ? list.filter((a) => a.lastLoginAt && Date.parse(a.lastLoginAt) > day).length : "—"}</b></div>
+        <div className="card"><small>Quản trị</small><b>{list ? list.filter((a) => a.role === "admin").length : "—"}</b></div>
+      </div>
+      <div className="panel">
+        <div className="row-head">
+          <h3>Danh sách ({shown.length})</h3>
+          <input type="search" placeholder="Tìm theo tên, tên đăng nhập, email" value={filter} onChange={(e) => setFilter(e.target.value)} />
+          <button onClick={() => void load()}>Tải lại</button>
+        </div>
+        {list === null ? <p className="muted">Đang tải…</p> : shown.length ? (
+          <table><thead><tr><th>Tên trong hang</th><th>Đăng nhập bằng</th><th>Quyền</th><th>Tạo lúc</th><th>Lần cuối</th></tr></thead>
+            <tbody>{shown.map((a) => (
+              <tr key={a.id}>
+                <td>{a.name}</td>
+                <td>{a.provider === "google" ? <>Google{a.email ? <small className="muted"> · {a.email}</small> : null}</> : <span className="mono">@{a.username}</span>}</td>
+                <td>{a.role === "admin" ? <b>quản trị</b> : "người chơi"}</td>
+                <td>{fmtDate(a.createdAt)}</td>
+                <td>{fmtDate(a.lastLoginAt)}</td>
+              </tr>
+            ))}</tbody></table>
+        ) : <p className="muted">{q ? "Không có tài khoản nào khớp." : "Chưa có ai đăng ký."}</p>}
+      </div>
+      {auth.account?.provider === "password" ? <PasswordForm /> : !auth.account ? <p className="muted">Đang vào bằng mã quản trị: đăng nhập bằng tài khoản quản trị để đổi mật khẩu.</p> : null}
+    </section>
+  );
+}
+
 /* ------------------------------------------------------------------ shell */
 
 function App() {
-  const [token, setToken] = useState(readToken);
+  const [auth, setAuth] = useState<Auth | null>(null);
+  const [checking, setChecking] = useState(true);
+  const [notice, setNotice] = useState("");
   const [tab, setTab] = useState<Tab>(() => (location.hash.slice(1) as Tab) || "live");
   const [storage, setStorage] = useState("");
   useEffect(() => { history.replaceState(null, "", `#${tab}`); }, [tab]);
+  // Already signed in? The token of this tab first, then the session cookie.
   useEffect(() => {
-    if (!token) return;
-    call<{ storage: string }>(token, "GET", "/v1/admin/content")
+    const token = readToken();
+    if (token) { setAuth({ token, account: null }); setChecking(false); return; }
+    accountApi.me()
+      .then((me) => { if (me.account?.role === "admin") setAuth({ token: null, account: me.account }); })
+      .catch(() => {})
+      .finally(() => setChecking(false));
+  }, []);
+  useEffect(() => {
+    if (!auth) return;
+    call<{ storage: string }>(auth, "GET", "/v1/admin/content")
       .then((d) => setStorage(d.storage))
       .catch((err) => {
         if (!(err instanceof ApiError && err.status === 401)) return;
         try { sessionStorage.removeItem(TOKEN_KEY); } catch { /* this tab only */ }
-        setToken("");
+        setNotice("Phiên quản trị đã hết. Đăng nhập lại nhé.");
+        setAuth(null);
       });
-  }, [token]);
-  if (!token) return <Login onToken={setToken} />;
+  }, [auth]);
+  const signOut = async () => {
+    try { sessionStorage.removeItem(TOKEN_KEY); } catch { /* */ }
+    if (!auth?.token) await accountApi.logout().catch((err) => { if (!(err instanceof AuthError)) throw err; });
+    setNotice("");
+    setAuth(null);
+  };
+  if (checking) return <main className="login"><p className="muted">Đang kiểm tra phiên đăng nhập…</p></main>;
+  if (!auth) return <Login onAuth={(a) => { setNotice(""); setAuth(a); }} notice={notice} />;
   return (
     <div className="shell">
       <aside>
         <div className="brand"><b>TÊ LIỆT</b><small>QUẢN TRỊ HANG</small></div>
         <nav>
-          {([["live", "Tổng quan"], ["videos", "Video màn hình"], ["quests", "Quest T1"]] as const).map(([id, label]) => (
+          {([["live", "Tổng quan"], ["videos", "Video màn hình"], ["quests", "Quest T1"], ["accounts", "Tài khoản"]] as const).map(([id, label]) => (
             <button key={id} aria-current={tab === id ? "page" : undefined} onClick={() => setTab(id)}>{label}</button>
           ))}
         </nav>
         <div className="foot">
+          <small>{auth.account ? <>Đăng nhập: <b>{auth.account.username ? `@${auth.account.username}` : auth.account.name}</b></> : "Đăng nhập bằng mã quản trị"}</small>
           <small>Lưu ở: {storage === "postgres" ? "Postgres" : storage === "file" ? "tệp JSON trên máy chủ" : "—"}</small>
           <a href="/" target="_blank" rel="noreferrer">Mở game ↗</a>
-          <button onClick={() => { try { sessionStorage.removeItem(TOKEN_KEY); } catch { /* */ } setToken(""); }}>Đăng xuất</button>
+          <button onClick={() => void signOut()}>Đăng xuất</button>
         </div>
       </aside>
-      <main>{tab === "live" ? <LiveTab token={token} /> : tab === "videos" ? <VideosTab token={token} /> : <QuestsTab token={token} />}</main>
+      <main>{tab === "live" ? <LiveTab auth={auth} /> : tab === "videos" ? <VideosTab auth={auth} /> : tab === "quests" ? <QuestsTab auth={auth} /> : <AccountsTab auth={auth} />}</main>
     </div>
   );
 }

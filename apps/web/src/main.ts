@@ -28,6 +28,7 @@ import {
   Emote,
   LIMITS,
   MoveInput,
+  type AccountView,
 } from "@te-liet/shared";
 import { SHRINE_CENTER, SHRINE_SEATS, SHRINE_SEAT_HEIGHT, SHRINE_RADIUS, applyShrineAwareInput, isInShrine, shrineLoopAt } from "../../../packages/shared/src/shrine.js";
 import "./style.css";
@@ -57,6 +58,8 @@ import { createNameTags } from "./nametags.js";
 import { createNearFlames } from "./nearFlames.js";
 import { createWorld, landmarks } from "./scene.js";
 import { CONTROLS_HELP, focusChat, mountUI, rememberInvite, touch, ui } from "./ui.js";
+import { auth, AuthError } from "./auth/client.js";
+import { forgetGoogleChoice } from "./auth/google.js";
 import { SHRINE_CAMERA_BLOCKERS } from "./world/shrine.js";
 import { loadManifests } from "./world/manifest.js";
 
@@ -959,29 +962,48 @@ const gameUrl =
     ? "ws://localhost:2567"
     : `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}`);
 
+/** Vé vào game cho khách (Chơi thử): tên tự chọn, mã mời khi close test đòi. */
+async function guestTicket(name: string, code: string): Promise<string> {
+  const res = await fetch(apiUrl, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json", "X-T1-Request": "1" },
+    body: JSON.stringify(code ? { name, invite: code } : { name }),
+  });
+  if (res.status === 403) {
+    // close test: API đòi mã mời (thiếu hoặc sai) → hiện ô nhập mã
+    const body = (await res.json().catch(() => null)) as { error?: string } | null;
+    ui.set({ needInvite: true });
+    if (code) rememberInvite("");
+    throw new Error(body?.error || "Cần mã mời để vào hang");
+  }
+  if (res.status === 429) throw new Error("Đông người vào quá, thử lại sau ít giây nhé.");
+  if (!res.ok) throw new Error("Không thể đăng nhập");
+  if (code) rememberInvite(code);
+  return (await res.json()).ticket;
+}
+/** Vé vào game cho tài khoản đang đăng nhập; phiên hết hạn thì quay về màn đăng nhập. */
+async function memberTicket(): Promise<string> {
+  try {
+    return (await auth.ticket()).ticket;
+  } catch (error) {
+    if (error instanceof AuthError && error.status === 401) {
+      ui.set({ account: null });
+      throw new Error("Phiên đăng nhập đã hết. Đăng nhập lại hoặc chơi thử nhé.");
+    }
+    throw error;
+  }
+}
+
+/** Vào hang: bằng tài khoản đang đăng nhập nếu có, không thì là khách tên `name`. */
 async function join(name: string, invite = "") {
   if (session || ui.get().busy) return;
   ui.set({ busy: true });
   let joined: Room | undefined;
   try {
-    const code = invite.trim();
-    const res = await fetch(apiUrl, {
-      method: "POST",
-      credentials: "include",
-      headers: { "Content-Type": "application/json", "X-T1-Request": "1" },
-      body: JSON.stringify(code ? { name, invite: code } : { name }),
-    });
-    if (res.status === 403) {
-      // close test: API đòi mã mời (thiếu hoặc sai) → hiện ô nhập mã
-      const body = (await res.json().catch(() => null)) as { error?: string } | null;
-      ui.set({ needInvite: true });
-      if (code) rememberInvite("");
-      throw new Error(body?.error || "Cần mã mời để vào hang");
-    }
-    if (res.status === 429) throw new Error("Đông người vào quá, thử lại sau ít giây nhé.");
-    if (!res.ok) throw new Error("Không thể đăng nhập");
-    if (code) rememberInvite(code);
-    const { ticket } = await res.json();
+    const account = ui.get().account;
+    if (account) name = account.name;
+    const ticket = account ? await memberTicket() : await guestTicket(name, invite.trim());
     const targetRoom = requestedRoom(location.href);
     if (new URL(location.href).searchParams.has("room") && !targetRoom) throw new Error("Link phòng không hợp lệ. Bỏ tham số room để tìm hang mới.");
     const client = new Client(gameUrl);
@@ -1130,11 +1152,57 @@ async function join(name: string, invite = "") {
   }
 }
 
+/* ------------------------------------------------------------------ tài khoản */
+
+/** Hỏi API ai đang đăng nhập (cookie phiên) và máy chủ có bật Google / mã mời không. */
+async function loadAccount() {
+  try {
+    const me = await auth.me();
+    ui.set({ account: me.account, google: me.google, needInvite: ui.get().needInvite || me.inviteRequired, authReady: true });
+  } catch {
+    ui.set({ authReady: true });
+  }
+}
+void loadAccount();
+
+const authMessage = (error: unknown) => (error instanceof Error ? error.message : "Không đăng nhập được, thử lại nhé.");
+/** Đăng nhập xong (mật khẩu hoặc Google): nhớ tài khoản rồi vào hang luôn. */
+async function signedIn(run: () => Promise<{ account: AccountView }>, invite?: string) {
+  if (session || ui.get().busy) return;
+  ui.set({ busy: true, loginNotice: "" });
+  try {
+    const { account } = await run();
+    if (invite?.trim()) rememberInvite(invite.trim());
+    ui.set({ account, busy: false });
+    void join(account.name);
+  } catch (error) {
+    const code = error instanceof AuthError ? error.code : "";
+    if (code === "invite_required" || code === "invite_invalid") ui.set({ needInvite: true });
+    ui.set({ busy: false, loginNotice: authMessage(error) });
+  }
+}
+
 mountUI({
   join,
-  // Chưa có đăng nhập Google ở backend: chỉ báo, không giả lập phiên.
-  google: () =>
-    ui.set({ loginNotice: "Đăng nhập Google sẽ mở sau. Bấm Chơi thử để vào hang." }),
+  enter: () => void join(ui.get().account?.name ?? ""),
+  signIn: (mode, form) =>
+    void signedIn(
+      () => (mode === "login" ? auth.login({ username: form.username, password: form.password }) : auth.signup(form)),
+      form.invite,
+    ),
+  googleCredential: (credential, invite) => void signedIn(() => auth.google(credential, invite.trim() || undefined), invite),
+  signOut: () => {
+    if (ui.get().busy) return;
+    ui.set({ busy: true });
+    auth
+      .logout()
+      .then(() => ui.set({ account: null, loginNotice: "Đã đăng xuất." }))
+      .catch((error) => ui.set({ loginNotice: authMessage(error) }))
+      .finally(() => {
+        forgetGoogleChoice();
+        ui.set({ busy: false });
+      });
+  },
   chat: sendChat,
   emote: sendEmote,
   interact,
