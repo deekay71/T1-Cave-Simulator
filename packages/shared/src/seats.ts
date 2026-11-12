@@ -13,7 +13,18 @@ export interface CaveSeat {
   readonly z: number;
   /** Độ cao mặt ngồi (m). */
   readonly h: number;
+  /** Bán kính (m) vòng tròn đánh dấu dưới chân vật: rộng hơn chân vật một chút. */
+  readonly r: number;
 }
+/** Nửa bề ngang (m) của từng model ở tỉ lệ 1. */
+const SEAT_HALF: Readonly<Record<string, number>> = {
+  "furniture/tl_furn_stool_v01": 0.17,
+  "furniture/tl_furn_stool_square_v01": 0.21,
+  "furniture/tl_furn_crate_small_v01": 0.31,
+  "furniture/tl_furn_crate_large_v01": 0.46,
+  "environment/tl_env_stone_small_a_v01": 0.21,
+  "environment/tl_env_stone_small_d_v01": 0.21,
+};
 /** Mặt ngồi (m) của từng model ở tỉ lệ 1; đá thấp ngồi ngay trên đỉnh. */
 const SEAT_TOP: Readonly<Record<string, number>> = {
   "furniture/tl_furn_stool_v01": 0.42,
@@ -37,7 +48,9 @@ export const CAVE_SEATS: readonly CaveSeat[] = HUB_PLACEMENTS.flatMap((p, i) => 
   const taken = HUB_PLACEMENTS.some(
     (q) => q !== p && (q.npc || (q.y ?? 0) > 0) && Math.hypot(q.x - p.x, q.z - p.z) < (q.npc ? 0.55 : 0.75),
   );
-  return taken ? [] : [{ id: `s${i}`, x: Math.fround(p.x), z: Math.fround(p.z), h }];
+  // Thùng vuông: vòng tròn phải ôm được góc thùng (nửa cạnh x 1,41).
+  const half = SEAT_HALF[p.asset] * (p.scale ?? 1) * (p.asset.includes("crate") ? 1.41 : 1);
+  return taken ? [] : [{ id: `s${i}`, x: Math.fround(p.x), z: Math.fround(p.z), h, r: Math.round((half + 0.16) * 100) / 100 }];
 });
 const BY_ID = new Map(CAVE_SEATS.map((s) => [s.id, s]));
 export const caveSeat = (id: string): CaveSeat | undefined => BY_ID.get(id);

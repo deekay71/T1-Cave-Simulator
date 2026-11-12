@@ -1078,12 +1078,14 @@ class FanAvatar implements Avatar {
       }
       const w = envelope(slot.t) * slot.fade;
       if (slot.name === "jump") {
-        // two hops (0.5 m, then 0.3 m) with the arms half-way into the cheer
+        // one hop per jump, with the arms half-way into the cheer while in the air
         const u = (slot.t - JUMP_START) / JUMP_TIME;
         if (u > 0 && u < 1) hop = Math.max(hop, JUMP_HEIGHT * 4 * u * (1 - u) * slot.fade);
-        const v = (slot.t - JUMP_START - JUMP_TIME) / (JUMP_TIME * 0.8);
-        if (v > 0 && v < 1) hop = Math.max(hop, JUMP_HEIGHT * 0.6 * 4 * v * (1 - v) * slot.fade);
-        if (w > 0) this.applyEmote("cheer", slot.t, w * 0.55);
+        if (u >= 1) {
+          slot.name = null; // landed: the emote is over (no second bounce, no lingering arms)
+          continue;
+        }
+        if (w > 0) this.applyEmote("cheer", slot.t, Math.min(w, 4 * u * (1 - u)) * 0.55);
       } else if (w > 0) this.applyEmote(slot.name, slot.t, w);
     }
     // The caller places the root on the floor every frame before update(): lift it for the hop.

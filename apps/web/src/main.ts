@@ -35,7 +35,7 @@ import { resident } from "./stalls/client.js";
 import { CAVE_STALLS, CAVE_STALL_RADIUS } from "../../../packages/shared/src/stalls.js";
 import { findPath } from "../../../packages/shared/src/nav.js";
 import { CAVE_SEATS, CAVE_SEAT_REACH, caveSeat, type CaveSeat, type CaveSeatRequest } from "../../../packages/shared/src/seats.js";
-import { buildMarkers } from "./world/markers.js";
+import { buildMarkers, buildSeatRings } from "./world/markers.js";
 import { STALL_CAMERA_BLOCKERS } from "./world/stalls.js";
 import { requestedRoom, roomInviteUrl } from "./roomInvite.js";
 import {
@@ -111,6 +111,9 @@ const follow = createFollowCamera(camera, {
 });
 /** Đuốc sát camera: ngọn lửa thụt xuống thay vì che kín khung hình. */
 const flames = createNearFlames();
+/** Vòng tròn trắng dưới chân mọi vật ngồi được (ghế đẩu, thùng, đá thấp). */
+const seatRings = buildSeatRings(app, app.root, CAVE_SEATS);
+const takenSeats = new Set<string>();
 /** Vòng sáng + mũi tên nhấp nhô ở mọi điểm tương tác (màu theo sạp). */
 const MARKER_COLORS: Record<string, string> = { altar: "#F2C76B", screen: "#8FB8F2", rest: "#D8C7B0" };
 const markers = buildMarkers(
@@ -883,6 +886,9 @@ app.on("update", (dt: number) => {
       seat: seated ? "seated" : !inShrine && nearestFreeSeat(mine.x, mine.z) ? "near" : null });
   }
   markers.update(dt, inShrine ? null : mine, ui.get().destination);
+  takenSeats.clear();
+  players.forEach((p) => { if (p.seat) takenSeats.add(p.seat); });
+  seatRings.update(inShrine ? null : mine, takenSeats);
   flames.update(camera); // sau hiệu ứng lửa của world (handler update của world chạy trước)
   // Camera bị ép sát đầu (lưng sát vách, sát đồ cao): avatar mình mờ dần rồi ẩn hẳn.
   setSelfOpacity(mine, smoothstep(SELF_FADE_TO, SELF_FADE_FROM, follow.boom));

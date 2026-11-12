@@ -141,3 +141,52 @@ export function buildMarkers(app: pc.AppBase, parent: pc.Entity, spots: readonly
     },
   };
 }
+
+/**
+ * Seat rings: a thin white circle on the floor round every thing a player can sit on (stools,
+ * crates, low stones: packages/shared CAVE_SEATS), so it reads at a glance what F works on. One
+ * shared unlit material; rings further than SEAT_FAR m from the player are switched off, and a
+ * ring whose seat is taken dims.
+ */
+export interface SeatRings {
+  root: pc.Entity;
+  update(player: { x: number; z: number } | null, taken: ReadonlySet<string>): void;
+}
+const SEAT_FAR = 16;
+export function buildSeatRings(app: pc.AppBase, parent: pc.Entity, seats: readonly { id: string; x: number; z: number; r: number }[]): SeatRings {
+  const root = new pc.Entity("seat-rings");
+  parent.addChild(root);
+  const free = glow("#FFFFFF");
+  free.emissiveIntensity = 0.55;
+  free.update();
+  const busy = glow("#FFFFFF");
+  busy.emissiveIntensity = 0.14;
+  busy.update();
+  // unit ring (outer radius 1), scaled per seat; the line stays ~4.5 cm wide at a typical 0.5 m radius
+  const unit = ringMesh(app.graphicsDevice, 1, 0.09, 32);
+  const items = seats.map((seat) => {
+    const e = new pc.Entity(`seat-ring-${seat.id}`);
+    const instance = new pc.MeshInstance(unit, free);
+    e.addComponent("render", { meshInstances: [instance], castShadows: false, receiveShadows: false });
+    e.setLocalPosition(seat.x, 0.03, seat.z);
+    e.setLocalScale(seat.r, 1, seat.r);
+    e.enabled = false;
+    root.addChild(e);
+    return { seat, e, instance, taken: false };
+  });
+  return {
+    root,
+    update(player, taken) {
+      for (const it of items) {
+        const on = !!player && Math.hypot(player.x - it.seat.x, player.z - it.seat.z) < SEAT_FAR;
+        if (it.e.enabled !== on) it.e.enabled = on;
+        if (!on) continue;
+        const t = taken.has(it.seat.id);
+        if (t !== it.taken) {
+          it.taken = t;
+          it.instance.material = t ? busy : free;
+        }
+      }
+    },
+  };
+}
